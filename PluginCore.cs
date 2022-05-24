@@ -45,6 +45,23 @@ namespace ACAudio
 
         public VirindiViewService.HudView View;
 
+
+        private static void _LogInfo(string s)
+        {
+            Log($"INFO: {s}");
+        }
+
+        private static void _LogWarning(string s)
+        {
+            Log($"WARNING: {s}");
+        }
+
+        private static void _LogError(string s)
+        {
+            Log($"ERROR: {s}");
+        }
+
+
         /// <summary>
         /// This is called when the plugin is started up. This happens only once.
         /// </summary>
@@ -52,6 +69,10 @@ namespace ACAudio
 		{
             InstanceNumber = InstanceNumberGen++;
             _Instance = this;
+
+            Smith.Log.InfoCallback = _LogInfo;
+            Smith.Log.WarningCallback = _LogWarning;
+            Smith.Log.ErrorCallback = _LogError;
 
             try
             {
@@ -63,6 +84,7 @@ namespace ACAudio
                 Log("----------------------------------------------------------------------");
 
 
+                Log("Generate virindi view");
                 VirindiViewService.XMLParsers.Decal3XMLParser parser = new VirindiViewService.XMLParsers.Decal3XMLParser();
                 VirindiViewService.ViewProperties properties;
                 VirindiViewService.ControlGroup controls;
@@ -72,7 +94,7 @@ namespace ACAudio
 
 
 
-
+                Log("hook events");
                 View.ThemeChanged += delegate (object sender, EventArgs e)
                 {
                     RegenerateLogos();
@@ -98,16 +120,20 @@ namespace ACAudio
                 (View["FMOD_Credit"] as HudStaticText).FontHeight = 5;
 
 
+                Log("regen logos");
                 RegenerateLogos();
 
 
-                Audio.Init(1000, dopplerscale:0.135f);
+                Log("init audio");
+                if (!Audio.Init(1000, dopplerscale: 0.135f))
+                    Log("Failed to initialize Audio");
 
+                Log("hook render");
                 Core.RenderFrame += _Process;
             }
-            catch
+            catch(Exception ex)
             {
-
+                Log($"Startup exception: {ex.Message}");
             }
         }
 
@@ -137,7 +163,14 @@ namespace ACAudio
                 dt = truedt;
             lastTimestamp = curtimestamp;
 
-            Process(dt, truedt);
+            try
+            {
+                Process(dt, truedt);
+            }
+            catch(Exception ex)
+            {
+                Log($"Process exception: {ex.Message}");
+            }
         }
 
         private Mat4 GetCameraMatrix()
@@ -154,6 +187,7 @@ namespace ACAudio
 
 
             Vec3 playerPos = SmithInterop.Vector(Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First.RawCoordinates());
+
 
             WorldObject w;
             //w.RawCoordinates
@@ -179,17 +213,30 @@ namespace ACAudio
                 List<WorldObject> monsters = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Monster), playerPos, maxDist);
                 List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), playerPos, maxDist);
 
-                if(testObj != null)
-                    WriteToChat($"dist to sound: {(SmithInterop.Vector(testObj.RawCoordinates()) - cameraMat.Position).Magnitude.ToString("0.00")}");
+                /*if(testObj != null)
+                    WriteToChat($"dist to sound: {(SmithInterop.Vector(testObj.RawCoordinates()) - cameraMat.Position).Magnitude.ToString("0.00")}");*/
+
+
+
+
+                WorldObject player = Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First;
+                //Log($"behavior:{player.Behavior}  boolkeys:{player.BoolKeys.Count}   doublekeys:{player.DoubleKeys.Count}   gamedataflags1:{player.GameDataFlags1}   longkeys:{player.LongKeys.Count}   physicsdataflags:{player.PhysicsDataFlags}   stringkeys:{player.StringKeys.Count}   type:{player.Type}");
+                /*Log("------------------- LONG KEYS ----------------");
+                foreach(int i in player.DoubleKeys)
+                {
+                    Log($"{(DoubleValueKey)i} = {player.Values((DoubleValueKey)i)}");
+                }*/
+
+                //Log($"{Host.Actions.CombatMode}");
 
 
 
                 // lol lets dump stuff to look at
-                Log("--------------- WE BE DUMPIN ------------");
+                /*Log("--------------- WE BE DUMPIN ------------");
                 foreach (WorldObject obj in allobj)
                 {
                     Log($"name:{obj.Name}  id:{obj.Id}  class:{obj.ObjectClass}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
-                }
+                }*/
 
                 //WriteToChat($"{InstanceNumber}  players:{players.Count}  npcs:{npcs.Count}  monsters:{monsters.Count}  playerPos:{playerPos}");
 
@@ -197,15 +244,20 @@ namespace ACAudio
 
                 //WriteToChat($"{InstanceNumber} blah {Core.WorldFilter.GetAll().Count} objects  {Core.WorldFilter.GetLandscape().Count} landscape   player: {coords.NorthSouth},{coords.EastWest}");
 
-
-
                 {
 
                     // find closest NPC to make a sound source
                     WorldObject closestObj = null;
                     double closestDist = 99999.0;
-                    foreach (WorldObject obj in Core.WorldFilter.GetByObjectClass(ObjectClass.Npc))
+                    foreach (WorldObject obj in Core.WorldFilter.GetAll())
                     {
+#if true
+                        if(obj.ObjectClass != ObjectClass.Portal)
+#else
+                        if (obj.ObjectClass != ObjectClass.Npc)
+#endif
+                            continue;
+
                         Vec3 objPos = SmithInterop.Vector(obj.RawCoordinates());
                         double dist = (objPos - playerPos).Magnitude;
 
@@ -234,14 +286,17 @@ namespace ACAudio
                             testObjID = testObj.Id;
 
                             string playfile;
+#if true
+                            playfile = "portal.ogg";
+#else
                             if (MathLib.random.NextDouble() >= 0.5)
                                 playfile = "data/questrecieved.mp3";
                             else
                                 playfile = "data/questcomplete.mp3";
+#endif
 
 
-                            string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), playfile);
-                            Audio.Sound snd = Audio.GetSound("test", File.ReadAllBytes(filepath), Audio.DimensionMode._3DPositional, true);
+                            Audio.Sound snd = Audio.GetSound("test", ReadDataFile(playfile), Audio.DimensionMode._3DPositional, true);
 
                             testChannel = Audio.PlaySound(snd, true);
 
@@ -266,6 +321,16 @@ namespace ACAudio
             // Z is up
 
             Audio.Process(dt, truedt, cameraMat.Position, Vec3.Zero, cameraMat.Up, cameraMat.Forward);
+        }
+
+        public byte[] ReadDataFile(string filename)
+        {
+            return System.IO.File.ReadAllBytes(GenerateDataPath(filename));
+        }
+
+        public string GenerateDataPath(string filename)
+        {
+            return System.IO.Path.Combine(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data"), filename);
         }
 
         public List<WorldObject> FilterByDistance(IEnumerable<WorldObject> objects, Vec3 pt, double dist)
@@ -336,15 +401,33 @@ namespace ACAudio
 
 
             // bg music test
+            if(true)
             {
-                string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data/ac_anotherorch.mp3");
-                Audio.Sound snd = Audio.GetSound("test", File.ReadAllBytes(filepath), Audio.DimensionMode._2D, true);
+                try
+                {
+                    //string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), /*"data/ac_anotherorch.mp3"*/"data/ac_someoffbeat.mp3");
+                    Audio.Sound snd = Audio.GetSound("test", ReadDataFile("ac_anotherorch.mp3"), Audio.DimensionMode._2D, true);
+                    if (snd == null)
+                        Log("cant get music sound");
+                    else
+                    {
 
-                Audio.Channel song = Audio.PlaySound(snd, true);
+                        Audio.Channel song = Audio.PlaySound(snd, true);
+                        if (song == null)
+                            Log("cant make sound channel");
+                        else
+                        {
 
-                song.Volume = 0.3;
-                song.Play();
+                            song.Volume = 0.3;
+                            song.Play();
+                        }
+                    }
 
+                }
+                catch(Exception ex)
+                {
+                    Log($"failed to play music: {ex.Message}");
+                }
             }
 
 
