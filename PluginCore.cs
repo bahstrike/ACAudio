@@ -11,6 +11,7 @@ using VirindiViewService.Controls;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace ACAudio
 {
@@ -54,6 +55,14 @@ namespace ACAudio
 
             try
             {
+                if (File.Exists(FinalLogFilepath))
+                    File.Delete(FinalLogFilepath);
+
+                Log("----------------------------------------------------------------------");
+                Log("                            ACAudio Startup");
+                Log("----------------------------------------------------------------------");
+
+
                 VirindiViewService.XMLParsers.Decal3XMLParser parser = new VirindiViewService.XMLParsers.Decal3XMLParser();
                 VirindiViewService.ViewProperties properties;
                 VirindiViewService.ControlGroup controls;
@@ -75,50 +84,10 @@ namespace ACAudio
                 {
                     WriteToChat("BLAH");
 
-#if true
-
-                    Vec3 playerPos = SmithInterop.Vector(Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First.RawCoordinates());
-
-                    // find closest NPC to make a sound source
-                    WorldObject closestObj = null;
-                    double closestDist = 99999.0;
-                    foreach(WorldObject obj in Core.WorldFilter.GetByObjectClass(ObjectClass.Npc))
-                    {
-                        Vec3 objPos = SmithInterop.Vector(obj.RawCoordinates());
-                        double dist = (objPos - playerPos).Magnitude;
-
-                        if(dist < closestDist)
-                        {
-                            closestDist = dist;
-                            closestObj = obj;
-                        }
-                    }
-
-
-                    if (closestObj != null)
-                    {
-                        testObj = closestObj;
-
-                        string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data/speech.wav");
-                        Audio.Sound snd = Audio.GetSound("test", File.ReadAllBytes(filepath), Audio.DimensionMode._3DPositional, false);
-
-                        testChannel = Audio.PlaySound(snd, true);
-
-                        testChannel.SetPosition(SmithInterop.Vector(testObj.RawCoordinates()), Vec3.Zero);
-
-                        testChannel.Volume = 1.0;
-
-                        testChannel.SetMinMaxDistance(5.0, 35.0);
-
-
-                        testChannel.Play();
-                    }
-#else
-                    string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data/ac_anotherorch.mp3");
+                    /*string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data/ac_anotherorch.mp3");
                     Audio.Sound snd = Audio.GetSound("test", File.ReadAllBytes(filepath), Audio.DimensionMode._2D, false);
 
-                    Audio.PlaySound(snd);
-#endif
+                    Audio.PlaySound(snd);*/
                 };
 
                 View["FMOD"].Hit += delegate (object sender, EventArgs e)
@@ -132,7 +101,7 @@ namespace ACAudio
                 RegenerateLogos();
 
 
-                Audio.Init(1000);
+                Audio.Init(1000, dopplerscale:0.135f);
 
                 Core.RenderFrame += _Process;
             }
@@ -142,8 +111,10 @@ namespace ACAudio
             }
         }
 
+        public const int BadWorldID = -1;
+
         Audio.Channel testChannel = null;
-        WorldObject testObj = null;
+        int testObjID = BadWorldID;
 
         long lastTimestamp = 0;
         private void _Process(object sender, EventArgs e)
@@ -191,7 +162,7 @@ namespace ACAudio
             Decal.Adapter.Wrappers.D3DObj d;
             //d.OrientToCamera
 
-
+            WorldObject testObj = Core.WorldFilter[testObjID];
             if (testChannel != null && testChannel.IsPlaying && testObj != null)
                 testChannel.SetPosition(SmithInterop.Vector(testObj.RawCoordinates()), Vec3.Zero);
             
@@ -201,21 +172,94 @@ namespace ACAudio
             {
                 sayStuff = 0.0;
 
-                double maxDist = 0.1;
+                double maxDist = 35.0;
 
                 List<WorldObject> players = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Player), playerPos, maxDist);
                 List<WorldObject> npcs = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Npc), playerPos, maxDist);
                 List<WorldObject> monsters = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Monster), playerPos, maxDist);
-
+                List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), playerPos, maxDist);
 
                 if(testObj != null)
                     WriteToChat($"dist to sound: {(SmithInterop.Vector(testObj.RawCoordinates()) - cameraMat.Position).Magnitude.ToString("0.00")}");
+
+
+
+                // lol lets dump stuff to look at
+                Log("--------------- WE BE DUMPIN ------------");
+                foreach (WorldObject obj in allobj)
+                {
+                    Log($"name:{obj.Name}  id:{obj.Id}  class:{obj.ObjectClass}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
+                }
 
                 //WriteToChat($"{InstanceNumber}  players:{players.Count}  npcs:{npcs.Count}  monsters:{monsters.Count}  playerPos:{playerPos}");
 
                 //WriteToChat(cameraMat.ToString());
 
                 //WriteToChat($"{InstanceNumber} blah {Core.WorldFilter.GetAll().Count} objects  {Core.WorldFilter.GetLandscape().Count} landscape   player: {coords.NorthSouth},{coords.EastWest}");
+
+
+
+                {
+
+                    // find closest NPC to make a sound source
+                    WorldObject closestObj = null;
+                    double closestDist = 99999.0;
+                    foreach (WorldObject obj in Core.WorldFilter.GetByObjectClass(ObjectClass.Npc))
+                    {
+                        Vec3 objPos = SmithInterop.Vector(obj.RawCoordinates());
+                        double dist = (objPos - playerPos).Magnitude;
+
+                        if (dist < closestDist)
+                        {
+                            closestDist = dist;
+                            closestObj = obj;
+                        }
+                    }
+
+
+                    if (closestObj != null)
+                    {
+                        // only switch if its diff from existing
+                        if (closestObj.Id != testObjID)
+                        {
+                            if (testChannel != null)
+                            {
+                                testChannel.Stop();
+                                testChannel = null;
+                            }
+
+
+
+                            testObj = closestObj;//lol dumb reusing local var.. all test haxx for now
+                            testObjID = testObj.Id;
+
+                            string playfile;
+                            if (MathLib.random.NextDouble() >= 0.5)
+                                playfile = "data/questrecieved.mp3";
+                            else
+                                playfile = "data/questcomplete.mp3";
+
+
+                            string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), playfile);
+                            Audio.Sound snd = Audio.GetSound("test", File.ReadAllBytes(filepath), Audio.DimensionMode._3DPositional, true);
+
+                            testChannel = Audio.PlaySound(snd, true);
+
+                            testChannel.SetPosition(SmithInterop.Vector(testObj.RawCoordinates()), Vec3.Zero);
+
+                            testChannel.Volume = 0.6;
+
+                            testChannel.SetMinMaxDistance(5.0, 35.0);
+
+
+                            testChannel.Play();
+                        }
+                    }
+
+                }
+
+
+
             }
 
 
@@ -288,6 +332,22 @@ namespace ACAudio
         private void CharacterFilter_LoginComplete(object sender, EventArgs e)
         {
             WriteToChat("Startup");
+
+
+
+            // bg music test
+            {
+                string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data/ac_anotherorch.mp3");
+                Audio.Sound snd = Audio.GetSound("test", File.ReadAllBytes(filepath), Audio.DimensionMode._2D, true);
+
+                Audio.Channel song = Audio.PlaySound(snd, true);
+
+                song.Volume = 0.3;
+                song.Play();
+
+            }
+
+
         }
 
         /// <summary>
@@ -298,6 +358,11 @@ namespace ACAudio
             Core.RenderFrame -= _Process;
 
             Audio.Shutdown();
+
+
+            Log("----------------------------------------------------------------------");
+            Log("                           ACAudio Shutdown");
+            Log("----------------------------------------------------------------------");
         }
 
         private void FilterCore_CommandLineText(object sender, ChatParserInterceptEventArgs e)
@@ -321,11 +386,26 @@ namespace ACAudio
             try
             {
                 Instance.Host.Actions.AddChatText($"[{PluginName}] {message}", 5);
+                Log($"WriteToChat: {message}");
             }
             catch (Exception)
             {
 
             }
+        }
+
+        private static string FinalLogFilepath
+        {
+            get
+            {
+                return System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), $"{PluginName}.log");
+            }
+        }
+
+        public static void Log(string ln)
+        {
+            using (StreamWriter logFile = File.AppendText(FinalLogFilepath))
+                logFile.WriteLine($"{DateTime.Now.ToLongTimeString()}: {ln}");
         }
 
 
