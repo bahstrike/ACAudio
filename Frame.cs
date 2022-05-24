@@ -1,4 +1,6 @@
-﻿using System;
+﻿//used with permission by trevis (UtilityBelt)
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;

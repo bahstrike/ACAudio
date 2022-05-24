@@ -169,10 +169,17 @@ namespace ACAudio
             Process(dt, truedt);
         }
 
+        private Mat4 GetCameraMatrix()
+        {
+            UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8);//used with permission by trevis (UtilityBelt)
+
+            return SmithInterop.Matrix(frame);
+        }
+
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
-            Mat4 cameraMat = SmithInterop.Matrix(UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8));
+            Mat4 cameraMat = GetCameraMatrix();
 
 
             Vec3 playerPos = SmithInterop.Vector(Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First.RawCoordinates());

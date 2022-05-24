@@ -19,6 +19,7 @@ namespace ACAudio
             return new Vec3(v.X, v.Y, v.Z);
         }
 
+        //used with permission by trevis (UtilityBelt)
         public static Mat4 Matrix(Frame f)
         {
             return new Mat4(
