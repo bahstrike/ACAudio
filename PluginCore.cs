@@ -383,6 +383,21 @@ namespace ACAudio
 
                         new Vec3(151.4200, 172.2459, 36.2050),// meeting hall
                         new Vec3(148.5136, 175.7152, 36.2184),// meeting hall
+
+
+                        // holtburg
+                        new Vec3(90.3577, 151.8003, 68.2100),// in town (lower)
+                        new Vec3(41.3759, 132.7583, 68.2100),// in town (lower)
+                        new Vec3(18.4588, 126.6065, 68.2100),// in town (lower)
+                        new Vec3(133.4468, 136.5444, 68.2100),// in town(lower)
+                        new Vec3(155.7883, 114.9172, 68.2100),// in town(lower)
+
+                        new Vec3(156.8031, 32.4556, 98.0754),//meeting hall
+                        new Vec3(153.2823, 35.4991, 98.1161),// meeting hall
+
+                        new Vec3(139.1402, 28.3915, 96.2100),//in town (upper)
+                        new Vec3(105.9374, 17.1748, 96.2100),//in town (upper)
+
                     })
                         positions.Add(pos + adjust);
 
