@@ -29,5 +29,20 @@ namespace ACAudio
                 f.x, f.y, f.z, 1.0
                 );
         }
+
+        public static Position Position(Frame f)
+        {
+            return new Position(f.landblock, new Vec3((double)f.x, (double)f.y, (double)f.z));
+        }
+
+        // returns Vec3.Infinite if obj is invalid
+        public static Vec3 ObjectGlobalPosition(WorldObject obj)
+        {
+            ACAudio.Position? pos = ACAudio.Position.FromObject(obj);
+            if (!pos.HasValue)
+                return Vec3.Infinite;
+
+            return pos.Value.Global;
+        }
     }
 }

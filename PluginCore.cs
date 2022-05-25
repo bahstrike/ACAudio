@@ -168,7 +168,11 @@ namespace ACAudio
         {
             get
             {
-                return GetCameraMatrix().Position;
+                Position p;
+                Mat4 m;
+                GetCameraInfo(out p, out m);
+
+                return p.Global;
             }
         }
 
@@ -205,20 +209,25 @@ namespace ACAudio
             }
         }
 
-        private Mat4 GetCameraMatrix()
+        private void GetCameraInfo(out Position pos, out Mat4 mat)
         {
             UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8);//used with permission by trevis (UtilityBelt)
 
-            return SmithInterop.Matrix(frame);
+            pos = SmithInterop.Position(frame);
+            mat = SmithInterop.Matrix(frame);
         }
 
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
-            Mat4 cameraMat = GetCameraMatrix();
+            //Mat4 cameraMat = GetCameraMatrix();
 
 
-            Vec3 cameraPos = cameraMat.Position;//SmithInterop.Vector(Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First.RawCoordinates());
+            //Vec3 cameraPos = cameraMat.Position;//SmithInterop.Vector(Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First.RawCoordinates());
+
+            Position cameraPos;
+            Mat4 cameraMat;
+            GetCameraInfo(out cameraPos, out cameraMat);
 
 
             WorldObject w;
@@ -278,7 +287,7 @@ namespace ACAudio
                         double maxDist = 35.0;
                         foreach (WorldObject obj in Core.WorldFilter.GetAll())
                         {
-                            double dist = (cameraPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+                            double dist = (cameraPos.Local - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
 
                             if (dist > maxDist)
                                 continue;
@@ -298,7 +307,7 @@ namespace ACAudio
                         List<WorldObject> portals = new List<WorldObject>();
                         foreach (WorldObject obj in Core.WorldFilter.GetAll())
                         {
-                            double dist = (cameraPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+                            double dist = (cameraPos.Local - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
                             if (dist > maxDist)
                                 continue;
 
@@ -319,7 +328,7 @@ namespace ACAudio
                         foreach (WorldObject obj in portals)
                         {
                             // re-check with updated maxDist
-                            double dist = (cameraPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+                            double dist = (cameraPos.Local - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
                             if (dist > maxDist)
                                 continue;
 
@@ -406,7 +415,7 @@ namespace ACAudio
                     List<Vec3> finalPositions = new List<Vec3>();
                     foreach (Vec3 pos in positions)
                     {
-                        double dist = (cameraPos - pos).Magnitude;
+                        double dist = (cameraPos.Local - pos).Magnitude;
 
                         if (dist > maxDist)
                             continue;
@@ -430,10 +439,50 @@ namespace ACAudio
                         PlayForPosition(pos, "candle.ogg", vol, minDist, maxDist);
                 }
 
+#if true
+
+                (View["Info"] as HudStaticText).Text =
+                    $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  cam:{cameraPos.Global}\n";
+#else
+                UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8);
+                uint lb = frame.landblock;//(uint)player.Values(LongValueKey.Landblock);
+
+                int lbX = (int)((lb & 0xFF000000) >> 24);
+                int lbY = (int)((lb & 0x00FF0000) >> 16);
+                int area = (int)((lb & 0x0000FF00) >> 8);
+                int cell = (int)(lb & 0x000000FF);  // 1-based
+                int cellX = (cell - 1) / 8;
+                int cellY = (cell - 1) % 8;
+
+
+
+
+                const double cellScale = 24.0;  // terrain landblock is 8x8 -> 192x192   therefore cellX * 24.0  is local coord in landblock
+                Vec2 cellLL = new Vec2((double)cellX * cellScale, (double)cellY * cellScale);
+
+                Vec2 landblockLL = new Vec2((double)lbX * 192.0, (double)lbY * 192.0); // terrain landblock is 192x192
+
+                Vec2 globalLL = landblockLL;// + cellLL;
+
+
+                Vec3 globalCamPos = globalLL.At3DZ(0.0) + cameraPos;
+
+                // SW = lower left = negative
+                // NE = upper right = positive
+                Vec2 cornerSW = new Vec2(-101.95, -101.95); // landblock 0,0
+                Vec2 cornerNE = new Vec2(102.05, 102.05); // landblock 256,256   (note may need to subtract landblock size to get SW corner of last landblock)
+
+
+
 
                 //Log($"activeobjs:{ActiveObjectAmbients.Count}  audiochannels:{Audio.ChannelCount}");
-                (View["Info"] as HudStaticText).Text = $"activeobjs:{ActiveAmbients.Count}  audiochannels:{Audio.ChannelCount}";
-
+                (View["Info"] as HudStaticText).Text =
+                    $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  cam:{cameraPos}  lb({(LandblockInside(lb) ? "I" : "T")}):0x{lb.ToString("X8")}\n" +
+                    $"lb:{lbX},{lbY}  area:{area}  cell:{cellX},{cellY}\n" +
+                    $"landblockLL:{landblockLL}\ncellLL:{cellLL}\nglobalLL:{globalLL}\n" +
+                    $"globalCamPos:{globalCamPos}";//    camDist:{camDist}\n" +
+                    //$"quat:{frame.qw},{frame.qx},{frame.qy},{frame.qz}";
+#endif
             }
 
 
@@ -464,7 +513,7 @@ namespace ACAudio
                     float minDist, maxDist;
                     a.Channel.channel.get3DMinMaxDistance(out minDist, out maxDist);
 
-                    double dist = (cameraPos - a.Position).Magnitude;
+                    double dist = (cameraPos.Local - a.Position).Magnitude;
 
                     // fudge dist a bit?
                     maxDist += 2.0f;
@@ -730,8 +779,7 @@ namespace ACAudio
 
             foreach (WorldObject obj in objects)
             {
-                Vec3 objPt = SmithInterop.Vector(obj.RawCoordinates());
-                if ((pt - objPt).Magnitude > dist)
+                if ((pt - SmithInterop.ObjectGlobalPosition(obj)).Magnitude > dist)
                     continue;
 
                 objs.Add(obj);
