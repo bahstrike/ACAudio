@@ -48,7 +48,7 @@ namespace ACAudio
             Local = Vec3.Zero;
         }
 
-        public Position(uint _Landblock, Vec3 _Local)
+        private Position(uint _Landblock, Vec3 _Local)
         {
             Landblock = _Landblock;
             Local = _Local;
@@ -57,6 +57,11 @@ namespace ACAudio
         public static Position FromLocal(uint landblock, Vec3 local)
         {
             return new Position(landblock, local);
+        }
+
+        public static Position FromLocal(uint landblock, double localX, double localY, double localZ)
+        {
+            return new Position(landblock, new Vec3(localX, localY, localZ));
         }
 
         public static Position FromGlobal(uint landblock, Vec3 global)
@@ -78,6 +83,11 @@ namespace ACAudio
                 return null;
 
             return FromLocal(landblock, SmithInterop.Vector(obj.RawCoordinates()));
+        }
+
+        public override string ToString()
+        {
+            return $"0x{Landblock.ToString("X8")}, {Local}";
         }
     }
 }

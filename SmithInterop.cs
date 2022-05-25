@@ -32,7 +32,7 @@ namespace ACAudio
 
         public static Position Position(Frame f)
         {
-            return new Position(f.landblock, new Vec3((double)f.x, (double)f.y, (double)f.z));
+            return ACAudio.Position.FromLocal(f.landblock, (double)f.x, (double)f.y, (double)f.z);
         }
 
         // returns Vec3.Infinite if obj is invalid

@@ -126,9 +126,7 @@ namespace ACAudio
                 {
                     WriteToChat("WEEE");
 
-                    string coordStr = SmithInterop.Vector(Player.RawCoordinates()).ToString();
-
-                    Log($"{coordStr}");
+                    Log($"{Position.FromObject(Player)}");
                 };
 
                 View["FMOD"].Hit += delegate (object sender, EventArgs e)
