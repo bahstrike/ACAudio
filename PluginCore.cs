@@ -107,7 +107,7 @@ namespace ACAudio
                     WriteToChat("BLAH");
 
 
-                    List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), SmithInterop.Vector(Player.RawCoordinates()), 35.0);
+                    List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), CameraPosition, 35.0);
 
                     // lol lets dump stuff to look at
                     Log("--------------- WE BE DUMPIN ------------");
@@ -164,6 +164,14 @@ namespace ACAudio
             }
         }
 
+        public Vec3 CameraPosition
+        {
+            get
+            {
+                return GetCameraMatrix().Position;
+            }
+        }
+
         public const int BadWorldID = -1;
 
         long lastTimestamp = 0;
@@ -210,7 +218,7 @@ namespace ACAudio
             Mat4 cameraMat = GetCameraMatrix();
 
 
-            Vec3 playerPos = SmithInterop.Vector(Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First.RawCoordinates());
+            Vec3 cameraPos = cameraMat.Position;//SmithInterop.Vector(Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First.RawCoordinates());
 
 
             WorldObject w;
@@ -261,21 +269,63 @@ namespace ACAudio
                 {
 
                     // dynamic objects
-                    double vol = 1.0;
-                    double minDist = 5.0;
-                    double maxDist = 35.0;
-                    foreach (WorldObject obj in Core.WorldFilter.GetAll())
+
+
+                    // lifestone
                     {
-                        double dist = (playerPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+                        double vol = 1.0;
+                        double minDist = 5.0;
+                        double maxDist = 35.0;
+                        foreach (WorldObject obj in Core.WorldFilter.GetAll())
+                        {
+                            double dist = (cameraPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
 
-                        if (dist > maxDist)
-                            continue;
+                            if (dist > maxDist)
+                                continue;
+
+                            if (obj.ObjectClass == ObjectClass.Lifestone)
+                                PlayForObject(obj, "lifestone.ogg", vol, minDist, maxDist);
+                        }
+                    }
 
 
-                        if (obj.ObjectClass == ObjectClass.Portal)
+                    // portals (dynamic; in case too many are around)
+                    {
+                        double vol = 1.0;
+                        double minDist = 5.0;
+                        double maxDist = 35.0;
+
+                        List<WorldObject> portals = new List<WorldObject>();
+                        foreach (WorldObject obj in Core.WorldFilter.GetAll())
+                        {
+                            double dist = (cameraPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+                            if (dist > maxDist)
+                                continue;
+
+
+                            if (obj.ObjectClass == ObjectClass.Portal)
+                                portals.Add(obj);
+                        }
+
+
+                        // if we got more than like 3 then tone em back
+                        if(portals.Count > 3)
+                        {
+                            vol *= 0.4;
+                            minDist *= 0.9;
+                            maxDist *= 0.5;
+                        }
+
+                        foreach (WorldObject obj in portals)
+                        {
+                            // re-check with updated maxDist
+                            double dist = (cameraPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+                            if (dist > maxDist)
+                                continue;
+
                             PlayForObject(obj, "portal.ogg", vol, minDist, maxDist);
-                        else if (obj.ObjectClass == ObjectClass.Lifestone)
-                            PlayForObject(obj, "lifestone.ogg", vol, minDist, maxDist);
+                        }
+
                     }
 
 
@@ -316,7 +366,7 @@ namespace ACAudio
                         pos.z -= 1.27;
 
 
-                        double dist = (playerPos - pos).Magnitude;
+                        double dist = (cameraPos - pos).Magnitude;
 
                         if (dist > maxDist)
                             continue;
@@ -339,9 +389,9 @@ namespace ACAudio
             {
                 Ambient a = ActiveAmbients[x];
 
-                bool keep = true;
+                string discardReason = null;
 
-                if (keep)
+                if (discardReason == null)
                 {
                     // cull bad object references
                     if (a is ObjectAmbient)
@@ -349,31 +399,39 @@ namespace ACAudio
                         ObjectAmbient oa = a as ObjectAmbient;
 
                         if (oa.WorldObject == null)
-                            keep = false;
+                            discardReason = "bad object ref";
                     }
 
                 }
                 
 
-                if(keep)
+                if(discardReason == null)
                 { 
                     float minDist, maxDist;
                     a.Channel.channel.get3DMinMaxDistance(out minDist, out maxDist);
 
-                    double dist = (playerPos - a.Position).Magnitude;
+                    double dist = (cameraPos - a.Position).Magnitude;
 
                     // fudge dist a bit?
                     maxDist += 2.0f;
 
                     if (dist > (double)maxDist)
-                        keep = false;
+                        discardReason = $"bad dist {dist} > {maxDist}";
                 }
 
 
                 
                 // decide whether to remove or update
-                if(!keep)
+                if(discardReason != null)
                 {
+
+                    if (a is ObjectAmbient)
+                        Log($"channel ({a.Channel.ID}): removing for weenie {(a as ObjectAmbient).WeenieID}: {discardReason}");
+                    else if(a is StaticAmbient)
+                        Log($"channel ({a.Channel.ID}): removing for static {(a as StaticAmbient).Position}: {discardReason}");
+
+
+
                     a.Channel.Stop();
                     Audio.ForgetChannel(a.Channel);
 
@@ -528,8 +586,6 @@ namespace ACAudio
                 return;
 
 
-            Log($"OOHH WE GONNA PLAY {filename} at {pos}");
-
             // start new sound
             StaticAmbient newsa = new StaticAmbient();
 
@@ -542,6 +598,8 @@ namespace ACAudio
             newsa.Channel.Play();
 
             ActiveAmbients.Add(newsa);
+
+            Log($"channel ({newsa.Channel.ID}): added static play {filename} at {pos}");
         }
 
         public void PlayForObject(WorldObject obj, string filename, double vol, double minDist, double maxDist)
@@ -579,7 +637,6 @@ namespace ACAudio
                 }
             }
 
-
             // get sound
             Audio.Sound snd = Audio.GetSound(filename, ReadDataFile(filename), Audio.DimensionMode._3DPositional, true);
             if (snd == null)
@@ -598,6 +655,8 @@ namespace ACAudio
             newoa.Channel.Play();
 
             ActiveAmbients.Add(newoa);
+
+            Log($"channel ({newoa.Channel.ID}): added weenie play {filename} from ID {obj.Id}");
         }
 
         public byte[] ReadDataFile(string filename)
