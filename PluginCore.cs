@@ -561,7 +561,13 @@ namespace ACAudio
 
                     // if same name, bail
                     if (oa.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        // do we want to update properties?
+                        oa.Channel.Volume = vol;
+                        oa.Channel.SetMinMaxDistance(minDist, maxDist);
+
                         return;
+                    }
 
                     // changing sounds? kill existing
                     oa.Channel.Stop();
