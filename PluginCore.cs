@@ -15,10 +15,10 @@ using System.Diagnostics;
 
 namespace ACAudio
 {
-	[WireUpBaseEvents]
-	[FriendlyName(PluginName)]
-	public class PluginCore : PluginBase
-	{
+    [WireUpBaseEvents]
+    [FriendlyName(PluginName)]
+    public class PluginCore : PluginBase
+    {
         public const string PluginName = "ACAudio";//needs to match namespace or "embedded resources" wont work
 
         private static PluginCore _Instance = null;
@@ -66,7 +66,7 @@ namespace ACAudio
         /// This is called when the plugin is started up. This happens only once.
         /// </summary>
         protected override void Startup()
-		{
+        {
             InstanceNumber = InstanceNumberGen++;
             _Instance = this;
 
@@ -89,7 +89,7 @@ namespace ACAudio
                 VirindiViewService.ViewProperties properties;
                 VirindiViewService.ControlGroup controls;
                 parser.ParseFromResource($"{PluginName}.mainView.xml", out properties, out controls);
-                
+
                 View = new VirindiViewService.HudView(properties, controls);
 
 
@@ -101,8 +101,8 @@ namespace ACAudio
                 };
 
 
-            
-                View["Dump"].Hit += delegate(object sender, EventArgs e)
+
+                View["Dump"].Hit += delegate (object sender, EventArgs e)
                 {
                     WriteToChat("BLAH");
 
@@ -150,7 +150,7 @@ namespace ACAudio
                 Log("hook render");
                 Core.RenderFrame += _Process;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log($"Startup exception: {ex.Message}");
             }
@@ -199,7 +199,7 @@ namespace ACAudio
             {
                 Process(dt, truedt);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log($"Process exception: {ex.Message}");
             }
@@ -227,7 +227,7 @@ namespace ACAudio
 
             Decal.Adapter.Wrappers.D3DObj d;
             //d.OrientToCamera
-            
+
 
             sayStuff += dt;
             if (sayStuff >= 0.2)
@@ -309,7 +309,7 @@ namespace ACAudio
 
 
                         // if we got more than like 3 then tone em back
-                        if(portals.Count > 3)
+                        if (portals.Count > 3)
                         {
                             vol *= 0.4;
                             minDist *= 0.9;
@@ -340,7 +340,35 @@ namespace ACAudio
                     double maxDist = 15.0;
 
                     // candle sounds lol
-                    foreach (Vec3 _pos in new Vec3[]
+
+
+                    // add direct coordinates if we can pass inside object..  if standing on top, add to list below
+                    List<Vec3> positions = new List<Vec3>(new Vec3[] {
+                        // town network
+                        new Vec3(74.9212, -83.2331, 0.0050),
+                        new Vec3(83.3264, -75.0515, 0.0050),
+                        new Vec3(83.2375, -64.9197, 0.0050),
+                        new Vec3(74.9133, -56.6920, 0.0050),
+                        new Vec3(64.8490, -56.8161, 0.0050),
+                        new Vec3(56.6511, -65.0491, 0.0050),
+                        new Vec3(56.7121, -74.9459, 0.0050),
+                        new Vec3(65.0106, -83.3552, 0.0050),
+
+                        // town network annex
+                        new Vec3(67.6610, -166.0082, -5.9950),
+                        new Vec3(72.3911, -166.0279, -5.9950),
+                        new Vec3(75.9901, -162.3565, -5.9950),
+                        new Vec3(75.9803, -157.6755, -5.9950),
+                        new Vec3(64.0190, -157.6426, -5.9950),
+                        new Vec3(64.0199, -162.3036, -5.9950),
+                        });
+
+
+                    // i was prolly on top of candle post for these; might wanna subtract some Z...
+                    // assuming around 6-foot human toon..  a chest (origin)->foot is estimated at perhaps
+                    // 50" or 1.27 meters
+                    Vec3 adjust = new Vec3(0.0, 0.0, -1.27);
+                    foreach (Vec3 pos in new Vec3[]
                     {
                         // cragstone
                         new Vec3(175.1502, 113.1925, 34.2100),// in town
@@ -355,25 +383,36 @@ namespace ACAudio
 
                         new Vec3(151.4200, 172.2459, 36.2050),// meeting hall
                         new Vec3(148.5136, 175.7152, 36.2184),// meeting hall
-
                     })
+                        positions.Add(pos + adjust);
+
+
+                    // build list of final candidates
+                    List<Vec3> finalPositions = new List<Vec3>();
+                    foreach (Vec3 pos in positions)
                     {
-                        Vec3 pos = _pos;
-
-                        // i was prolly on top of candle post for these; might wanna subtract some Z...
-                        // assuming around 6-foot human toon..  a chest (origin)->foot is estimated at perhaps
-                        // 50" or 1.27 meters
-                        pos.z -= 1.27;
-
-
                         double dist = (cameraPos - pos).Magnitude;
 
                         if (dist > maxDist)
                             continue;
 
+                        finalPositions.Add(pos);
+                    }
+
+
+                    // if we got more than like 3 then tone em back
+                    if (finalPositions.Count > 3)
+                    {
+                        vol *= 0.4;
+                        minDist *= 0.9;
+                        maxDist *= 0.5;
+                    }
+
+
+                    // dispatch
+                    foreach (Vec3 pos in finalPositions)
                         // hardcoded
                         PlayForPosition(pos, "candle.ogg", vol, minDist, maxDist);
-                    }
                 }
 
 
@@ -385,7 +424,7 @@ namespace ACAudio
 
 
             // kill/forget sounds for objects out of range?
-            for (int x=0; x<ActiveAmbients.Count; x++)
+            for (int x = 0; x < ActiveAmbients.Count; x++)
             {
                 Ambient a = ActiveAmbients[x];
 
@@ -403,10 +442,10 @@ namespace ACAudio
                     }
 
                 }
-                
 
-                if(discardReason == null)
-                { 
+
+                if (discardReason == null)
+                {
                     float minDist, maxDist;
                     a.Channel.channel.get3DMinMaxDistance(out minDist, out maxDist);
 
@@ -420,14 +459,14 @@ namespace ACAudio
                 }
 
 
-                
+
                 // decide whether to remove or update
-                if(discardReason != null)
+                if (discardReason != null)
                 {
 
                     if (a is ObjectAmbient)
                         Log($"channel ({a.Channel.ID}): removing for weenie {(a as ObjectAmbient).WeenieID}: {discardReason}");
-                    else if(a is StaticAmbient)
+                    else if (a is StaticAmbient)
                         Log($"channel ({a.Channel.ID}): removing for static {(a as StaticAmbient).Position}: {discardReason}");
 
 
@@ -437,7 +476,8 @@ namespace ACAudio
 
                     ActiveAmbients.RemoveAt(x);
                     x--;
-                } else
+                }
+                else
                 {
                     // update position
                     a.Channel.SetPosition(a.Position, Vec3.Zero);
@@ -673,7 +713,7 @@ namespace ACAudio
         {
             List<WorldObject> objs = new List<WorldObject>();
 
-            foreach(WorldObject obj in objects)
+            foreach (WorldObject obj in objects)
             {
                 Vec3 objPt = SmithInterop.Vector(obj.RawCoordinates());
                 if ((pt - objPt).Magnitude > dist)
@@ -714,9 +754,9 @@ namespace ACAudio
 
             Color fill = View.Theme.GetColor("ButtonText");
 
-            for(int y=0; y<h; y++)
+            for (int y = 0; y < h; y++)
             {
-                for(int x=0; x<w; x++)
+                for (int x = 0; x < w; x++)
                 {
                     Color clr = src.GetPixel(x, y);
 
@@ -737,7 +777,7 @@ namespace ACAudio
 
 
             // bg music test
-            if(false)
+            if (false)
             {
                 try
                 {
@@ -760,7 +800,7 @@ namespace ACAudio
                     }
 
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Log($"failed to play music: {ex.Message}");
                 }
@@ -786,7 +826,7 @@ namespace ACAudio
 
         private void FilterCore_CommandLineText(object sender, ChatParserInterceptEventArgs e)
         {
-            if(false)
+            if (false)
             {
 
                 //Do not execute as AC command.
@@ -859,6 +899,6 @@ namespace ACAudio
             if (!Decal_DispatchOnChatCommand(cmd))
                 CoreManager.Current.Actions.InvokeChatParser(cmd);
         }
-        
+
     }
 }
