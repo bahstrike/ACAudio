@@ -106,6 +106,16 @@ namespace ACAudio
                 {
                     WriteToChat("BLAH");
 
+
+                    List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), SmithInterop.Vector(Player.RawCoordinates()), 35.0);
+
+                    // lol lets dump stuff to look at
+                    Log("--------------- WE BE DUMPIN ------------");
+                    foreach (WorldObject obj in allobj)
+                    {
+                        Log($"name:{obj.Name}  id:{obj.Id}  class:{obj.ObjectClass}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
+                    }
+
                     /*string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data/ac_anotherorch.mp3");
                     Audio.Sound snd = Audio.GetSound("test", File.ReadAllBytes(filepath), Audio.DimensionMode._2D, false);
 
@@ -137,10 +147,15 @@ namespace ACAudio
             }
         }
 
-        public const int BadWorldID = -1;
+        public WorldObject Player
+        {
+            get
+            {
+                return Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First;
+            }
+        }
 
-        Audio.Channel testChannel = null;
-        int testObjID = BadWorldID;
+        public const int BadWorldID = -1;
 
         long lastTimestamp = 0;
         private void _Process(object sender, EventArgs e)
@@ -195,23 +210,19 @@ namespace ACAudio
 
             Decal.Adapter.Wrappers.D3DObj d;
             //d.OrientToCamera
-
-            WorldObject testObj = Core.WorldFilter[testObjID];
-            if (testChannel != null && testChannel.IsPlaying && testObj != null)
-                testChannel.SetPosition(SmithInterop.Vector(testObj.RawCoordinates()), Vec3.Zero);
             
 
             sayStuff += dt;
-            if(sayStuff >= 0.2)
+            if (sayStuff >= 0.2)
             {
                 sayStuff = 0.0;
 
                 double maxDist = 35.0;
 
-                List<WorldObject> players = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Player), playerPos, maxDist);
+                /*List<WorldObject> players = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Player), playerPos, maxDist);
                 List<WorldObject> npcs = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Npc), playerPos, maxDist);
                 List<WorldObject> monsters = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Monster), playerPos, maxDist);
-                List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), playerPos, maxDist);
+                List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), playerPos, maxDist);*/
 
                 /*if(testObj != null)
                     WriteToChat($"dist to sound: {(SmithInterop.Vector(testObj.RawCoordinates()) - cameraMat.Position).Magnitude.ToString("0.00")}");*/
@@ -230,97 +241,142 @@ namespace ACAudio
                 //Log($"{Host.Actions.CombatMode}");
 
 
-
-                // lol lets dump stuff to look at
-                /*Log("--------------- WE BE DUMPIN ------------");
-                foreach (WorldObject obj in allobj)
-                {
-                    Log($"name:{obj.Name}  id:{obj.Id}  class:{obj.ObjectClass}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
-                }*/
-
                 //WriteToChat($"{InstanceNumber}  players:{players.Count}  npcs:{npcs.Count}  monsters:{monsters.Count}  playerPos:{playerPos}");
 
                 //WriteToChat(cameraMat.ToString());
 
                 //WriteToChat($"{InstanceNumber} blah {Core.WorldFilter.GetAll().Count} objects  {Core.WorldFilter.GetLandscape().Count} landscape   player: {coords.NorthSouth},{coords.EastWest}");
 
+
+
                 {
 
                     // find closest NPC to make a sound source
-                    WorldObject closestObj = null;
-                    double closestDist = 99999.0;
                     foreach (WorldObject obj in Core.WorldFilter.GetAll())
                     {
-#if true
-                        if(obj.ObjectClass != ObjectClass.Portal)
-#else
-                        if (obj.ObjectClass != ObjectClass.Npc)
-#endif
+                        double dist = (playerPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+
+                        if (dist > 35.0)
                             continue;
 
-                        Vec3 objPos = SmithInterop.Vector(obj.RawCoordinates());
-                        double dist = (objPos - playerPos).Magnitude;
 
-                        if (dist < closestDist)
-                        {
-                            closestDist = dist;
-                            closestObj = obj;
-                        }
+                        if (obj.ObjectClass == ObjectClass.Portal)
+                            PlayForObject(obj, "portal.ogg");
+                        else if (obj.ObjectClass == ObjectClass.Lifestone)
+                            PlayForObject(obj, "lifestone.ogg");
                     }
 
-
-                    if (closestObj != null)
-                    {
-                        // only switch if its diff from existing
-                        if (closestObj.Id != testObjID)
-                        {
-                            if (testChannel != null)
-                            {
-                                testChannel.Stop();
-                                testChannel = null;
-                            }
-
-
-
-                            testObj = closestObj;//lol dumb reusing local var.. all test haxx for now
-                            testObjID = testObj.Id;
-
-                            string playfile;
-#if true
-                            playfile = "portal.ogg";
-#else
-                            if (MathLib.random.NextDouble() >= 0.5)
-                                playfile = "data/questrecieved.mp3";
-                            else
-                                playfile = "data/questcomplete.mp3";
-#endif
-
-
-                            Audio.Sound snd = Audio.GetSound("test", ReadDataFile(playfile), Audio.DimensionMode._3DPositional, true);
-
-                            testChannel = Audio.PlaySound(snd, true);
-
-                            testChannel.SetPosition(SmithInterop.Vector(testObj.RawCoordinates()), Vec3.Zero);
-
-                            testChannel.Volume = 0.6;
-
-                            testChannel.SetMinMaxDistance(5.0, 35.0);
-
-
-                            testChannel.Play();
-                        }
-                    }
 
                 }
 
 
 
+                //Log($"activeobjs:{ActiveObjectAmbients.Count}  audiochannels:{Audio.ChannelCount}");
+                (View["Info"] as HudStaticText).Text = $"activeobjs:{ActiveObjectAmbients.Count}  audiochannels:{Audio.ChannelCount}";
+
+            }
+
+
+
+            // kill/forget sounds for objects out of range?
+            for (int x=0; x<ActiveObjectAmbients.Count; x++)
+            {
+                ObjectAmbient oa = ActiveObjectAmbients[x];
+
+                bool keep = true;
+
+                WorldObject obj = oa.WorldObject;
+                if (obj == null)
+                    keep = false;
+                else
+                {
+                    float minDist, maxDist;
+                    oa.Channel.channel.get3DMinMaxDistance(out minDist, out maxDist);
+
+                    double dist = (playerPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+
+                    // fudge dist a bit?
+                    maxDist += 2.0f;
+
+                    if (dist > (double)maxDist)
+                        keep = false;
+                }
+
+
+                if(!keep)
+                {
+                    oa.Channel.Stop();
+                    Audio.ForgetChannel(oa.Channel);
+
+                    ActiveObjectAmbients.RemoveAt(x);
+                    x--;
+                } else
+                {
+                    // update position
+                    oa.Channel.SetPosition(SmithInterop.Vector(obj.RawCoordinates()), Vec3.Zero);
+                }
             }
 
 
             // Z is up
 
             Audio.Process(dt, truedt, cameraMat.Position, Vec3.Zero, cameraMat.Up, cameraMat.Forward);
+        }
+
+        public class ObjectAmbient
+        {
+            public int WeenieID;
+            public Audio.Channel Channel;
+
+            public WorldObject WorldObject
+            {
+                get
+                {
+                    return Instance.Core.WorldFilter[WeenieID];
+                }
+            }
+        }
+
+        public List<ObjectAmbient> ActiveObjectAmbients = new List<ObjectAmbient>();
+
+        public void PlayForObject(WorldObject obj, string filename)
+        {
+            // check if playing already
+            foreach(ObjectAmbient oa in ActiveObjectAmbients)
+                if(oa.WeenieID == obj.Id)
+                {
+                    // if same name, bail
+                    if (oa.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
+                        return;
+
+                    // changing sounds? kill existing
+                    oa.Channel.Stop();
+                    Audio.ForgetChannel(oa.Channel);
+
+                    ActiveObjectAmbients.Remove(oa);
+
+                    break;
+                }
+
+
+            // get sound
+            Audio.Sound snd = Audio.GetSound(filename, ReadDataFile(filename), Audio.DimensionMode._3DPositional, true);
+            if (snd == null)
+                return;
+
+
+            // start new sound
+            ObjectAmbient newoa = new ObjectAmbient();
+
+            newoa.WeenieID = obj.Id;
+
+            newoa.Channel = Audio.PlaySound(snd, true);
+            newoa.Channel.SetPosition(SmithInterop.Vector(obj.RawCoordinates()), Vec3.Zero);
+            newoa.Channel.Volume = 0.6;
+            newoa.Channel.SetMinMaxDistance(5.0, 35.0);
+            newoa.Channel.Play();
+
+            ActiveObjectAmbients.Add(newoa);
         }
 
         public byte[] ReadDataFile(string filename)

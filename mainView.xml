@@ -4,6 +4,8 @@
     <page>
       <control progid="DecalControls.FixedLayout" clipped="">
 
+        <control progid="DecalControls.StaticText" name="Info" left="10" top="10" width="400" height="18" text=""/>
+
         <control progid="DecalControls.PushButton" name="Test" left="10" top="30" width="70" height="20" text="Test"/>
 
         <control progid="DecalControls.PushButton" name="FMOD" left="10" top="80" width="100" height="28"/>
