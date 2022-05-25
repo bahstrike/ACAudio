@@ -226,7 +226,7 @@ namespace ACAudio
             {
                 sayStuff = 0.0;
 
-                double maxDist = 35.0;
+                //double maxDist = 35.0;
 
                 /*List<WorldObject> players = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Player), playerPos, maxDist);
                 List<WorldObject> npcs = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Npc), playerPos, maxDist);
@@ -260,24 +260,66 @@ namespace ACAudio
 
                 {
 
-                    // find closest NPC to make a sound source
+                    // dynamic objects
+                    double vol = 1.0;
+                    double minDist = 5.0;
+                    double maxDist = 35.0;
                     foreach (WorldObject obj in Core.WorldFilter.GetAll())
                     {
                         double dist = (playerPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
 
-                        if (dist > 35.0)
+                        if (dist > maxDist)
                             continue;
 
 
                         if (obj.ObjectClass == ObjectClass.Portal)
-                            PlayForObject(obj, "portal.ogg");
+                            PlayForObject(obj, "portal.ogg", vol, minDist, maxDist);
                         else if (obj.ObjectClass == ObjectClass.Lifestone)
-                            PlayForObject(obj, "lifestone.ogg");
+                            PlayForObject(obj, "lifestone.ogg", vol, minDist, maxDist);
                     }
 
 
                 }
 
+
+                // static positions
+                {
+
+                    double vol = 0.125;
+                    double minDist = 5.0;
+                    double maxDist = 15.0;
+
+                    // candle sounds lol
+                    foreach (Vec3 _pos in new Vec3[]
+                    {
+                        // cragstone
+                        new Vec3(175.1502, 113.1925, 34.2100),// in town
+                        new Vec3(158.3660, 150.9660, 34.2100),// in town
+
+                        new Vec3(81.0427, 89.3640, 56.2100),//town up hill
+
+                        new Vec3(151.4200, 172.2459, 36.2050),// meeting hall
+                        new Vec3(148.5136, 175.7152, 36.2184),// meeting hall
+
+                    })
+                    {
+                        Vec3 pos = _pos;
+
+                        // i was prolly on top of candle post for these; might wanna subtract some Z...
+                        // assuming around 6-foot human toon..  a chest (origin)->foot is estimated at perhaps
+                        // 50" or 1.27 meters
+                        pos.z -= 1.27;
+
+
+                        double dist = (playerPos - pos).Magnitude;
+
+                        if (dist > maxDist)
+                            continue;
+
+                        // hardcoded
+                        PlayForPosition(pos, "candle.ogg", vol, minDist, maxDist);
+                    }
+                }
 
 
                 //Log($"activeobjs:{ActiveObjectAmbients.Count}  audiochannels:{Audio.ChannelCount}");
@@ -290,24 +332,30 @@ namespace ACAudio
             // kill/forget sounds for objects out of range?
             for (int x=0; x<ActiveAmbients.Count; x++)
             {
-                Ambient oa = ActiveAmbients[x];
+                Ambient a = ActiveAmbients[x];
 
                 bool keep = true;
 
                 if (keep)
                 {
-                    // cull bad object references (if its an object)
-                    if ((oa as ObjectAmbient)?.WorldObject == null)
-                        keep = false;
+                    // cull bad object references
+                    if (a is ObjectAmbient)
+                    {
+                        ObjectAmbient oa = a as ObjectAmbient;
+
+                        if (oa.WorldObject == null)
+                            keep = false;
+                    }
+
                 }
                 
 
                 if(keep)
                 { 
                     float minDist, maxDist;
-                    oa.Channel.channel.get3DMinMaxDistance(out minDist, out maxDist);
+                    a.Channel.channel.get3DMinMaxDistance(out minDist, out maxDist);
 
-                    double dist = (playerPos - oa.Position).Magnitude;
+                    double dist = (playerPos - a.Position).Magnitude;
 
                     // fudge dist a bit?
                     maxDist += 2.0f;
@@ -321,15 +369,15 @@ namespace ACAudio
                 // decide whether to remove or update
                 if(!keep)
                 {
-                    oa.Channel.Stop();
-                    Audio.ForgetChannel(oa.Channel);
+                    a.Channel.Stop();
+                    Audio.ForgetChannel(a.Channel);
 
                     ActiveAmbients.RemoveAt(x);
                     x--;
                 } else
                 {
                     // update position
-                    oa.Channel.SetPosition(oa.Position, Vec3.Zero);
+                    a.Channel.SetPosition(a.Position, Vec3.Zero);
                 }
             }
 
@@ -389,12 +437,82 @@ namespace ACAudio
 
         public List<Ambient> ActiveAmbients = new List<Ambient>();
 
-        public void PlayForObject(WorldObject obj, string filename)
+        public void PlayForPosition(Vec3 pos, string filename, double vol, double minDist, double maxDist)
+        {
+            //Log($"playforposition {pos} | {filename}");
+
+            // check if playing already
+            foreach (Ambient a in ActiveAmbients)
+            {
+                StaticAmbient sa = a as StaticAmbient;
+                if (sa == null)
+                    continue;
+
+                if (sa != null)
+                {
+                    // check reference
+                    double dist = (sa.Position - pos).Magnitude;
+                    if (dist > 2.4)// erm.. magic numbers for preventing sound source overlap
+                        continue;
+
+                    //Log("checking");
+
+                    // if same name, bail
+                    if (sa.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        //Log("playforposition bailed on same filename");
+                        return;
+                    }
+
+                    // changing sounds? kill existing
+                    sa.Channel.Stop();
+                    Audio.ForgetChannel(sa.Channel);
+
+                    ActiveAmbients.Remove(sa);
+
+                    //Log("playforposition removed an ambient");
+
+                    break;
+                }
+            }
+
+            // get sound
+            Audio.Sound snd = Audio.GetSound(filename, ReadDataFile(filename), Audio.DimensionMode._3DPositional, true);
+            if (snd == null)
+                return;
+
+
+            Log($"OOHH WE GONNA PLAY {filename} at {pos}");
+
+            // start new sound
+            StaticAmbient newsa = new StaticAmbient();
+
+            newsa.StaticPosition = pos;
+
+            newsa.Channel = Audio.PlaySound(snd, true);
+            newsa.Channel.SetPosition(pos, Vec3.Zero);
+            newsa.Channel.Volume = vol;
+            newsa.Channel.SetMinMaxDistance(minDist, maxDist);
+            newsa.Channel.Play();
+
+            ActiveAmbients.Add(newsa);
+        }
+
+        public void PlayForObject(WorldObject obj, string filename, double vol, double minDist, double maxDist)
         {
             // check if playing already
-            foreach (ObjectAmbient oa in ActiveAmbients)
-                if(oa != null && oa.WeenieID == obj.Id)
+            foreach (Ambient a in ActiveAmbients)
+            {
+                ObjectAmbient oa = a as ObjectAmbient;
+                if (oa == null)
+                    continue;
+
+                if (oa != null)
                 {
+                    // check reference
+                    if (oa.WeenieID != obj.Id)
+                        continue;
+
                     // if same name, bail
                     if (oa.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
                         return;
@@ -407,6 +525,7 @@ namespace ACAudio
 
                     break;
                 }
+            }
 
 
             // get sound
@@ -422,8 +541,8 @@ namespace ACAudio
 
             newoa.Channel = Audio.PlaySound(snd, true);
             newoa.Channel.SetPosition(SmithInterop.Vector(obj.RawCoordinates()), Vec3.Zero);
-            newoa.Channel.Volume = 0.6;
-            newoa.Channel.SetMinMaxDistance(5.0, 35.0);
+            newoa.Channel.Volume = vol;
+            newoa.Channel.SetMinMaxDistance(minDist, maxDist);
             newoa.Channel.Play();
 
             ActiveAmbients.Add(newoa);
