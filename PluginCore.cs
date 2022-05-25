@@ -102,7 +102,7 @@ namespace ACAudio
 
 
             
-                View["Test"].Hit += delegate(object sender, EventArgs e)
+                View["Dump"].Hit += delegate(object sender, EventArgs e)
                 {
                     WriteToChat("BLAH");
 
@@ -120,6 +120,15 @@ namespace ACAudio
                     Audio.Sound snd = Audio.GetSound("test", File.ReadAllBytes(filepath), Audio.DimensionMode._2D, false);
 
                     Audio.PlaySound(snd);*/
+                };
+
+                View["Coords"].Hit += delegate (object sender, EventArgs e)
+                {
+                    WriteToChat("WEEE");
+
+                    string coordStr = SmithInterop.Vector(Player.RawCoordinates()).ToString();
+
+                    Log($"{coordStr}");
                 };
 
                 View["FMOD"].Hit += delegate (object sender, EventArgs e)
@@ -272,28 +281,33 @@ namespace ACAudio
 
 
                 //Log($"activeobjs:{ActiveObjectAmbients.Count}  audiochannels:{Audio.ChannelCount}");
-                (View["Info"] as HudStaticText).Text = $"activeobjs:{ActiveObjectAmbients.Count}  audiochannels:{Audio.ChannelCount}";
+                (View["Info"] as HudStaticText).Text = $"activeobjs:{ActiveAmbients.Count}  audiochannels:{Audio.ChannelCount}";
 
             }
 
 
 
             // kill/forget sounds for objects out of range?
-            for (int x=0; x<ActiveObjectAmbients.Count; x++)
+            for (int x=0; x<ActiveAmbients.Count; x++)
             {
-                ObjectAmbient oa = ActiveObjectAmbients[x];
+                Ambient oa = ActiveAmbients[x];
 
                 bool keep = true;
 
-                WorldObject obj = oa.WorldObject;
-                if (obj == null)
-                    keep = false;
-                else
+                if (keep)
                 {
+                    // cull bad object references (if its an object)
+                    if ((oa as ObjectAmbient)?.WorldObject == null)
+                        keep = false;
+                }
+                
+
+                if(keep)
+                { 
                     float minDist, maxDist;
                     oa.Channel.channel.get3DMinMaxDistance(out minDist, out maxDist);
 
-                    double dist = (playerPos - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+                    double dist = (playerPos - oa.Position).Magnitude;
 
                     // fudge dist a bit?
                     maxDist += 2.0f;
@@ -303,17 +317,19 @@ namespace ACAudio
                 }
 
 
+                
+                // decide whether to remove or update
                 if(!keep)
                 {
                     oa.Channel.Stop();
                     Audio.ForgetChannel(oa.Channel);
 
-                    ActiveObjectAmbients.RemoveAt(x);
+                    ActiveAmbients.RemoveAt(x);
                     x--;
                 } else
                 {
                     // update position
-                    oa.Channel.SetPosition(SmithInterop.Vector(obj.RawCoordinates()), Vec3.Zero);
+                    oa.Channel.SetPosition(oa.Position, Vec3.Zero);
                 }
             }
 
@@ -323,10 +339,31 @@ namespace ACAudio
             Audio.Process(dt, truedt, cameraMat.Position, Vec3.Zero, cameraMat.Up, cameraMat.Forward);
         }
 
-        public class ObjectAmbient
+        public abstract class Ambient
+        {
+            public Audio.Channel Channel;
+
+            public abstract Vec3 Position
+            {
+                get;
+            }
+        }
+
+        public class ObjectAmbient : Ambient
         {
             public int WeenieID;
-            public Audio.Channel Channel;
+
+            public override Vec3 Position
+            {
+                get
+                {
+                    WorldObject wo = WorldObject;
+                    if (wo == null)
+                        return Vec3.Infinite;
+                    else
+                        return SmithInterop.Vector(wo.RawCoordinates());
+                }
+            }
 
             public WorldObject WorldObject
             {
@@ -337,13 +374,26 @@ namespace ACAudio
             }
         }
 
-        public List<ObjectAmbient> ActiveObjectAmbients = new List<ObjectAmbient>();
+        public class StaticAmbient : Ambient
+        {
+            public Vec3 StaticPosition;
+
+            public override Vec3 Position
+            {
+                get
+                {
+                    return StaticPosition;
+                }
+            }
+        }
+
+        public List<Ambient> ActiveAmbients = new List<Ambient>();
 
         public void PlayForObject(WorldObject obj, string filename)
         {
             // check if playing already
-            foreach(ObjectAmbient oa in ActiveObjectAmbients)
-                if(oa.WeenieID == obj.Id)
+            foreach (ObjectAmbient oa in ActiveAmbients)
+                if(oa != null && oa.WeenieID == obj.Id)
                 {
                     // if same name, bail
                     if (oa.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
@@ -353,7 +403,7 @@ namespace ACAudio
                     oa.Channel.Stop();
                     Audio.ForgetChannel(oa.Channel);
 
-                    ActiveObjectAmbients.Remove(oa);
+                    ActiveAmbients.Remove(oa);
 
                     break;
                 }
@@ -376,7 +426,7 @@ namespace ACAudio
             newoa.Channel.SetMinMaxDistance(5.0, 35.0);
             newoa.Channel.Play();
 
-            ActiveObjectAmbients.Add(newoa);
+            ActiveAmbients.Add(newoa);
         }
 
         public byte[] ReadDataFile(string filename)
@@ -457,7 +507,7 @@ namespace ACAudio
 
 
             // bg music test
-            if(true)
+            if(false)
             {
                 try
                 {
