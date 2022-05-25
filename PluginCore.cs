@@ -295,6 +295,11 @@ namespace ACAudio
                         // cragstone
                         new Vec3(175.1502, 113.1925, 34.2100),// in town
                         new Vec3(158.3660, 150.9660, 34.2100),// in town
+                        new Vec3(162.6672, 63.5380, 34.2100), // in town
+                        new Vec3(160.2169, 36.2300, 34.2100), // in town
+                        new Vec3(149.8169, 21.0506, 34.2100), // in town
+                        new Vec3(19.2658, 101.0283, 72.2100), // in town
+                        new Vec3(41.4031, 61.4495, 56.2100), // in town
 
                         new Vec3(81.0427, 89.3640, 56.2100),//town up hill
 
@@ -380,6 +385,47 @@ namespace ACAudio
                     a.Channel.SetPosition(a.Position, Vec3.Zero);
                 }
             }
+
+
+
+
+            // lets sync time positions for active ambient loopables that want to
+            List<string> alreadyDone = new List<string>();
+            for (int x = 0; x < ActiveAmbients.Count - 1; x++)
+            {
+                Ambient aa = ActiveAmbients[x];
+                if (!aa.Channel.IsPlaying)
+                    continue;
+
+                if (alreadyDone.Contains(aa.Channel.Sound.Name))
+                    continue;
+
+                alreadyDone.Add(aa.Channel.Sound.Name);
+
+
+                for (int y = 1; y < ActiveAmbients.Count; y++)
+                {
+                    Ambient ab = ActiveAmbients[y];
+                    if (!ab.Channel.IsPlaying)
+                        continue;
+
+                    // if not playing same sound, skip
+                    if (!aa.Channel.Sound.Name.Equals(ab.Channel.Sound.Name, StringComparison.InvariantCultureIgnoreCase))
+                        continue;
+
+                    // do we want to sync sound timestamps? skip now if not
+                    //if (no)
+                    //continue;
+
+
+                    // copy A timestamp to B
+                    uint posFmod;
+                    aa.Channel.channel.getPosition(out posFmod, FMOD.TIMEUNIT.PCM);
+                    ab.Channel.channel.setPosition(posFmod, FMOD.TIMEUNIT.PCM);
+                }
+            }
+
+
 
 
             // Z is up
