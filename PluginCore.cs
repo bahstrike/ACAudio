@@ -126,7 +126,7 @@ namespace ACAudio
                 {
                     WriteToChat("WEEE");
 
-                    Log($"{Position.FromObject(Player)}");
+                    Log($"Position.FromLocal({Position.FromObject(Player)}),");
                 };
 
                 View["FMOD"].Hit += delegate (object sender, EventArgs e)
@@ -399,22 +399,20 @@ namespace ACAudio
                         new Vec3(81.0427, 89.3640, 56.2100),//town up hill
 
                         new Vec3(151.4200, 172.2459, 36.2050),// meeting hall
-                        new Vec3(148.5136, 175.7152, 36.2184),// meeting hall
+                        new Vec3(148.5136, 175.7152, 36.2184),// meeting hall*/
 
 
                         // holtburg
-                        new Vec3(90.3577, 151.8003, 68.2100),// in town (lower)
-                        new Vec3(41.3759, 132.7583, 68.2100),// in town (lower)
-                        new Vec3(18.4588, 126.6065, 68.2100),// in town (lower)
-                        new Vec3(133.4468, 136.5444, 68.2100),// in town(lower)
-                        new Vec3(155.7883, 114.9172, 68.2100),// in town(lower)
-
-                        new Vec3(156.8031, 32.4556, 98.0754),//meeting hall
-                        new Vec3(153.2823, 35.4991, 98.1161),// meeting hall
-
-                        new Vec3(139.1402, 28.3915, 96.2100),//in town (upper)
-                        new Vec3(105.9374, 17.1748, 96.2100),//in town (upper)
-                        */
+                        Position.FromLocal(0xAAB4001C, 83.1785, 80.5087, 57.2859),
+                        Position.FromLocal(0xA9B40035, 155.8313, 114.7828, 68.2100),
+                        Position.FromLocal(0xA9B4002E, 133.4774, 136.2814, 68.2100),
+                        Position.FromLocal(0xA9B4001F, 89.4780, 152.0241, 66.7978),
+                        Position.FromLocal(0xA9B4000E, 41.6327, 132.6815, 68.2100),
+                        Position.FromLocal(0xA9B40006, 18.5117, 126.5471, 68.2100),
+                        Position.FromLocal(0xA9B40021, 105.9395, 17.0463, 96.2100),
+                        Position.FromLocal(0xA9B4002A, 139.0259, 28.3847, 96.2100),
+                        Position.FromLocal(0xA9B40032, 156.8629, 32.3431, 98.0754),
+                        Position.FromLocal(0xA9B40032, 153.2320, 35.5311, 98.1161),
                     })
                     {
                         Position tmp = pos;

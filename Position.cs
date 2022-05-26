@@ -21,12 +21,36 @@ namespace ACAudio
 
         public bool IsValid { get { return (Landblock != 0); } }
 
-        public int DungeonID { get { return IsolateDungeonID(Landblock); } }    // -1 if terrain
+
+#if true
+        public bool IsTerrain {  get { return (Landblock & 0x0000FF00) != 0; } }
+
+        public int DungeonID
+        {
+            get
+            {
+                if (IsTerrain)
+                    return -1;
+
+                return (int)((Landblock & 0xFFFF0000) >> 16);
+            }
+        }
 
         public bool IsCompatibleWith(Position o)
         {
-            return (DungeonID == o.DungeonID);
+            // if both are terrain, then definitely compatible
+            if (IsTerrain && o.IsTerrain)
+                return true;
+
+            // if neither are terrain, then directly compare the dungeon ID
+            if (!IsTerrain && !o.IsTerrain)
+                return (DungeonID == o.DungeonID);
+
+            // if one is terrain and other is dungeon then check if landblock XXYY is same, and we'll say its OK.. i guess..
+            return (Landblock & 0xFFFF0000) == (o.Landblock & 0xFFFF0000);
         }
+#else
+        public int DungeonID { get { return IsolateDungeonID(Landblock); } }    // -1 if terrain
 
         // returns -1 if terrain
         public static int IsolateDungeonID(uint landblock)
@@ -37,13 +61,19 @@ namespace ACAudio
             return (int)((landblock & 0xFFFF0000) >> 16);
         }
 
+        public bool IsCompatibleWith(Position o)
+        {
+            return (DungeonID == o.DungeonID);
+        }
+#endif
+
         private Vec2 LandblockGlobalOffset
         {
             get
             {
                 // if dungeon, just use local  (no offset)
-                if (DungeonID != -1)
-                    return Vec2.Zero;
+                //if (DungeonID != -1)
+                    //return Vec2.Zero;
 
                 return new Vec2((double)LandblockX * 192.0, (double)LandblockY * 192.0);
             }
