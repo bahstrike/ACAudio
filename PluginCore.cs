@@ -848,11 +848,56 @@ namespace ACAudio
         }
 
 
+        private Audio.Channel portalSong = null;
+
+        [BaseEvent("ChangePortalMode", "CharacterFilter")]
+        private void CharacterFilter_ChangePortalMode(object sender, ChangePortalModeEventArgs e)
+        {
+            if(e.Type == PortalEventType.EnterPortal)
+            {
+                // start sound
+
+                try
+                {
+                    Audio.Sound snd = Audio.GetSound("portalsong", ReadDataFile("wish_portal_copyrightsadface.mp3"), Audio.DimensionMode._2D, true);
+                    if (snd == null)
+                        Log("cant get music sound");
+                    else
+                    {
+
+                        portalSong = Audio.PlaySound(snd, true);
+                        if (portalSong == null)
+                            Log("cant make sound channel");
+                        else
+                        {
+
+                            portalSong.Volume = 0.3;
+                            portalSong.Play();
+                        }
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    Log($"portal music play BAD: {ex.Message}");
+                }
+            } else
+            {
+                // stop sound
+                if(portalSong != null)
+                {
+                    portalSong.Stop();
+                    Audio.ForgetChannel(portalSong);
+
+                    portalSong = null;
+                }
+            }
+        }
+
         [BaseEvent("LoginComplete", "CharacterFilter")]
         private void CharacterFilter_LoginComplete(object sender, EventArgs e)
         {
             WriteToChat("Startup");
-
 
 
             // bg music test
