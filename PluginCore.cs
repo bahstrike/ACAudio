@@ -147,6 +147,10 @@ namespace ACAudio
 
                 Log("hook render");
                 Core.RenderFrame += _Process;
+
+
+
+                StartPortalSong();// first time login portal deserves one
             }
             catch (Exception ex)
             {
@@ -850,39 +854,47 @@ namespace ACAudio
 
         private Audio.Channel portalSong = null;
 
+        private void StartPortalSong()
+        {
+            try
+            {
+                Audio.Sound snd = Audio.GetSound("portalsong", ReadDataFile("ac_dnbpor.mp3"), Audio.DimensionMode._2D, true);
+                if (snd == null)
+                    Log("cant get music sound");
+                else
+                {
+
+                    portalSong = Audio.PlaySound(snd, true);
+                    if (portalSong == null)
+                        Log("cant make sound channel");
+                    else
+                    {
+
+                        portalSong.Volume = 0.3;
+                        portalSong.Play();
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Log($"portal music play BAD: {ex.Message}");
+            }
+        }
+
         [BaseEvent("ChangePortalMode", "CharacterFilter")]
         private void CharacterFilter_ChangePortalMode(object sender, ChangePortalModeEventArgs e)
         {
             if(e.Type == PortalEventType.EnterPortal)
             {
                 // start sound
+                Log("changeportalmode START");
 
-                try
-                {
-                    Audio.Sound snd = Audio.GetSound("portalsong", ReadDataFile("wish_portal_copyrightsadface.mp3"), Audio.DimensionMode._2D, true);
-                    if (snd == null)
-                        Log("cant get music sound");
-                    else
-                    {
-
-                        portalSong = Audio.PlaySound(snd, true);
-                        if (portalSong == null)
-                            Log("cant make sound channel");
-                        else
-                        {
-
-                            portalSong.Volume = 0.3;
-                            portalSong.Play();
-                        }
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    Log($"portal music play BAD: {ex.Message}");
-                }
+                StartPortalSong();
             } else
             {
+                Log("changeportalmode DONE");
+
                 // stop sound
                 if(portalSong != null)
                 {
