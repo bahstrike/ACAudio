@@ -149,6 +149,10 @@ namespace ACAudio
                 Core.RenderFrame += _Process;
 
 
+                Log("hook logoff");
+                Core.CharacterFilter.Logoff += _CharacterFilter_Logoff;
+
+
 
                 StartPortalSong();// first time login portal deserves one
             }
@@ -156,6 +160,18 @@ namespace ACAudio
             {
                 Log($"Startup exception: {ex.Message}");
             }
+        }
+
+        private bool LogOff = false;
+        private void _CharacterFilter_Logoff(object sender, LogoffEventArgs e)
+        {
+            if (LogOff)
+                return;
+
+            Log("LOGOFF LOL");
+            StartPortalSong();
+
+            LogOff = true;
         }
 
         public WorldObject Player
@@ -950,6 +966,8 @@ namespace ACAudio
         /// </summary>
         protected override void Shutdown()
         {
+            Core.CharacterFilter.Logoff -= _CharacterFilter_Logoff;
+
             Core.RenderFrame -= _Process;
 
             Audio.Shutdown();
