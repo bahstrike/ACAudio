@@ -9,8 +9,8 @@
         <control progid="DecalControls.PushButton" name="Dump" left="10" top="150" width="70" height="20" text="Dump"/>
         <control progid="DecalControls.PushButton" name="Coords" left="80" top="150" width="70" height="20" text="Coords"/>
 
-        <control progid="DecalControls.PushButton" name="FMOD" left="10" top="180" width="100" height="28"/>
-        <control progid="DecalControls.StaticText" name="FMOD_Credit" left="10" top="215" width="400" height="18" text="Made with FMOD Studio by Firelight Technologies Pty Ltd."/>
+        <control progid="DecalControls.PushButton" name="FMOD" left="10" top="228" width="50" height="14"/>
+        <control progid="DecalControls.StaticText" name="FMOD_Credit" left="70" top="231" width="400" height="18" text="Made with FMOD Studio by Firelight Technologies Pty Ltd."/>
 
 
       </control>
