@@ -13,18 +13,38 @@ namespace ACAudio
 
         private int LandblockX { get { return (int)((Landblock & 0xFF000000)>>24); } }
         private int LandblockY {  get { return (int)((Landblock & 0x00FF0000) >> 16); } }
-        private int LandblockArea {  get { return (int)((Landblock & 0x0000FF00) >> 8); } }
+        //private int LandblockArea { get { return (int)((Landblock & 0x0000FF00) >> 8); } }
         //private int LandblockCell { get { return (int)(Landblock & 0x000000FF); } }//1-based
 
         //private int CellX { get { return (LandblockCell - 1) / 8; } }
         //private int CellY { get { return (LandblockCell - 1) % 8; } }
 
-        public bool Terrain { get { return (LandblockArea == 0); } }
+        public bool IsValid { get { return (Landblock != 0); } }
+
+        public int DungeonID { get { return IsolateDungeonID(Landblock); } }    // -1 if terrain
+
+        public bool IsCompatibleWith(Position o)
+        {
+            return (DungeonID == o.DungeonID);
+        }
+
+        // returns -1 if terrain
+        public static int IsolateDungeonID(uint landblock)
+        {
+            if ((landblock & 0x0000FF00) == 0)
+                return -1;
+
+            return (int)((landblock & 0xFFFF0000) >> 16);
+        }
 
         private Vec2 LandblockGlobalOffset
         {
             get
             {
+                // if dungeon, just use local  (no offset)
+                if (DungeonID != -1)
+                    return Vec2.Zero;
+
                 return new Vec2((double)LandblockX * 192.0, (double)LandblockY * 192.0);
             }
         }
@@ -52,6 +72,14 @@ namespace ACAudio
         {
             Landblock = _Landblock;
             Local = _Local;
+        }
+
+        public static Position Invalid
+        {
+            get
+            {
+                return new Position(0);
+            }
         }
 
         public static Position FromLocal(uint landblock, Vec3 local)

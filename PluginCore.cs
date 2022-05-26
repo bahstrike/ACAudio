@@ -285,8 +285,11 @@ namespace ACAudio
                         double maxDist = 35.0;
                         foreach (WorldObject obj in Core.WorldFilter.GetAll())
                         {
-                            double dist = (cameraPos.Local - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+                            Position? objPos = Position.FromObject(obj);
+                            if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
+                                continue;
 
+                            double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
                             if (dist > maxDist)
                                 continue;
 
@@ -305,10 +308,13 @@ namespace ACAudio
                         List<WorldObject> portals = new List<WorldObject>();
                         foreach (WorldObject obj in Core.WorldFilter.GetAll())
                         {
-                            double dist = (cameraPos.Local - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
-                            if (dist > maxDist)
+                            Position? objPos = Position.FromObject(obj);
+                            if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
                                 continue;
 
+                            double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
+                            if (dist > maxDist)
+                                continue;
 
                             if (obj.ObjectClass == ObjectClass.Portal)
                                 portals.Add(obj);
@@ -326,7 +332,11 @@ namespace ACAudio
                         foreach (WorldObject obj in portals)
                         {
                             // re-check with updated maxDist
-                            double dist = (cameraPos.Local - SmithInterop.Vector(obj.RawCoordinates())).Magnitude;
+                            Position? objPos = Position.FromObject(obj);
+                            if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
+                                continue;
+
+                            double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
                             if (dist > maxDist)
                                 continue;
 
@@ -350,24 +360,24 @@ namespace ACAudio
 
 
                     // add direct coordinates if we can pass inside object..  if standing on top, add to list below
-                    List<Vec3> positions = new List<Vec3>(new Vec3[] {
+                    List<Position> positions = new List<Position>(new Position[] {
                         // town network
-                        new Vec3(74.9212, -83.2331, 0.0050),
-                        new Vec3(83.3264, -75.0515, 0.0050),
-                        new Vec3(83.2375, -64.9197, 0.0050),
-                        new Vec3(74.9133, -56.6920, 0.0050),
-                        new Vec3(64.8490, -56.8161, 0.0050),
-                        new Vec3(56.6511, -65.0491, 0.0050),
-                        new Vec3(56.7121, -74.9459, 0.0050),
-                        new Vec3(65.0106, -83.3552, 0.0050),
+                        Position.FromLocal(0x00070157, 74.9212, -83.2331, 0.0050),
+                        Position.FromLocal(0x00070157, 83.3264, -75.0515, 0.0050),
+                        Position.FromLocal(0x00070157, 83.2375, -64.9197, 0.0050),
+                        Position.FromLocal(0x00070157, 74.9133, -56.6920, 0.0050),
+                        Position.FromLocal(0x00070157, 64.8490, -56.8161, 0.0050),
+                        Position.FromLocal(0x00070157, 56.6511, -65.0491, 0.0050),
+                        Position.FromLocal(0x00070157, 56.7121, -74.9459, 0.0050),
+                        Position.FromLocal(0x00070157, 65.0106, -83.3552, 0.0050),
 
                         // town network annex
-                        new Vec3(67.6610, -166.0082, -5.9950),
-                        new Vec3(72.3911, -166.0279, -5.9950),
-                        new Vec3(75.9901, -162.3565, -5.9950),
-                        new Vec3(75.9803, -157.6755, -5.9950),
-                        new Vec3(64.0190, -157.6426, -5.9950),
-                        new Vec3(64.0199, -162.3036, -5.9950),
+                        Position.FromLocal(0x00070157, 67.6610, -166.0082, -5.9950),
+                        Position.FromLocal(0x00070157, 72.3911, -166.0279, -5.9950),
+                        Position.FromLocal(0x00070157, 75.9901, -162.3565, -5.9950),
+                        Position.FromLocal(0x00070157, 75.9803, -157.6755, -5.9950),
+                        Position.FromLocal(0x00070157, 64.0190, -157.6426, -5.9950),
+                        Position.FromLocal(0x00070157, 64.0199, -162.3036, -5.9950),
                         });
 
 
@@ -375,10 +385,10 @@ namespace ACAudio
                     // assuming around 6-foot human toon..  a chest (origin)->foot is estimated at perhaps
                     // 50" or 1.27 meters
                     Vec3 adjust = new Vec3(0.0, 0.0, -1.27);
-                    foreach (Vec3 pos in new Vec3[]
+                    foreach (Position pos in new Position[]
                     {
                         // cragstone
-                        new Vec3(175.1502, 113.1925, 34.2100),// in town
+                        /*new Vec3(175.1502, 113.1925, 34.2100),// in town
                         new Vec3(158.3660, 150.9660, 34.2100),// in town
                         new Vec3(162.6672, 63.5380, 34.2100), // in town
                         new Vec3(160.2169, 36.2300, 34.2100), // in town
@@ -404,16 +414,24 @@ namespace ACAudio
 
                         new Vec3(139.1402, 28.3915, 96.2100),//in town (upper)
                         new Vec3(105.9374, 17.1748, 96.2100),//in town (upper)
-
+                        */
                     })
-                        positions.Add(pos + adjust);
+                    {
+                        Position tmp = pos;
+                        tmp.Local += adjust;
+
+                        positions.Add(tmp);
+                    }
 
 
                     // build list of final candidates
-                    List<Vec3> finalPositions = new List<Vec3>();
-                    foreach (Vec3 pos in positions)
+                    List<Position> finalPositions = new List<Position>();
+                    foreach (Position pos in positions)
                     {
-                        double dist = (cameraPos.Local - pos).Magnitude;
+                        if (!pos.IsCompatibleWith(cameraPos))
+                            continue;
+
+                        double dist = (cameraPos.Global - pos.Global).Magnitude;
 
                         if (dist > maxDist)
                             continue;
@@ -432,7 +450,7 @@ namespace ACAudio
 
 
                     // dispatch
-                    foreach (Vec3 pos in finalPositions)
+                    foreach (Position pos in finalPositions)
                         // hardcoded
                         PlayForPosition(pos, "candle.ogg", vol, minDist, maxDist);
                 }
@@ -440,7 +458,7 @@ namespace ACAudio
 #if true
 
                 (View["Info"] as HudStaticText).Text =
-                    $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  cam:{cameraPos.Global}\n";
+                    $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n";
 #else
                 UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8);
                 uint lb = frame.landblock;//(uint)player.Values(LongValueKey.Landblock);
@@ -505,13 +523,19 @@ namespace ACAudio
 
                 }
 
+                if(discardReason == null)
+                {
+                    // cull incompatible dungeon id
+                    if (!cameraPos.IsCompatibleWith(a.Position))
+                        discardReason = "wrong dungeon";
+                }
 
                 if (discardReason == null)
                 {
                     float minDist, maxDist;
                     a.Channel.channel.get3DMinMaxDistance(out minDist, out maxDist);
 
-                    double dist = (cameraPos.Local - a.Position).Magnitude;
+                    double dist = (cameraPos.Global - a.Position.Global).Magnitude;
 
                     // fudge dist a bit?
                     maxDist += 2.0f;
@@ -542,7 +566,7 @@ namespace ACAudio
                 else
                 {
                     // update position
-                    a.Channel.SetPosition(a.Position, Vec3.Zero);
+                    a.Channel.SetPosition(a.Position.Global, Vec3.Zero);
                 }
             }
 
@@ -590,14 +614,14 @@ namespace ACAudio
 
             // Z is up
 
-            Audio.Process(dt, truedt, cameraMat.Position, Vec3.Zero, cameraMat.Up, cameraMat.Forward);
+            Audio.Process(dt, truedt, cameraPos.Global, Vec3.Zero, cameraMat.Up, cameraMat.Forward);
         }
 
         public abstract class Ambient
         {
             public Audio.Channel Channel;
 
-            public abstract Vec3 Position
+            public abstract Position Position
             {
                 get;
             }
@@ -607,15 +631,11 @@ namespace ACAudio
         {
             public int WeenieID;
 
-            public override Vec3 Position
+            public override Position Position
             {
                 get
                 {
-                    WorldObject wo = WorldObject;
-                    if (wo == null)
-                        return Vec3.Infinite;
-                    else
-                        return SmithInterop.Vector(wo.RawCoordinates());
+                    return Position.FromObject(WorldObject) ?? Position.Invalid;
                 }
             }
 
@@ -630,9 +650,9 @@ namespace ACAudio
 
         public class StaticAmbient : Ambient
         {
-            public Vec3 StaticPosition;
+            public Position StaticPosition;
 
-            public override Vec3 Position
+            public override Position Position
             {
                 get
                 {
@@ -643,7 +663,7 @@ namespace ACAudio
 
         public List<Ambient> ActiveAmbients = new List<Ambient>();
 
-        public void PlayForPosition(Vec3 pos, string filename, double vol, double minDist, double maxDist)
+        public void PlayForPosition(Position pos, string filename, double vol, double minDist, double maxDist)
         {
             //Log($"playforposition {pos} | {filename}");
 
@@ -657,7 +677,7 @@ namespace ACAudio
                 if (sa != null)
                 {
                     // check reference
-                    double dist = (sa.Position - pos).Magnitude;
+                    double dist = (sa.Position.Global - pos.Global).Magnitude;
                     if (dist > 2.4)// erm.. magic numbers for preventing sound source overlap
                         continue;
 
@@ -694,7 +714,7 @@ namespace ACAudio
             newsa.StaticPosition = pos;
 
             newsa.Channel = Audio.PlaySound(snd, true);
-            newsa.Channel.SetPosition(pos, Vec3.Zero);
+            newsa.Channel.SetPosition(pos.Global, Vec3.Zero);
             newsa.Channel.Volume = vol;
             newsa.Channel.SetMinMaxDistance(minDist, maxDist);
             newsa.Channel.Play();
