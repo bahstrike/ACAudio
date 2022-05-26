@@ -62,6 +62,37 @@ namespace ACAudio
         }
 
 
+        public bool EnableAudio
+        {
+            get
+            {
+                if (View == null)
+                    return false;
+
+                HudCheckBox cb = View["Enable"] as HudCheckBox;
+                if (cb == null)
+                    return false;
+
+                return cb.Checked;
+            }
+        }
+
+        public double Volume
+        {
+            get
+            {
+                if (View == null)
+                    return 0.0;
+
+                HudHSlider slider = View["Volume"] as HudHSlider;
+                if (slider == null)
+                    return 0.0;
+
+                return (double)(slider.Position - slider.Min) / (double)(slider.Max - slider.Min);
+            }
+        }
+
+
         /// <summary>
         /// This is called when the plugin is started up. This happens only once.
         /// </summary>
@@ -127,6 +158,11 @@ namespace ACAudio
                     WriteToChat("WEEE");
 
                     Log($"Position.FromLocal({Position.FromObject(Player)}),");
+                };
+
+                (View["Enable"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
+                {
+
                 };
 
                 View["FMOD"].Hit += delegate (object sender, EventArgs e)
@@ -238,6 +274,22 @@ namespace ACAudio
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
+            Audio.AllowSound = EnableAudio;
+            Audio.MasterVolume = Volume;
+
+
+            if(portalSong != null)
+            {
+                if (!EnableAudio || portalSong.Volume == 0.0)
+                {
+                    portalSong.Stop();
+                    Audio.ForgetChannel(portalSong);
+
+                    portalSong = null;
+                }
+            }
+
+
             //Mat4 cameraMat = GetCameraMatrix();
 
 
@@ -293,94 +345,99 @@ namespace ACAudio
 
 
 
+                // only try to play ambient sounds if not portaling
+                if (EnableAudio && portalSong == null)
                 {
 
-                    // dynamic objects
 
-
-                    // lifestone
                     {
-                        double vol = 1.0;
-                        double minDist = 5.0;
-                        double maxDist = 35.0;
-                        foreach (WorldObject obj in Core.WorldFilter.GetAll())
+
+                        // dynamic objects
+
+
+                        // lifestone
                         {
-                            Position? objPos = Position.FromObject(obj);
-                            if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
-                                continue;
+                            double vol = 1.0;
+                            double minDist = 5.0;
+                            double maxDist = 35.0;
+                            foreach (WorldObject obj in Core.WorldFilter.GetAll())
+                            {
+                                Position? objPos = Position.FromObject(obj);
+                                if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
+                                    continue;
 
-                            double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
-                            if (dist > maxDist)
-                                continue;
+                                double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
+                                if (dist > maxDist)
+                                    continue;
 
-                            if (obj.ObjectClass == ObjectClass.Lifestone)
-                                PlayForObject(obj, "lifestone.ogg", vol, minDist, maxDist);
+                                if (obj.ObjectClass == ObjectClass.Lifestone)
+                                    PlayForObject(obj, "lifestone.ogg", vol, minDist, maxDist);
+                            }
                         }
+
+
+                        // portals (dynamic; in case too many are around)
+                        {
+                            double vol = 1.0;
+                            double minDist = 5.0;
+                            double maxDist = 35.0;
+
+                            List<WorldObject> portals = new List<WorldObject>();
+                            foreach (WorldObject obj in Core.WorldFilter.GetAll())
+                            {
+                                Position? objPos = Position.FromObject(obj);
+                                if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
+                                    continue;
+
+                                double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
+                                if (dist > maxDist)
+                                    continue;
+
+                                if (obj.ObjectClass == ObjectClass.Portal)
+                                    portals.Add(obj);
+                            }
+
+
+                            // if we got more than like 3 then tone em back
+                            if (portals.Count > 3)
+                            {
+                                vol *= 0.4;
+                                minDist *= 0.9;
+                                maxDist *= 0.5;
+                            }
+
+                            foreach (WorldObject obj in portals)
+                            {
+                                // re-check with updated maxDist
+                                Position? objPos = Position.FromObject(obj);
+                                if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
+                                    continue;
+
+                                double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
+                                if (dist > maxDist)
+                                    continue;
+
+                                PlayForObject(obj, "portal.ogg", vol, minDist, maxDist);
+                            }
+
+                        }
+
+
                     }
 
 
-                    // portals (dynamic; in case too many are around)
+                    // static positions
                     {
-                        double vol = 1.0;
+
+                        double vol = 0.125;
                         double minDist = 5.0;
-                        double maxDist = 35.0;
+                        double maxDist = 15.0;
 
-                        List<WorldObject> portals = new List<WorldObject>();
-                        foreach (WorldObject obj in Core.WorldFilter.GetAll())
-                        {
-                            Position? objPos = Position.FromObject(obj);
-                            if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
-                                continue;
-
-                            double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
-                            if (dist > maxDist)
-                                continue;
-
-                            if (obj.ObjectClass == ObjectClass.Portal)
-                                portals.Add(obj);
-                        }
+                        // candle sounds lol
 
 
-                        // if we got more than like 3 then tone em back
-                        if (portals.Count > 3)
-                        {
-                            vol *= 0.4;
-                            minDist *= 0.9;
-                            maxDist *= 0.5;
-                        }
-
-                        foreach (WorldObject obj in portals)
-                        {
-                            // re-check with updated maxDist
-                            Position? objPos = Position.FromObject(obj);
-                            if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
-                                continue;
-
-                            double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
-                            if (dist > maxDist)
-                                continue;
-
-                            PlayForObject(obj, "portal.ogg", vol, minDist, maxDist);
-                        }
-
-                    }
-
-
-                }
-
-
-                // static positions
-                {
-
-                    double vol = 0.125;
-                    double minDist = 5.0;
-                    double maxDist = 15.0;
-
-                    // candle sounds lol
-
-
-                    // add direct coordinates if we can pass inside object..  if standing on top, add to list below
-                    List<Position> positions = new List<Position>(new Position[] {
+                        // add direct coordinates if we can pass inside object..  if standing on top, add to list below
+                        List<Position> positions = new List<Position>(new Position[] {
                         // town network
                         Position.FromLocal(0x00070157, 74.9212, -83.2331, 0.0050),
                         Position.FromLocal(0x00070157, 83.3264, -75.0515, 0.0050),
@@ -401,12 +458,12 @@ namespace ACAudio
                         });
 
 
-                    // i was prolly on top of candle post for these; might wanna subtract some Z...
-                    // assuming around 6-foot human toon..  a chest (origin)->foot is estimated at perhaps
-                    // 50" or 1.27 meters
-                    Vec3 adjust = new Vec3(0.0, 0.0, -1.27);
-                    foreach (Position pos in new Position[]
-                    {
+                        // i was prolly on top of candle post for these; might wanna subtract some Z...
+                        // assuming around 6-foot human toon..  a chest (origin)->foot is estimated at perhaps
+                        // 50" or 1.27 meters
+                        Vec3 adjust = new Vec3(0.0, 0.0, -1.27);
+                        foreach (Position pos in new Position[]
+                        {
                         // cragstone
                         /*new Vec3(175.1502, 113.1925, 34.2100),// in town
                         new Vec3(158.3660, 150.9660, 34.2100),// in town
@@ -433,44 +490,45 @@ namespace ACAudio
                         Position.FromLocal(0xA9B4002A, 139.0259, 28.3847, 96.2100),
                         Position.FromLocal(0xA9B40032, 156.8629, 32.3431, 98.0754),
                         Position.FromLocal(0xA9B40032, 153.2320, 35.5311, 98.1161),
-                    })
-                    {
-                        Position tmp = pos;
-                        tmp.Local += adjust;
+                        })
+                        {
+                            Position tmp = pos;
+                            tmp.Local += adjust;
 
-                        positions.Add(tmp);
+                            positions.Add(tmp);
+                        }
+
+
+                        // build list of final candidates
+                        List<Position> finalPositions = new List<Position>();
+                        foreach (Position pos in positions)
+                        {
+                            if (!pos.IsCompatibleWith(cameraPos))
+                                continue;
+
+                            double dist = (cameraPos.Global - pos.Global).Magnitude;
+
+                            if (dist > maxDist)
+                                continue;
+
+                            finalPositions.Add(pos);
+                        }
+
+
+                        // if we got more than like 3 then tone em back
+                        if (finalPositions.Count > 3)
+                        {
+                            vol *= 0.4;
+                            minDist *= 0.9;
+                            maxDist *= 0.5;
+                        }
+
+
+                        // dispatch
+                        foreach (Position pos in finalPositions)
+                            // hardcoded
+                            PlayForPosition(pos, "candle.ogg", vol, minDist, maxDist);
                     }
-
-
-                    // build list of final candidates
-                    List<Position> finalPositions = new List<Position>();
-                    foreach (Position pos in positions)
-                    {
-                        if (!pos.IsCompatibleWith(cameraPos))
-                            continue;
-
-                        double dist = (cameraPos.Global - pos.Global).Magnitude;
-
-                        if (dist > maxDist)
-                            continue;
-
-                        finalPositions.Add(pos);
-                    }
-
-
-                    // if we got more than like 3 then tone em back
-                    if (finalPositions.Count > 3)
-                    {
-                        vol *= 0.4;
-                        minDist *= 0.9;
-                        maxDist *= 0.5;
-                    }
-
-
-                    // dispatch
-                    foreach (Position pos in finalPositions)
-                        // hardcoded
-                        PlayForPosition(pos, "candle.ogg", vol, minDist, maxDist);
                 }
 
 #if true
@@ -527,6 +585,20 @@ namespace ACAudio
                 Ambient a = ActiveAmbients[x];
 
                 string discardReason = null;
+
+                // kill all ambients if disabled
+                if (discardReason == null)
+                {
+                    if (!EnableAudio)
+                        discardReason = "no audio";
+                }
+
+                // kill all ambients if portaling
+                if (discardReason == null)
+                {
+                    if (portalSong != null)
+                        discardReason = "portaling";
+                }
 
                 if (discardReason == null)
                 {
@@ -885,8 +957,9 @@ namespace ACAudio
                         Log("cant make sound channel");
                     else
                     {
+                        portalSong.Volume = 0.001;//to prevent instant stop for fadeout detection
+                        portalSong.SetTargetVolume(0.35, 0.575);
 
-                        portalSong.Volume = 0.3;
                         portalSong.Play();
                     }
                 }
@@ -914,10 +987,7 @@ namespace ACAudio
                 // stop sound
                 if(portalSong != null)
                 {
-                    portalSong.Stop();
-                    Audio.ForgetChannel(portalSong);
-
-                    portalSong = null;
+                    portalSong.SetTargetVolume(0.0, 0.575);
                 }
             }
         }
