@@ -62,19 +62,28 @@ namespace ACAudio
         }
 
 
-        public bool EnableAudio
+        public bool GetUserEnableAudio()
         {
-            get
-            {
-                if (View == null)
-                    return false;
+            if (View == null)
+                return false;
 
-                HudCheckBox cb = View["Enable"] as HudCheckBox;
-                if (cb == null)
-                    return false;
+            HudCheckBox cb = View["Enable"] as HudCheckBox;
+            if (cb == null)
+                return false;
 
-                return cb.Checked;
-            }
+            return cb.Checked;
+        }
+
+        public bool GetUserEnableMusic()
+        {
+            if (View == null)
+                return false;
+
+            HudCheckBox cb = View["MusicEnable"] as HudCheckBox;
+            if (cb == null)
+                return false;
+
+            return cb.Checked;
         }
 
         public bool IsPlayingPortalMusic
@@ -85,19 +94,28 @@ namespace ACAudio
             }
         }
 
-        public double Volume
+        public double GetUserVolume()
         {
-            get
-            {
-                if (View == null)
-                    return 0.0;
+            if (View == null)
+                return 0.0;
 
-                HudHSlider slider = View["Volume"] as HudHSlider;
-                if (slider == null)
-                    return 0.0;
+            HudHSlider slider = View["Volume"] as HudHSlider;
+            if (slider == null)
+                return 0.0;
 
-                return (double)(slider.Position - slider.Min) / (double)(slider.Max - slider.Min);
-            }
+            return (double)(slider.Position - slider.Min) / (double)(slider.Max - slider.Min);
+        }
+
+        public double GetUserMusicVolume()
+        {
+            if (View == null)
+                return 0.0;
+
+            HudHSlider slider = View["MusicVolume"] as HudHSlider;
+            if (slider == null)
+                return 0.0;
+
+            return (double)(slider.Position - slider.Min) / (double)(slider.Max - slider.Min);
         }
 
 
@@ -171,6 +189,15 @@ namespace ACAudio
                 (View["Enable"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
                 {
 
+                };
+
+                View["Defaults"].Hit += delegate (object sender, EventArgs e)
+                {
+                    (View["Enable"] as HudCheckBox).Checked = true;
+                    (View["Volume"] as HudHSlider).Position = 75;
+
+                    (View["MusicEnable"] as HudCheckBox).Checked = true;
+                    (View["MusicVolume"] as HudHSlider).Position = 35;
                 };
 
                 View["FMOD"].Hit += delegate (object sender, EventArgs e)
@@ -292,14 +319,15 @@ namespace ACAudio
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
-            Audio.AllowSound = EnableAudio;
+            Audio.AllowSound = GetUserEnableAudio();
 
             if (DoesACHaveFocus())
-                Audio.MasterVolume = Volume;
+                Audio.MasterVolume = GetUserVolume();
             else
                 Audio.MasterVolume = 0.0;
 
-
+            Music.Enable = GetUserEnableMusic();
+            Music.Volume = GetUserMusicVolume();
 
             Music.Process(dt);
 
@@ -360,7 +388,7 @@ namespace ACAudio
 
 
                 // only try to play ambient sounds if not portaling
-                if (EnableAudio && !IsPlayingPortalMusic)
+                if (GetUserEnableAudio() && !IsPlayingPortalMusic)
                 {
 
 
@@ -603,7 +631,7 @@ namespace ACAudio
                 // kill all ambients if disabled
                 if (discardReason == null)
                 {
-                    if (!EnableAudio)
+                    if (!GetUserEnableAudio())
                         discardReason = "no audio";
                 }
 

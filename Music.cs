@@ -7,6 +7,7 @@ namespace ACAudio
 {
     public static class Music
     {
+        public static bool Enable = true;
         public static double Volume = 0.35;
 
         public static Audio.Channel Channel = null;
@@ -85,7 +86,7 @@ namespace ACAudio
 
         public static void Process(double dt)
         {
-            if (!PluginCore.Instance.EnableAudio && Channel != null)
+            if (!Enable && Channel != null)
             {
                 Channel.Stop();
                 Channel = null;
