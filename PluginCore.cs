@@ -77,6 +77,14 @@ namespace ACAudio
             }
         }
 
+        public bool IsPlayingPortalMusic
+        {
+            get
+            {
+                return Music.IsPlayingName(PortalSongFilename);
+            }
+        }
+
         public double Volume
         {
             get
@@ -180,6 +188,8 @@ namespace ACAudio
                 Log("init audio");
                 if (!Audio.Init(1000, dopplerscale: 0.135f))
                     Log("Failed to initialize Audio");
+
+                Music.Init();
 
                 Log("hook render");
                 Core.RenderFrame += _Process;
@@ -290,11 +300,8 @@ namespace ACAudio
                 Audio.MasterVolume = 0.0;
 
 
-            if(!EnableAudio && portalSong != null)
-            {
-                portalSong.Stop();
-                portalSong = null;
-            }
+
+            Music.Process(dt);
 
 
             //Mat4 cameraMat = GetCameraMatrix();
@@ -353,7 +360,7 @@ namespace ACAudio
 
 
                 // only try to play ambient sounds if not portaling
-                if (EnableAudio && portalSong == null)
+                if (EnableAudio && !IsPlayingPortalMusic)
                 {
 
 
@@ -603,7 +610,7 @@ namespace ACAudio
                 // kill all ambients if portaling
                 if (discardReason == null)
                 {
-                    if (portalSong != null)
+                    if (IsPlayingPortalMusic)
                         discardReason = "portaling";
                 }
 
@@ -945,40 +952,10 @@ namespace ACAudio
         }
 
 
-        private Audio.Channel portalSong = null;
-
+        public const string PortalSongFilename = "ac_dnbpor.mp3";
         private void StartPortalSong()
         {
-            try
-            {
-                Audio.Sound snd = Audio.GetSound("portalsong", ReadDataFile("ac_dnbpor.mp3"), Audio.DimensionMode._2D, true);
-                if (snd == null)
-                    Log("cant get music sound");
-                else
-                {
-
-                    portalSong = Audio.PlaySound(snd, true);
-                    if (portalSong == null)
-                        Log("cant make sound channel");
-                    else
-                    {
-                        portalSong.OnStopped += delegate (Audio.Channel channel)
-                        {
-                            portalSong = null;
-                        };
-
-                        portalSong.Volume = 0.0;
-                        portalSong.SetTargetVolume(0.35, 0.575);
-
-                        portalSong.Play();
-                    }
-                }
-
-            }
-            catch (Exception ex)
-            {
-                Log($"portal music play BAD: {ex.Message}");
-            }
+            Music.Play(PortalSongFilename);
         }
 
         [BaseEvent("ChangePortalMode", "CharacterFilter")]
@@ -994,10 +971,17 @@ namespace ACAudio
             {
                 Log("changeportalmode DONE");
 
-                // stop sound
-                if(portalSong != null)
+                Music.Stop();// STOP the portal music
+
+
+                // bg music?
+                if (true)
                 {
-                    portalSong.FadeToStop(0.575);
+                    // for now (testing) just start playing a song depending on terrain or inside lol
+                    if (Position.FromObject(Player)?.IsTerrain ?? false)
+                        Music.Play("ac_anotherorch.mp3");
+                    else
+                        Music.Play("ac_someoffbeat.mp3");
                 }
             }
         }
@@ -1008,35 +992,7 @@ namespace ACAudio
             WriteToChat("Startup");
 
 
-            // bg music test
-            if (false)
-            {
-                try
-                {
-                    //string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), /*"data/ac_anotherorch.mp3"*/"data/ac_someoffbeat.mp3");
-                    Audio.Sound snd = Audio.GetSound("test", ReadDataFile("ac_anotherorch.mp3"), Audio.DimensionMode._2D, true);
-                    if (snd == null)
-                        Log("cant get music sound");
-                    else
-                    {
-
-                        Audio.Channel song = Audio.PlaySound(snd, true);
-                        if (song == null)
-                            Log("cant make sound channel");
-                        else
-                        {
-
-                            song.Volume = 0.3;
-                            song.Play();
-                        }
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    Log($"failed to play music: {ex.Message}");
-                }
-            }
+            // dont play music here cause its probably within portal music
 
 
         }
@@ -1050,6 +1006,7 @@ namespace ACAudio
 
             Core.RenderFrame -= _Process;
 
+            Music.Shutdown();
             Audio.Shutdown();
 
 
