@@ -271,11 +271,23 @@ namespace ACAudio
             mat = SmithInterop.Matrix(frame);
         }
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetActiveWindow();
+
+        private bool DoesACHaveFocus()
+        {
+            return (GetActiveWindow() == Host.Decal.Hwnd);
+        }
+
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
             Audio.AllowSound = EnableAudio;
-            Audio.MasterVolume = Volume;
+
+            if (DoesACHaveFocus())
+                Audio.MasterVolume = Volume;
+            else
+                Audio.MasterVolume = 0.0;
 
 
             if(portalSong != null)
