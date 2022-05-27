@@ -332,6 +332,9 @@ namespace ACAudio
             Music.Process(dt);
 
 
+            PortalSongHeat = Math.Max(0.0, PortalSongHeat - PortalSongHeatCooldown * dt);
+
+
             //Mat4 cameraMat = GetCameraMatrix();
 
 
@@ -576,7 +579,8 @@ namespace ACAudio
 #if true
 
                 (View["Info"] as HudStaticText).Text =
-                    $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n";
+                    $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
+                    $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
 #else
                 UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8);
                 uint lb = frame.landblock;//(uint)player.Values(LongValueKey.Landblock);
@@ -980,10 +984,18 @@ namespace ACAudio
         }
 
 
+        public double PortalSongHeat = 0.0;
+        public const double PortalSongHeatMax = 1.55;
+        public const double PortalSongHeatCooldown = 0.0175;
+
         public const string PortalSongFilename = "ac_dnbpor.mp3";
         private void StartPortalSong()
         {
+            if (PortalSongHeat >= PortalSongHeatMax)
+                return;
+
             Music.Play(PortalSongFilename);
+            PortalSongHeat += 1.0;
         }
 
         [BaseEvent("ChangePortalMode", "CharacterFilter")]
@@ -991,6 +1003,8 @@ namespace ACAudio
         {
             if(e.Type == PortalEventType.EnterPortal)
             {
+                Music.Stop();// kill existing music if present
+
                 // start sound
                 Log("changeportalmode START");
 
