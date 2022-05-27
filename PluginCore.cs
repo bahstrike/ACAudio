@@ -290,15 +290,10 @@ namespace ACAudio
                 Audio.MasterVolume = 0.0;
 
 
-            if(portalSong != null)
+            if(!EnableAudio && portalSong != null)
             {
-                if (!EnableAudio || portalSong.Volume == 0.0)
-                {
-                    portalSong.Stop();
-                    Audio.ForgetChannel(portalSong);
-
-                    portalSong = null;
-                }
+                portalSong.Stop();
+                portalSong = null;
             }
 
 
@@ -660,7 +655,6 @@ namespace ACAudio
 
 
                     a.Channel.Stop();
-                    Audio.ForgetChannel(a.Channel);
 
                     ActiveAmbients.RemoveAt(x);
                     x--;
@@ -794,7 +788,6 @@ namespace ACAudio
 
                     // changing sounds? kill existing
                     sa.Channel.Stop();
-                    Audio.ForgetChannel(sa.Channel);
 
                     ActiveAmbients.Remove(sa);
 
@@ -853,7 +846,6 @@ namespace ACAudio
 
                     // changing sounds? kill existing
                     oa.Channel.Stop();
-                    Audio.ForgetChannel(oa.Channel);
 
                     ActiveAmbients.Remove(oa);
 
@@ -874,7 +866,8 @@ namespace ACAudio
 
             newoa.Channel = Audio.PlaySound(snd, true);
             newoa.Channel.SetPosition(SmithInterop.Vector(obj.RawCoordinates()), Vec3.Zero);
-            newoa.Channel.Volume = vol;
+            newoa.Channel.Volume = 0.0;
+            newoa.Channel.SetTargetVolume(vol, 0.08);//slide fade-in; especially in case of portaling
             newoa.Channel.SetMinMaxDistance(minDist, maxDist);
             newoa.Channel.Play();
 
@@ -969,7 +962,12 @@ namespace ACAudio
                         Log("cant make sound channel");
                     else
                     {
-                        portalSong.Volume = 0.001;//to prevent instant stop for fadeout detection
+                        portalSong.OnStopped += delegate (Audio.Channel channel)
+                        {
+                            portalSong = null;
+                        };
+
+                        portalSong.Volume = 0.0;
                         portalSong.SetTargetVolume(0.35, 0.575);
 
                         portalSong.Play();
@@ -999,7 +997,7 @@ namespace ACAudio
                 // stop sound
                 if(portalSong != null)
                 {
-                    portalSong.SetTargetVolume(0.0, 0.575);
+                    portalSong.FadeToStop(0.575);
                 }
             }
         }
