@@ -228,11 +228,44 @@ namespace ACAudio
 
 
                 StartPortalSong();// first time login portal deserves one
+
+                LoadStaticPositions();
             }
             catch (Exception ex)
             {
                 Log($"Startup exception: {ex.Message}");
             }
+        }
+
+        class StaticPosition
+        {
+            public uint ID;
+            public Position Position;
+        }
+
+        private List<StaticPosition> StaticPositions = new List<StaticPosition>();
+
+        private void LoadStaticPositions()
+        {
+            StaticPositions.Clear();
+
+            ZipUtil zip = new ZipUtil_Stream(GetEmbeddedFile("static.dat"));
+
+            int numEntries = zip.ReadInt();
+            for(int x=0; x<numEntries; x++)
+            {
+                StaticPosition entry = new StaticPosition();
+
+                entry.ID = zip.ReadUInt();
+                entry.Position = Position.FromStream(zip);
+
+                StaticPositions.Add(entry);
+
+
+                //break;//HAXXXXXXXXXXXX    ONLY TEST 1 FOR NOW
+            }
+
+            zip.Close();
         }
 
         private bool LogOff = false;
@@ -316,9 +349,15 @@ namespace ACAudio
             return (GetActiveWindow() == Host.Decal.Hwnd);
         }
 
+
+        double lastProcessTime = 1.0;
+
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
+            PerfTimer pt_process = new PerfTimer();
+            pt_process.Start();
+
             Audio.AllowSound = GetUserEnableAudio();
 
             if (DoesACHaveFocus())
@@ -480,7 +519,7 @@ namespace ACAudio
 
                         // candle sounds lol
 
-
+#if false
                         // add direct coordinates if we can pass inside object..  if standing on top, add to list below
                         List<Position> positions = new List<Position>(new Position[] {
                         // town network
@@ -542,24 +581,30 @@ namespace ACAudio
 
                             positions.Add(tmp);
                         }
+#endif
 
 
                         // build list of final candidates
-                        List<Position> finalPositions = new List<Position>();
-                        foreach (Position pos in positions)
+                        List<StaticPosition> finalPositions = new List<StaticPosition>();
+                        foreach (StaticPosition pos in StaticPositions)
                         {
-                            if (!pos.IsCompatibleWith(cameraPos))
+                            if (!pos.Position.IsCompatibleWith(cameraPos))
                                 continue;
 
-                            double dist = (cameraPos.Global - pos.Global).Magnitude;
+                            double dist = (cameraPos.Global - pos.Position.Global).Magnitude;
 
                             if (dist > maxDist)
+                            {
+                                //Log($"bad dist  {dist} > {maxDist}     cam:{cameraPos.Global}  VS pos:{pos.Position.Global}  ");
                                 continue;
+                            }
+
+                            //Log("WE KEEP");
 
                             finalPositions.Add(pos);
                         }
 
-
+                        
                         // if we got more than like 3 then tone em back
                         if (finalPositions.Count > 3)
                         {
@@ -570,15 +615,16 @@ namespace ACAudio
 
 
                         // dispatch
-                        foreach (Position pos in finalPositions)
+                        foreach (StaticPosition pos in finalPositions)
                             // hardcoded
-                            PlayForPosition(pos, "candle.ogg", vol, minDist, maxDist);
+                            PlayForPosition(pos.Position, "candle.ogg", vol, minDist, maxDist);
                     }
                 }
 
 #if true
 
                 (View["Info"] as HudStaticText).Text =
+                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0)}msec  \n" +
                     $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
 #else
@@ -750,6 +796,10 @@ namespace ACAudio
             // Z is up
 
             Audio.Process(dt, truedt, cameraPos.Global, Vec3.Zero, cameraMat.Up, cameraMat.Forward);
+
+
+            pt_process.Stop();
+            lastProcessTime = pt_process.Duration;
         }
 
         public abstract class Ambient
