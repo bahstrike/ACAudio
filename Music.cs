@@ -7,25 +7,38 @@ namespace ACAudio
 {
     public static class Music
     {
-        public static bool Enable = true;
+        public static bool EnableWorld = true;
+        public static bool EnablePortal = true;
         public static double Volume = 0.35;
 
-        public static Audio.Channel Channel = null;
+        public class MusicChannel
+        {
+            public bool IsPortal;
+            public Audio.Channel Channel;
+
+            public MusicChannel(bool _IsPortal, Audio.Channel _Channel)
+            {
+                IsPortal = _IsPortal;
+                Channel = _Channel;
+            }
+        }
+
+        public static MusicChannel Channel = null;
 
         public static bool IsPlaying
         {
             get
             {
-                return (Channel != null && Channel.IsPlaying);
+                return (Channel != null && Channel.Channel.IsPlaying);
             }
         }
 
         public static bool IsPlayingName(string name)
         {
-            if (Channel == null || !Channel.IsPlaying)
+            if (Channel == null || !Channel.Channel.IsPlaying)
                 return false;
 
-            if (!Channel.Sound.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))
+            if (!Channel.Channel.Sound.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))
                 return false;
 
             return true;
@@ -36,8 +49,23 @@ namespace ACAudio
             PluginCore.Log($"MUSIC: {s}");
         }
 
-        public static void Play(string filename, double fadeTime=0.575)
+        public static void Play(string filename, bool isPortal, double fadeTime=0.575)
         {
+            // if playing something and preferences differ than ignore
+            if (!EnablePortal && isPortal)
+            {
+                Log("prevent playing portal song");
+                return;
+            }
+
+            if (!EnableWorld && !isPortal)
+            {
+                Log("prevent playing world song");
+                return;
+            }
+
+
+
             // if already playing something; stop it
             Stop();
 
@@ -50,15 +78,15 @@ namespace ACAudio
                 else
                 {
 
-                    Channel = Audio.PlaySound(snd, true);
+                    Channel = new MusicChannel(isPortal, Audio.PlaySound(snd, true));
                     if (Channel == null)
                         Log("cant make sound channel");
                     else
                     {
-                        Channel.Volume = 0.0;
-                        Channel.SetTargetVolume(Volume, fadeTime);
+                        Channel.Channel.Volume = 0.0;
+                        Channel.Channel.SetTargetVolume(Volume, fadeTime);
 
-                        Channel.Play();
+                        Channel.Channel.Play();
 
                         Log($"we be playin {filename}");
                     }
@@ -75,9 +103,9 @@ namespace ACAudio
         {
             if (Channel != null)
             {
-                Log($"beginning fadeout stop for {Channel.Sound.Name}");
+                Log($"beginning fadeout stop for {Channel.Channel.Sound.Name}");
 
-                Channel.FadeToStop(fadeTime);
+                Channel.Channel.FadeToStop(fadeTime);
 
                 // pre-forget about it?
                 Channel = null;
@@ -86,17 +114,22 @@ namespace ACAudio
 
         public static void Process(double dt)
         {
-            if (!Enable && Channel != null)
+            if(Channel != null)
             {
-                Channel.Stop();
-                Channel = null;
+                if((Channel.IsPortal && !EnablePortal) ||
+                    (!Channel.IsPortal && !EnableWorld))
+                {
+                    Channel.Channel.Stop();
+                    Channel = null;
+                }
+
             }
 
 
 
             if (Channel != null)
             {
-                Channel.Volume = Volume;
+                Channel.Channel.Volume = Volume;
             }
 
         }
@@ -113,7 +146,7 @@ namespace ACAudio
 
             if (Channel != null)
             {
-                Channel.Stop();
+                Channel.Channel.Stop();
                 Channel = null;
             }
         }

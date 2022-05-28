@@ -118,6 +118,18 @@ namespace ACAudio
             return (double)(slider.Position - slider.Min) / (double)(slider.Max - slider.Min);
         }
 
+        public bool GetUserAllowPortalMusic()
+        {
+            if (View == null)
+                return false;
+
+            HudCheckBox cb = View["PortalMusicEnable"] as HudCheckBox;
+            if (cb == null)
+                return false;
+
+            return cb.Checked;
+        }
+
 
         /// <summary>
         /// This is called when the plugin is started up. This happens only once.
@@ -365,7 +377,8 @@ namespace ACAudio
             else
                 Audio.MasterVolume = 0.0;
 
-            Music.Enable = GetUserEnableMusic();
+            Music.EnableWorld = GetUserEnableMusic();
+            Music.EnablePortal = GetUserAllowPortalMusic();
             Music.Volume = GetUserMusicVolume();
 
             Music.Process(dt);
@@ -1044,7 +1057,7 @@ namespace ACAudio
             if (PortalSongHeat >= PortalSongHeatMax)
                 return;
 
-            Music.Play(PortalSongFilename);
+            Music.Play(PortalSongFilename, true);
             PortalSongHeat += 1.0;
         }
 
@@ -1071,9 +1084,9 @@ namespace ACAudio
                 {
                     // for now (testing) just start playing a song depending on terrain or inside lol
                     if (Position.FromObject(Player)?.IsTerrain ?? false)
-                        Music.Play("ac_anotherorch.mp3");
+                        Music.Play("ac_anotherorch.mp3", false);
                     else
-                        Music.Play("ac_someoffbeat.mp3");
+                        Music.Play("ac_someoffbeat.mp3", false);
                 }
             }
         }

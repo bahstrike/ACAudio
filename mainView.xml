@@ -15,6 +15,8 @@
         <control progid="DecalControls.CheckBox" name="MusicEnable" left="160" top="180" width="70" height="20" text="Music" checked="True"/>
         <control progid="DecalControls.Slider" name="MusicVolume" left="240" top="180" width="170" height="20" minimum="0" maximum="100" position="35" />
 
+        <control progid="DecalControls.CheckBox" name="PortalMusicEnable" left="160" top="210" width="120" height="20" text="Portal Music" checked="True"/>
+
         <control progid="DecalControls.PushButton" name="FMOD" left="10" top="228" width="50" height="14"/>
         <control progid="DecalControls.StaticText" name="FMOD_Credit" left="70" top="231" width="400" height="18" text="Made with FMOD Studio by Firelight Technologies Pty Ltd."/>
 
