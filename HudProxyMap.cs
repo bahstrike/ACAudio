@@ -11,8 +11,16 @@ namespace ACAudio
 {
     public class HudProxyMap : HudControl
     {
+
+        long lastDrawTimestamp = 0;
+
         public override void DrawNow(DxTexture iSavedTarget)
         {
+            long curDrawTimestamp = PerfTimer.Timestamp;
+            double dt = Math.Min(1.0 / 20.0, Math.Max(1.0, PerfTimer.TimeBetween(lastDrawTimestamp, curDrawTimestamp)));
+            lastDrawTimestamp = curDrawTimestamp;
+            
+
             Box2 rc = new Box2(ClipRegion);
 
             iSavedTarget.Fill((Rectangle)rc, Color.FromArgb(16, 16, 16));
@@ -23,12 +31,6 @@ namespace ACAudio
                 return;
 
 
-            iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center, Vec2.One * 8.0), Color.Orange);
-
-            Vec2 playerLookVec = new Vec2(MathLib.ToRad(pc.Player.Values(DoubleValueKey.Heading) - 90.0));
-            iSavedTarget.DrawLine(rc.Center, rc.Center + playerLookVec * 12.0, Color.Orange, 2.0f);
-
-
             WorldObject player = pc.Player;
             int playerID = player.Id;
 
@@ -36,16 +38,36 @@ namespace ACAudio
             if (!_playerPos.HasValue)
                 return;
 
+#if true
+            Position camPos;
+            Mat4 camMat;
+            pc.GetCameraInfo(out camPos, out camMat);
+
+            Vec3 playerPos = camPos.Global;
+            Vec2 playerLookVec = camMat.Forward.XY;
+
+            playerLookVec.y *= -1.0;
+#else
             Vec3 playerPos = _playerPos.Value.Global;
+            Vec2 playerLookVec = new Vec2(MathLib.ToRad(pc.Player.Values(DoubleValueKey.Heading) - 90.0));
+#endif
+
+            // draw "player" in center UI
+            iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center, Vec2.One * 8.0), Color.Orange);
+
+            iSavedTarget.DrawLine(rc.Center, rc.Center + playerLookVec * 12.0, Color.Orange, 2.0f);
+
+
 
 
             double range = 35.0;
             double drawScale = rc.Size.Magnitude / range * 0.3;
 
+
             foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetAll())
             {
-                if (obj.Id == playerID)
-                    continue;
+                //if (obj.Id == playerID)
+                    //continue;
 
                 Position? objPos = Position.FromObject(obj);
                 if (!objPos.HasValue)
@@ -80,6 +102,12 @@ namespace ACAudio
 
                 iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
             }
+
+
+
+            iSavedTarget.BeginText(Theme.GetVal<string>("DefaultTextFontFace"), (float)Theme.GetVal<int>("DefaultTextFontSize"), Theme.GetVal<int>("DefaultTextFontWeight"), false, Theme.GetVal<int>("DefaultTextFontShadowSize"), Theme.GetVal<int>("DefaultTextFontShadowAlpha"));
+            iSavedTarget.WriteText($"fps:{(1.0 / dt).ToString("0.0")}", Theme.GetColor("ButtonText"), Theme.GetVal<Color>("DefaultTextFontShadowColor"), VirindiViewService.WriteTextFormats.None, ClipRegion);
+            iSavedTarget.EndText();
 
 
 

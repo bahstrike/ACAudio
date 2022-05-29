@@ -390,7 +390,7 @@ namespace ACAudio
             }
         }
 
-        private void GetCameraInfo(out Position pos, out Mat4 mat)
+        public void GetCameraInfo(out Position pos, out Mat4 mat)
         {
             UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8);//used with permission by trevis (UtilityBelt)
 
