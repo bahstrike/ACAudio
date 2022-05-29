@@ -223,6 +223,16 @@ namespace ACAudio
 
 
 
+                // create custom stuff
+                HudFixedLayout debugLayout = View["DebugContent"] as HudFixedLayout;
+                HudProxyMap hudmap = new HudProxyMap();
+                hudmap.InternalName = "ProxyMap";
+                Box2 fillRC = new Box2(debugLayout.ClipRegion);
+                debugLayout.AddControl(hudmap, (Rectangle)(fillRC.Offsetted(-fillRC.UL).Inflated(Vec2.One * -fillRC.Size.Magnitude * 0.01)));
+
+
+
+
                 using (INIFile ini = INIFile)
                 {
                     (View["Enable"] as HudCheckBox).Checked = ini.GetKeyString("ACAudio", "Enable", "1") != "0";
@@ -233,7 +243,6 @@ namespace ACAudio
 
                     (View["PortalMusicEnable"] as HudCheckBox).Checked = ini.GetKeyString("ACAudio", "PortalMusicEnable", "1") != "0";
                 }
-
 
 
                 Log("regen logos");
@@ -839,6 +848,9 @@ namespace ACAudio
                 }
             }
 
+
+
+            (View["ProxyMap"] as HudProxyMap).Invalidate();// draw every frame.. realtime map
 
 
 

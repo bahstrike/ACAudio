@@ -51,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Frame.cs" />
+    <Compile Include="HudProxyMap.cs" />
     <Compile Include="Music.cs" />
     <Compile Include="PluginCore.cs" />
     <Compile Include="Position.cs" />

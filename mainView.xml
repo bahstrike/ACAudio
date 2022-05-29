@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 <view icon="29808" title="AC Audio" width="420" height="300">
   <control progid="DecalControls.Notebook" name="nbMain">
-    <page>
+    <page label="Main">
       <control progid="DecalControls.FixedLayout" clipped="">
 
         <control progid="DecalControls.StaticText" name="Info" left="10" top="10" width="400" height="130" text=""/>
@@ -20,6 +20,12 @@
         <control progid="DecalControls.PushButton" name="FMOD" left="10" top="228" width="50" height="14"/>
         <control progid="DecalControls.StaticText" name="FMOD_Credit" left="70" top="231" width="400" height="18" text="Made with FMOD Studio by Firelight Technologies Pty Ltd."/>
 
+
+      </control>
+    </page>
+
+    <page label="Debug">
+      <control progid="DecalControls.FixedLayout" name="DebugContent" clipped="">
 
       </control>
     </page>
