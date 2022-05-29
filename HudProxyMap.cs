@@ -64,44 +64,85 @@ namespace ACAudio
             double drawScale = rc.Size.Magnitude / range * 0.3;
 
 
-            foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetAll())
-            {
-                //if (obj.Id == playerID)
-                    //continue;
-
-                Position? objPos = Position.FromObject(obj);
-                if (!objPos.HasValue)
-                    continue;
-
-                Vec3 offset = (objPos.Value.Global - playerPos);
 
 
-                Vec2 pt = offset.XY * drawScale;
 
-                // up is down, down is up :P
-                pt.y *= -1.0;
+            // static ambients
+            if(true)
+                foreach(PluginCore.StaticPosition sp in PluginCore.Instance.StaticPositions)
+                { 
+                    Vec3 offset = (sp.Position.Global - playerPos);
 
-                //PluginCore.Log($"lol {pt}");
+
+                    Vec2 pt = offset.XY * drawScale;
+
+                    // up is down, down is up :P
+                    pt.y *= -1.0;
+
+                    //PluginCore.Log($"lol {pt}");
 
 
-                bool isAmbient = false;
-                foreach(PluginCore.Ambient amb in pc.ActiveAmbients)
-                {
-                    PluginCore.ObjectAmbient objAmb = amb as PluginCore.ObjectAmbient;
-                    if(objAmb != null)
+                    bool isAmbient = false;
+                    foreach (PluginCore.Ambient amb in pc.ActiveAmbients)
                     {
-                        if(objAmb.WeenieID == obj.Id)
+                        PluginCore.StaticAmbient stAmb = amb as PluginCore.StaticAmbient;
+                        if (stAmb != null)
                         {
-                            isAmbient = true;
-                            break;
+                            if (stAmb.Position.Equals(sp.Position))
+                            {
+                                isAmbient = true;
+                                break;
+                            }
+
                         }
 
                     }
 
+                    iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
                 }
 
-                iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
-            }
+
+
+            // dynamic ambients
+            if(true)
+                foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetAll())
+                {
+                    //if (obj.Id == playerID)
+                        //continue;
+
+                    Position? objPos = Position.FromObject(obj);
+                    if (!objPos.HasValue)
+                        continue;
+
+                    Vec3 offset = (objPos.Value.Global - playerPos);
+
+
+                    Vec2 pt = offset.XY * drawScale;
+
+                    // up is down, down is up :P
+                    pt.y *= -1.0;
+
+                    //PluginCore.Log($"lol {pt}");
+
+
+                    bool isAmbient = false;
+                    foreach(PluginCore.Ambient amb in pc.ActiveAmbients)
+                    {
+                        PluginCore.ObjectAmbient objAmb = amb as PluginCore.ObjectAmbient;
+                        if(objAmb != null)
+                        {
+                            if(objAmb.WeenieID == obj.Id)
+                            {
+                                isAmbient = true;
+                                break;
+                            }
+
+                        }
+
+                    }
+
+                    iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
+                }
 
 
 

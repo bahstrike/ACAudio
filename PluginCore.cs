@@ -274,13 +274,13 @@ namespace ACAudio
             }
         }
 
-        class StaticPosition
+        public class StaticPosition
         {
             public uint ID;
             public Position Position;
         }
 
-        private List<StaticPosition> StaticPositions = new List<StaticPosition>();
+        public List<StaticPosition> StaticPositions = new List<StaticPosition>();
 
         private void LoadStaticPositions()
         {

@@ -155,5 +155,15 @@ namespace ACAudio
         {
             return $"0x{Landblock.ToString("X8")}, {Local}";
         }
+
+        public override bool Equals(object obj)
+        {
+            Position o = (Position)obj;
+
+            if (Landblock != o.Landblock)
+                return false;
+
+            return (Local == o.Local);
+        }
     }
 }
