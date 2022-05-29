@@ -210,6 +210,8 @@ namespace ACAudio
 
                     (View["MusicEnable"] as HudCheckBox).Checked = true;
                     (View["MusicVolume"] as HudHSlider).Position = 35;
+
+                    (View["PortalMusicEnable"] as HudCheckBox).Checked = true;
                 };
 
                 View["FMOD"].Hit += delegate (object sender, EventArgs e)
@@ -218,6 +220,20 @@ namespace ACAudio
                 };
 
                 (View["FMOD_Credit"] as HudStaticText).FontHeight = 5;
+
+
+
+                using (INIFile ini = INIFile)
+                {
+                    (View["Enable"] as HudCheckBox).Checked = ini.GetKeyString("ACAudio", "Enable", "1") != "0";
+                    (View["Volume"] as HudHSlider).Position = int.Parse(ini.GetKeyString("ACAudio", "Volume", "75"));
+
+                    (View["MusicEnable"] as HudCheckBox).Checked = ini.GetKeyString("ACAudio", "MusicEnable", "1") != "0";
+                    (View["MusicVolume"] as HudHSlider).Position = int.Parse(ini.GetKeyString("ACAudio", "MusicVolume", "35"));
+
+                    (View["PortalMusicEnable"] as HudCheckBox).Checked = ini.GetKeyString("ACAudio", "PortalMusicEnable", "1") != "0";
+                }
+
 
 
                 Log("regen logos");
@@ -290,6 +306,18 @@ namespace ACAudio
             StartPortalSong();
 
             LogOff = true;
+
+
+            using (INIFile ini = INIFile)
+            {
+                ini.WriteKey("ACAudio", "Enable", (View["Enable"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey("ACAudio", "Volume", (View["Volume"] as HudHSlider).Position.ToString());
+
+                ini.WriteKey("ACAudio", "MusicEnable", (View["MusicEnable"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey("ACAudio", "MusicVolume", (View["MusicVolume"] as HudHSlider).Position.ToString());
+
+                ini.WriteKey("ACAudio", "PortalMusicEnable", (View["PortalMusicEnable"] as HudCheckBox).Checked ? "1" : "0");
+            }
         }
 
         public WorldObject Player
@@ -309,6 +337,14 @@ namespace ACAudio
                 GetCameraInfo(out p, out m);
 
                 return p.Global;
+            }
+        }
+
+        public INIFile INIFile
+        {
+            get
+            {
+                return new INIFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ACAudio.ini"));
             }
         }
 
