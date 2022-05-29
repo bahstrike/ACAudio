@@ -70,7 +70,10 @@ namespace ACAudio
             // static ambients
             if(true)
                 foreach(PluginCore.StaticPosition sp in PluginCore.Instance.StaticPositions)
-                { 
+                {
+                    if (!sp.Position.IsCompatibleWith(camPos))
+                        continue;
+
                     Vec3 offset = (sp.Position.Global - playerPos);
 
 
