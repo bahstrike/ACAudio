@@ -107,7 +107,7 @@ namespace ACAudio
 
 
             // dynamic ambients
-            if(true)
+            if(false)
                 foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetAll())
                 {
                     //if (obj.Id == playerID)

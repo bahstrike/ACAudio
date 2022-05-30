@@ -1,0 +1,33 @@
+DEVELOPMENT
+--------------------------------------------------------------------------------------------
+Code				Strike
+Additional Code			trevis
+Static Positions Data		OptimShi
+Audio Engine			FMOD (Firelight Technologies Pty Ltd.)
+
+
+ADVICE and DISCUSSION
+--------------------------------------------------------------------------------------------
+Advan
+Harli Quin
+Hells
+Immortal Bob
+Maethor
+paradox
+trevis
+Yonneh
+
+
+MUSIC
+--------------------------------------------------------------------------------------------
+ac_dnbpor			Strike
+ac_someoffbeat			Strike
+ac_anotherorch			Strike
+
+
+SOUND EFFECTS
+--------------------------------------------------------------------------------------------
+portal				Strike
+lifestone			Strike
+candle				https://www.youtube.com/watch?v=qOhUpdIWrMs
+gasflame			https://freesound.org/people/neilraouf/sounds/435643/

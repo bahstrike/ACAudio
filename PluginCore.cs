@@ -674,8 +674,28 @@ namespace ACAudio
 
                         // dispatch
                         foreach (StaticPosition pos in finalPositions)
+                        {
+                            string filename = null;
+                            switch(pos.ID)
+                            {
+                                case 0x020005D8:// candle post
+                                case 0x0200190D:// candle post (no collide)
+                                case 0x020001EB:// wall candle
+                                    filename = "candle.ogg";
+                                    break;
+
+                                case 0x0200071A:// lantern post (sho)
+                                case 0x02000719:// lantern post (gharu)
+                                    filename = "gasflame.ogg";
+                                    break;
+                            }
+
+                            if (string.IsNullOrEmpty(filename))
+                                continue;
+
                             // hardcoded
-                            PlayForPosition(pos.Position, "candle.ogg", vol, minDist, maxDist);
+                            PlayForPosition(pos.Position, filename, vol, minDist, maxDist);
+                        }
                     }
                 }
 
