@@ -681,12 +681,18 @@ namespace ACAudio
                                 case 0x020005D8:// candle post
                                 case 0x0200190D:// candle post (no collide)
                                 case 0x020001EB:// wall candle
+                                case 0x02000372:// wall blue flame oil jar
                                     filename = "candle.ogg";
                                     break;
 
                                 case 0x0200071A:// lantern post (sho)
                                 case 0x02000719:// lantern post (gharu)
                                     filename = "gasflame.ogg";
+                                    break;
+
+                                case 0x02000115:// wall water fountain
+                                case 0x02000AA3:// fancy water fountain
+                                    filename = "waterfountain.ogg";
                                     break;
                             }
 
@@ -1162,7 +1168,7 @@ namespace ACAudio
         [BaseEvent("LoginComplete", "CharacterFilter")]
         private void CharacterFilter_LoginComplete(object sender, EventArgs e)
         {
-            WriteToChat("Startup");
+            WriteToChat($"Startup - {StaticPositions.Count} static positions loaded");
 
 
             // dont play music here cause its probably within portal music

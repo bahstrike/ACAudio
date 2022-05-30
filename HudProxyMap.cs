@@ -149,15 +149,15 @@ namespace ACAudio
 
 
 
-            iSavedTarget.BeginText(Theme.GetVal<string>("DefaultTextFontFace"), (float)Theme.GetVal<int>("DefaultTextFontSize"), Theme.GetVal<int>("DefaultTextFontWeight"), false, Theme.GetVal<int>("DefaultTextFontShadowSize"), Theme.GetVal<int>("DefaultTextFontShadowAlpha"));
+            /*iSavedTarget.BeginText(Theme.GetVal<string>("DefaultTextFontFace"), (float)Theme.GetVal<int>("DefaultTextFontSize"), Theme.GetVal<int>("DefaultTextFontWeight"), false, Theme.GetVal<int>("DefaultTextFontShadowSize"), Theme.GetVal<int>("DefaultTextFontShadowAlpha"));
             iSavedTarget.WriteText($"fps:{(1.0 / dt).ToString("0.0")}", Theme.GetColor("ButtonText"), Theme.GetVal<Color>("DefaultTextFontShadowColor"), VirindiViewService.WriteTextFormats.None, ClipRegion);
-            iSavedTarget.EndText();
+            iSavedTarget.EndText();*/
 
 
 
             // borders
             Color borderClrLt = Color.FromArgb(200, 200, 200);
-            Color borderClrDk = Color.Black;
+            Color borderClrDk = Color.FromArgb(32, 32, 32);
             float borderThick = 2.0f;
             iSavedTarget.DrawLine(rc.UL, rc.UR, borderClrLt, borderThick);
             iSavedTarget.DrawLine(rc.UR, rc.LR, borderClrDk, borderThick);
