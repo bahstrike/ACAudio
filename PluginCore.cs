@@ -276,8 +276,14 @@ namespace ACAudio
 
         public class StaticPosition
         {
-            public uint ID;
-            public Position Position;
+            public readonly uint ID;
+            public readonly Position Position;
+
+            public StaticPosition(uint _ID, Position _Position)
+            {
+                ID = _ID;
+                Position = _Position;
+            }
         }
 
         public List<StaticPosition> StaticPositions = new List<StaticPosition>();
@@ -291,16 +297,25 @@ namespace ACAudio
             int numEntries = zip.ReadInt();
             for(int x=0; x<numEntries; x++)
             {
-                StaticPosition entry = new StaticPosition();
+                uint id = zip.ReadUInt();
+                Position pos = Position.FromStream(zip);
 
-                entry.ID = zip.ReadUInt();
-                entry.Position = Position.FromStream(zip);
-
-                StaticPositions.Add(entry);
+                StaticPositions.Add(new StaticPosition(id, pos));
 
 
                 //break;//HAXXXXXXXXXXXX    ONLY TEST 1 FOR NOW
             }
+
+
+            // lets add some of our own!
+            StaticPositions.AddRange(new StaticPosition[]
+            {
+                new StaticPosition(DID_Casino, Position.FromLocal(0xDB540102, 108.8787, 132.4056, 19.5050)),//shoushi casino
+                new StaticPosition(DID_Casino, Position.FromLocal(0xA9B20106, 84.0530, 84.1775, 94.0050)),//holtburg casino
+                new StaticPosition(DID_Casino, Position.FromLocal(0x7E640119, 107.5988, 107.7285, 12.0050)),//yaraq casino
+
+            });
+
 
             zip.Close();
         }
@@ -409,6 +424,8 @@ namespace ACAudio
 
         double lastProcessTime = 1.0;
 
+        public const uint DID_Casino = 0x04200001;
+
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
@@ -442,11 +459,11 @@ namespace ACAudio
             GetCameraInfo(out cameraPos, out cameraMat);
 
 
-            WorldObject w;
+            //WorldObject w;
             //w.RawCoordinates
-            Vector3Object v;
+            //Vector3Object v;
 
-            Decal.Adapter.Wrappers.D3DObj d;
+            //Decal.Adapter.Wrappers.D3DObj d;
             //d.OrientToCamera
 
 
@@ -468,7 +485,7 @@ namespace ACAudio
 
 
 
-                WorldObject player = Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First;
+                //WorldObject player = Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First;
                 //Log($"behavior:{player.Behavior}  boolkeys:{player.BoolKeys.Count}   doublekeys:{player.DoubleKeys.Count}   gamedataflags1:{player.GameDataFlags1}   longkeys:{player.LongKeys.Count}   physicsdataflags:{player.PhysicsDataFlags}   stringkeys:{player.StringKeys.Count}   type:{player.Type}");
                 /*Log("------------------- LONG KEYS ----------------");
                 foreach(int i in player.DoubleKeys)
@@ -574,6 +591,7 @@ namespace ACAudio
                         double vol = 0.125;
                         double minDist = 5.0;
                         double maxDist = 15.0;
+                        double searchDist = 200.0;
 
                         // candle sounds lol
 
@@ -649,9 +667,10 @@ namespace ACAudio
                             if (!pos.Position.IsCompatibleWith(cameraPos))
                                 continue;
 
+
                             double dist = (cameraPos.Global - pos.Position.Global).Magnitude;
 
-                            if (dist > maxDist)
+                            if (dist > searchDist)//maxDist)
                             {
                                 //Log($"bad dist  {dist} > {maxDist}     cam:{cameraPos.Global}  VS pos:{pos.Position.Global}  ");
                                 continue;
@@ -662,7 +681,8 @@ namespace ACAudio
                             finalPositions.Add(pos);
                         }
 
-                        
+
+#if false
                         // if we got more than like 3 then tone em back
                         if (finalPositions.Count > 3)
                         {
@@ -670,6 +690,7 @@ namespace ACAudio
                             minDist *= 0.9;
                             maxDist *= 0.5;
                         }
+#endif
 
 
                         // dispatch
@@ -679,24 +700,50 @@ namespace ACAudio
                             switch(pos.ID)
                             {
                                 case 0x020005D8:// candle post
+                                case 0x020005D9:// candle post
                                 case 0x0200190D:// candle post (no collide)
                                 case 0x020001EB:// wall candle
+                                case 0x02000706:// fancy candle
+
+                                case 0x020001E5:// wall torch
+
                                 case 0x02000372:// wall blue flame oil jar
+
+                                case 0x01000A2F:// fireplace
+
                                     filename = "candle.ogg";
+                                    vol *= 0.9;
                                     break;
 
                                 case 0x0200071A:// lantern post (sho)
                                 case 0x02000719:// lantern post (gharu)
+                                case 0x020001BD:// placed lantern (aluvian?)
                                     filename = "gasflame.ogg";
+                                    vol *= 0.5;
                                     break;
 
                                 case 0x02000115:// wall water fountain
                                 case 0x02000AA3:// fancy water fountain
                                     filename = "waterfountain.ogg";
+                                    vol *= 0.8;
+                                    break;
+
+                                case PluginCore.DID_Casino:// programmatically added
+
+                                    // override "too much nearby crap" logic.. probably needs to go anyway
+                                    vol = 0.375;
+                                    minDist = 18.0;
+                                    maxDist = 75.0;
+                                    filename = "casino.ogg";
                                     break;
                             }
 
                             if (string.IsNullOrEmpty(filename))
+                                continue;
+
+                            // needs layer;  but anyway we cull again due to max dist.. the "cancel sound" has similar logic
+                            double dist = (cameraPos.Global - pos.Position.Global).Magnitude;
+                            if (dist >= maxDist)
                                 continue;
 
                             // hardcoded
