@@ -310,9 +310,51 @@ namespace ACAudio
             // lets add some of our own!
             StaticPositions.AddRange(new StaticPosition[]
             {
+                // casinos
                 new StaticPosition(DID_Casino, Position.FromLocal(0xDB540102, 108.8787, 132.4056, 19.5050)),//shoushi casino
                 new StaticPosition(DID_Casino, Position.FromLocal(0xA9B20106, 84.0530, 84.1775, 94.0050)),//holtburg casino
                 new StaticPosition(DID_Casino, Position.FromLocal(0x7E640119, 107.5988, 107.7285, 12.0050)),//yaraq casino
+
+                // aluvian pubs
+                new StaticPosition(DID_Pub, Position.FromLocal(0xA9B40155, 107.5387, 34.6304, 94.0050)),//holtburg pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xBC9F0136, 86.0224, 108.7003, 54.0050)),//cragstone pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xBF80014D, 132.0676, 12.0311, 34.0050)),//lytelthorpe pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xA1A4012C, 86.9807, 37.0400, 66.0050)),//glendon wood pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xDA750146, 154.5820, 59.9645, 18.0050)),//dryreach pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xCE950120, 83.0577, 109.5351, 20.0050)),//eastham pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xC98C011B, 133.0274, 179.5129, 22.0050)),//rithwic pub #1
+                new StaticPosition(DID_Pub, Position.FromLocal(0xC88C0136, 11.4128, 154.5505, 22.0050)),//rithwic pub #2
+
+                // gharu pubs
+                new StaticPosition(DID_Pub, Position.FromLocal(0x7D64013E, 87.8184, 62.6488, 12.0050)),//yaraq pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x91580103, 14.8508, 112.3013, 0.0050)),//al-arqas pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x9E430112, 32.8275, 173.5392, 43.2050)),//khayyaban pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xA25F0105, 128.5249, 58.2611, 20.0050)),//uziz pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x8090012A, 61.0440, 126.9740, 123.2050)),//zaikhal pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x934B01EA, 86.9623, 54.3279, -19.5950)),//xarabydun pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x9722014C, 59.2209, 104.2368, 102.0050)),//qalaba'r pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x977B013B, 185.3047, 180.1762, -0.7950)),//samsur pub
+
+                // sho pubs
+                new StaticPosition(DID_Pub, Position.FromLocal(0xDA55017C, 133.1145, 107.0167, 26.5453)),//shoushi pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xE5320116, 157.2550, 130.9876, 32.8050)),//mayoi pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xDA3B0135, 59.3783, 59.6798, 25.5050)),//lin pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xE74E0178, 130.3908, 79.1365, 36.8050)),//hebian-to pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xE8220114, 155.7477, 107.1478, -1.1950)),//kryst pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xF222011E, 157.1721, 178.7798, 24.9351)),//freehold pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xC95B011D, 85.3977, 83.9768, 16.8050)),//sawato pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xB4700151, 132.3495, 84.2421, 41.5050)),//yanshi pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xCD410105, 159.1650, 107.1606, 60.8441)),//baishi pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0xE53D0105, 178.5797, 180.4916, 102.0362)),//nanto pub
+
+                // annex
+                new StaticPosition(DID_Pub, Position.FromLocal(0x33D90109, 90.2632, 34.4398, 51.9950)),//sanamar pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x17B20110, 126.6372, 64.9596, 41.2050)),//redspire pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x1DB6003F, 177.8885, 165.0975, 120.0050)),//timaru pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x27EC0131, 111.4608, 106.1657, 79.9950)),//silyun pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x0EBA0100, 127.4152, 61.6667, 1.7050)),//ahurenga pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x2CB50102, 36.4137, 76.7356, 1.6050)),//greenspire pub
+                new StaticPosition(DID_Pub, Position.FromLocal(0x21B00102, 131.4977, 88.0402, 6.8050)),//bluespire pub
 
             });
 
@@ -425,6 +467,7 @@ namespace ACAudio
         double lastProcessTime = 1.0;
 
         public const uint DID_Casino = 0x04200001;
+        public const uint DID_Pub = 0x04200002;
 
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
@@ -588,11 +631,6 @@ namespace ACAudio
                     // static positions
                     {
 
-                        double vol = 0.125;
-                        double minDist = 5.0;
-                        double maxDist = 15.0;
-                        double searchDist = 200.0;
-
                         // candle sounds lol
 
 #if false
@@ -659,6 +697,8 @@ namespace ACAudio
                         }
 #endif
 
+                        double searchDist = 200.0;
+
 
                         // build list of final candidates
                         List<StaticPosition> finalPositions = new List<StaticPosition>();
@@ -696,6 +736,10 @@ namespace ACAudio
                         // dispatch
                         foreach (StaticPosition pos in finalPositions)
                         {
+                            double vol = 1.0;
+                            double minDist = 5.0;
+                            double maxDist = 15.0;
+
                             string filename = null;
                             switch(pos.ID)
                             {
@@ -708,33 +752,67 @@ namespace ACAudio
                                 case 0x020001E5:// wall torch
 
                                 case 0x02000372:// wall blue flame oil jar
+                                case 0x020009A3:// standing blue flame
 
                                 case 0x01000A2F:// fireplace
 
+                                case 0x02000485:// flame particle effect (for fireplace?)
+
+                                case 0x02000354:// fire pit
                                     filename = "candle.ogg";
-                                    vol *= 0.9;
+                                    vol = 0.1;
+                                    minDist = 2.0;
+                                    maxDist = 8.0;
                                     break;
 
-                                case 0x0200071A:// lantern post (sho)
                                 case 0x02000719:// lantern post (gharu)
-                                case 0x020001BD:// placed lantern (aluvian?)
+                                case 0x0200071A:// lantern post (sho)
+                                case 0x020001BA:// lantern
+                                case 0x020001BB:// lantern
+                                case 0x020001BC:// lantern
+                                case 0x020001BD:// lantern
+                                case 0x020001BE:// lantern
+                                case 0x020001BF:// lantern
+                                case 0x02000334:// lantern (seen in lin)
+                                case 0x02000336:// lantern (seen in lin)
+                                case 0x02000337:// lantern (seen in lin)
+                                case 0x02000338:// lantern (seen in lin)
+                                case 0x02000339:// lantern (seen in lin)
+                                case 0x0200033A:// lantern (seen in lin)
                                     filename = "gasflame.ogg";
-                                    vol *= 0.5;
+                                    vol = 0.1;
+                                    minDist = 2.0;
+                                    maxDist = 8.0;
                                     break;
 
                                 case 0x02000115:// wall water fountain
                                 case 0x02000AA3:// fancy water fountain
                                     filename = "waterfountain.ogg";
-                                    vol *= 0.8;
+                                    vol = 0.1;
+                                    minDist = 4.0;
+                                    maxDist = 12.0;
+                                    break;
+
+                                case 0x02000351:// cooking pot on fire pit
+                                case 0x02000345:// cooking pot hanging over fire
+                                    filename = "simmering.ogg";
+                                    vol = 0.1;
+                                    minDist = 4.0;
+                                    maxDist = 12.0;
                                     break;
 
                                 case PluginCore.DID_Casino:// programmatically added
-
-                                    // override "too much nearby crap" logic.. probably needs to go anyway
-                                    vol = 0.375;
+                                    vol = 0.35;
                                     minDist = 18.0;
                                     maxDist = 75.0;
                                     filename = "casino.ogg";
+                                    break;
+
+                                case PluginCore.DID_Pub:// programmatically added
+                                    vol = 0.35;
+                                    minDist = 18.0;
+                                    maxDist = 75.0;
+                                    filename = "pub.ogg";
                                     break;
                             }
 
