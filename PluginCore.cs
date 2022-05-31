@@ -765,14 +765,35 @@ namespace ACAudio
 
                                 case 0x01000A2F:// fireplace
 
-                                case 0x02000485:// flame particle effect (for fireplace?)
-
-                                case 0x02000354:// fire pit
                                     filename = "candle.ogg";
                                     vol = 0.175;
                                     minDist = 1.0;
                                     maxDist = 9.0;
                                     break;
+
+
+
+
+                                case 0x02000485:// flame particle effect (for fireplace?)
+
+                                case 0x02000354:// fire pit
+
+                                case 0x020005AE:// open campfire (big flames)
+
+                                    filename = "campfire.ogg";
+                                    vol = 0.3;
+                                    minDist = 4.0;
+                                    maxDist = 12.0;
+                                    break;
+
+
+                                case 0x0200033C:// forge
+                                    filename = "forge.ogg";
+                                    vol = 0.3;
+                                    minDist = 8.0;
+                                    maxDist = 30.0;
+                                    break;
+
 
                                 case 0x02000719:// lantern post (gharu)
                                 case 0x0200071A:// lantern post (sho)
