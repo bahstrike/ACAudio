@@ -143,10 +143,15 @@ namespace ACAudio
             return FromLocal(landblock, SmithInterop.Vector(obj.RawCoordinates()));
         }
 
-        public static Position FromStream(ZipUtil zip)
+        public static Position FromStream(ZipUtil zip, bool floats)
         {
             uint lb = zip.ReadUInt();
-            Vec3 local = zip.ReadVec3();
+
+            Vec3 local;
+            if (floats)
+                local = zip.ReadVec3Float();
+            else
+                local = zip.ReadVec3();
 
             return Position.FromLocal(lb, local);
         }

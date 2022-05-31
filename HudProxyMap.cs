@@ -19,7 +19,6 @@ namespace ACAudio
             long curDrawTimestamp = PerfTimer.Timestamp;
             double dt = Math.Min(1.0 / 20.0, Math.Max(1.0, PerfTimer.TimeBetween(lastDrawTimestamp, curDrawTimestamp)));
             lastDrawTimestamp = curDrawTimestamp;
-            
 
             Box2 rc = new Box2(ClipRegion);
 
@@ -75,6 +74,9 @@ namespace ACAudio
                         continue;
 
                     Vec3 offset = (sp.Position.Global - playerPos);
+
+                    if (offset.Magnitude > PluginCore.AudioSearchDist/*needs a sp.MaxDist*/)
+                        continue;
 
 
                     Vec2 pt = offset.XY * drawScale;
