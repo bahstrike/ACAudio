@@ -760,9 +760,9 @@ namespace ACAudio
 
                                 case 0x02000354:// fire pit
                                     filename = "candle.ogg";
-                                    vol = 0.1;
-                                    minDist = 2.0;
-                                    maxDist = 8.0;
+                                    vol = 0.175;
+                                    minDist = 1.0;
+                                    maxDist = 9.0;
                                     break;
 
                                 case 0x02000719:// lantern post (gharu)
@@ -780,9 +780,9 @@ namespace ACAudio
                                 case 0x02000339:// lantern (seen in lin)
                                 case 0x0200033A:// lantern (seen in lin)
                                     filename = "gasflame.ogg";
-                                    vol = 0.1;
-                                    minDist = 2.0;
-                                    maxDist = 8.0;
+                                    vol = 0.05;
+                                    minDist = 1.0;
+                                    maxDist = 9.0;
                                     break;
 
                                 case 0x02000115:// wall water fountain
@@ -796,7 +796,7 @@ namespace ACAudio
                                 case 0x02000351:// cooking pot on fire pit
                                 case 0x02000345:// cooking pot hanging over fire
                                     filename = "simmering.ogg";
-                                    vol = 0.1;
+                                    vol = 0.3;
                                     minDist = 4.0;
                                     maxDist = 12.0;
                                     break;
@@ -1075,7 +1075,7 @@ namespace ACAudio
                 {
                     // check reference
                     double dist = (sa.Position.Global - pos.Global).Magnitude;
-                    if (dist > 2.4)// erm.. magic numbers for preventing sound source overlap
+                    if (dist > 0.00001/*epsilon*/)
                         continue;
 
                     //Log("checking");
@@ -1086,6 +1086,7 @@ namespace ACAudio
                         //Log("playforposition bailed on same filename");
                         return;
                     }
+
 
                     // changing sounds? kill existing
                     sa.Channel.Stop();
