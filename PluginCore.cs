@@ -1024,6 +1024,32 @@ namespace ACAudio
             lastProcessTime = pt_process.Duration;
         }
 
+        public static Audio.Sound GetOrLoadSound(string name, Audio.DimensionMode mode, bool looping)
+        {
+            Audio.Sound snd = Audio.GetSound(name, mode, looping);
+            if (snd != null)
+                return snd;
+
+            if (PluginCore.Instance == null)
+                return null;
+
+            try
+            {
+                Log($"Loading file to RAM: {name}");
+                byte[] buf = PluginCore.Instance.ReadDataFile(name);
+                if (buf == null || buf.Length == 0)
+                    return null;
+
+                return Audio.GetSound(name, buf, mode, looping);
+            }
+            catch(Exception ex)
+            {
+                Log($"GetOrLoadSound() Cant load {name}: {ex.Message}");
+
+                return null;
+            }
+        }
+
         public abstract class Ambient
         {
             public Audio.Channel Channel;
@@ -1110,11 +1136,7 @@ namespace ACAudio
             }
 
             // get sound
-            Audio.Sound snd = Audio.GetSound(filename, Audio.DimensionMode._3DPositional, true);
-            if(snd == null)
-                snd = Audio.GetSound(filename, ReadDataFile(filename), Audio.DimensionMode._3DPositional, true);
-            else
-                Log("alrady had it lol");
+            Audio.Sound snd = GetOrLoadSound(filename, Audio.DimensionMode._3DPositional, true);
             if (snd == null)
                 return;
 
@@ -1170,11 +1192,7 @@ namespace ACAudio
             }
 
             // get sound
-            Audio.Sound snd = Audio.GetSound(filename, Audio.DimensionMode._3DPositional, true);
-            if (snd == null)
-                snd = Audio.GetSound(filename, ReadDataFile(filename), Audio.DimensionMode._3DPositional, true);
-            else
-                Log("alrady had it lol");
+            Audio.Sound snd = GetOrLoadSound(filename, Audio.DimensionMode._3DPositional, true);
             if (snd == null)
                 return;
 
