@@ -843,7 +843,8 @@ namespace ACAudio
 
                 (View["Info"] as HudStaticText).Text =
                     $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0)}msec  \n" +
-                    $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
+                    $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  sounds:{Audio.SoundCount}\n" +
+                    $"cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
 #else
                 UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8);
@@ -1109,7 +1110,11 @@ namespace ACAudio
             }
 
             // get sound
-            Audio.Sound snd = Audio.GetSound(filename, ReadDataFile(filename), Audio.DimensionMode._3DPositional, true);
+            Audio.Sound snd = Audio.GetSound(filename, Audio.DimensionMode._3DPositional, true);
+            if(snd == null)
+                snd = Audio.GetSound(filename, ReadDataFile(filename), Audio.DimensionMode._3DPositional, true);
+            else
+                Log("alrady had it lol");
             if (snd == null)
                 return;
 
@@ -1165,7 +1170,11 @@ namespace ACAudio
             }
 
             // get sound
-            Audio.Sound snd = Audio.GetSound(filename, ReadDataFile(filename), Audio.DimensionMode._3DPositional, true);
+            Audio.Sound snd = Audio.GetSound(filename, Audio.DimensionMode._3DPositional, true);
+            if (snd == null)
+                snd = Audio.GetSound(filename, ReadDataFile(filename), Audio.DimensionMode._3DPositional, true);
+            else
+                Log("alrady had it lol");
             if (snd == null)
                 return;
 

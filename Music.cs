@@ -72,7 +72,11 @@ namespace ACAudio
 
             try
             {
-                Audio.Sound snd = Audio.GetSound(filename, PluginCore.Instance.ReadDataFile(filename), Audio.DimensionMode._2D, true);
+                Audio.Sound snd = Audio.GetSound(filename, Audio.DimensionMode._2D, true);
+                if(snd == null)
+                    snd = Audio.GetSound(filename, PluginCore.Instance.ReadDataFile(filename), Audio.DimensionMode._2D, true);
+                else
+                    Log("alrady had it lol");
                 if (snd == null)
                     Log("cant get music sound");
                 else
