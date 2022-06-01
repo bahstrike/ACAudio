@@ -267,11 +267,18 @@ namespace ACAudio
                 StartPortalSong();// first time login portal deserves one
 
                 LoadStaticPositions();
+
+                ReloadConfig();
             }
             catch (Exception ex)
             {
                 Log($"Startup exception: {ex.Message}");
             }
+        }
+
+        private void ReloadConfig()
+        {
+            Config.Load(GenerateDataPath("master.aca"));
         }
 
         public class StaticPosition

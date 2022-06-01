@@ -1,15 +1,44 @@
-// this config file associates  positions/objects/dungeons/etc  with  sound files/volume/distances/etc
-// feel free to customize and make your own sound pack!
+// Welcome to the ACAudio configuration file!
+//
+// All plugin music and sound behaviors are controlled from MASTER.ACA so feel free to customize
+// and make your own sound pack :)
 
 
-//---------------------------------------------- special commands ----------------------------------------
+
+// Every line takes the form of    DIRECTIVE [CONTENT]
+//
+// Example:
+//   mode song
+//   file olthoimusic.mp3
+//   dungeon 6145
+//
+//
+// There are two concepts to consider when the config is loaded:
+//   - Sound Attributes
+//   - Sound Sources
+//
+// Basically, issue "sound attribute directives" to set-up a sound effect,
+// then issue as many "sound source directives" that should utilize that sound.
+//
+// The current sound attributes are retained whilst the config is being parsed.
+// You don't have to re-specify every value for every new sound; only the ones you want to change.
+//
+// Advanced users can use push/pop directives for in-place temporary adjustments.
+// Also, you can split your file up into a hierarchy of .ACA files via the "include" directive.
+//
+
+
+
+
+
+//---------------------------------------------- special directives --------------------------------------
 // Special commands to control parsing of config file or other miscellaneous stuff.
 //--------------------------------------------------------------------------------------------------------
 // include [whatever.aca]
 // In-place parses an additional config file.
 
 
-//---------------------------------------------- sound commands ------------------------------------------
+//------------------------------------------- sound attribute directives ---------------------------------
 // Set up the "current" sound properties.
 //--------------------------------------------------------------------------------------------------------
 // push
@@ -21,7 +50,7 @@
 // file [whatever.etc]
 // Sound filename. Practically any audio file format is acceptable (WAV/MP3/OGG/MOD/WMA/AIFF/FLAC/etc).
 //
-// volume [0..1]
+// vol [0..1]
 // Sound volume in a 0.0 to 1.0 range.
 //
 // mindist [0..infinity]
@@ -57,7 +86,7 @@
 // hybrid - Play like 3d when outside of mindist, play like 2d when inside mindist.
 
 
-//---------------------------------------------- sound sources -------------------------------------------
+//------------------------------------------ sound source directives -------------------------------------
 // Specify source(s) for the "current" sound to emanate from.
 //--------------------------------------------------------------------------------------------------------
 // static [id]

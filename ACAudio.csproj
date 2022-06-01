@@ -50,6 +50,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
     <Compile Include="Frame.cs" />
     <Compile Include="HudProxyMap.cs" />
     <Compile Include="Music.cs" />
