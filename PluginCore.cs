@@ -863,7 +863,7 @@ namespace ACAudio
 #if true
 
                 (View["Info"] as HudStaticText).Text =
-                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0)}msec  \n" +
+                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0)}msec  mem:{((double)Audio.MemoryUsageBytes/1024.0/1024.0).ToString("#0.0")}mb\n" +
                     $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  sounds:{Audio.SoundCount}\n" +
                     $"cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
