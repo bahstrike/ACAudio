@@ -110,6 +110,44 @@ namespace ACAudio
         public static List<SoundSource> Sources = new List<SoundSource>();
         public static SoundAttributes PortalSound = null;
 
+
+        public static SoundSourceStatic FindSoundSourceStatic(uint did)
+        {
+            foreach(SoundSource src in Sources)
+            {
+                SoundSourceStatic staticSrc = src as SoundSourceStatic;
+                if (staticSrc == null)
+                    continue;
+
+                if (staticSrc.DID != did)
+                    continue;
+
+                return staticSrc;
+            }
+
+            return null;
+        }
+
+        public static SoundSourcePosition[] FindSoundSourcesPosition(Position compatiblePos)
+        {
+            List<SoundSourcePosition> ret = new List<SoundSourcePosition>();
+
+            foreach(SoundSource src in Sources)
+            {
+                SoundSourcePosition posSrc = src as SoundSourcePosition;
+                if (posSrc == null)
+                    continue;
+
+                if (!posSrc.Position.IsCompatibleWith(compatiblePos))
+                    continue;
+
+                ret.Add(posSrc);
+            }
+
+            return ret.ToArray();
+        }
+
+
         private static Stack<SoundAttributes> SoundAttributeStack = new Stack<SoundAttributes>();
         private static SoundAttributes CurrentSound
         {

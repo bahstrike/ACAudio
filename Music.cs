@@ -33,17 +33,6 @@ namespace ACAudio
             }
         }
 
-        public static bool IsPlayingName(string name)
-        {
-            if (Channel == null || !Channel.Channel.IsPlaying)
-                return false;
-
-            if (!Channel.Channel.Sound.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))
-                return false;
-
-            return true;
-        }
-
         private static void Log(string s)
         {
             PluginCore.Log($"MUSIC: {s}");
@@ -51,6 +40,13 @@ namespace ACAudio
 
         public static void Play(string filename, bool isPortal, double fadeTime=0.575)
         {
+            if(string.IsNullOrEmpty(filename))
+            {
+                Log("wanted to play nothing; stopping music");
+                Stop();
+                return;
+            }
+
             // if playing something and preferences differ than ignore
             if (!EnablePortal && isPortal)
             {

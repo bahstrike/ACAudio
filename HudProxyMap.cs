@@ -63,6 +63,8 @@ namespace ACAudio
             double drawScale = rc.Size.Magnitude / range * 0.3;
 
 
+            double searchDist = 200.0;// make artifically high since proxymap should show sounds even out of range (should really calculate this based on zoom level and control size)
+
 
 
 
@@ -73,9 +75,15 @@ namespace ACAudio
                     if (!sp.Position.IsCompatibleWith(camPos))
                         continue;
 
+
+                    Config.SoundSourceStatic src = Config.FindSoundSourceStatic(sp.ID);
+                    if (src == null)
+                        continue;
+
+
                     Vec3 offset = (sp.Position.Global - playerPos);
 
-                    if (offset.Magnitude > PluginCore.AudioSearchDist/*needs a sp.MaxDist*/)
+                    if (offset.Magnitude > searchDist)//src.Sound.maxdist)
                         continue;
 
 
@@ -108,8 +116,46 @@ namespace ACAudio
 
 
 
+            // static positions
+            if (true)
+                foreach (Config.SoundSourcePosition src in Config.FindSoundSourcesPosition(camPos))
+                {
+                    Vec3 offset = (src.Position.Global - playerPos);
+
+                    if (offset.Magnitude > searchDist)//src.Sound.maxdist)
+                        continue;
+
+
+                    Vec2 pt = offset.XY * drawScale;
+
+                    // up is down, down is up :P
+                    pt.y *= -1.0;
+
+                    //PluginCore.Log($"lol {pt}");
+
+
+                    bool isAmbient = false;
+                    foreach (PluginCore.Ambient amb in pc.ActiveAmbients)
+                    {
+                        PluginCore.StaticAmbient stAmb = amb as PluginCore.StaticAmbient;
+                        if (stAmb != null)
+                        {
+                            if (stAmb.Position.Equals(src.Position))
+                            {
+                                isAmbient = true;
+                                break;
+                            }
+
+                        }
+
+                    }
+
+                    iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
+                }
+
+
             // dynamic ambients
-            if(false)
+            if (false)
                 foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetAll())
                 {
                     //if (obj.Id == playerID)
