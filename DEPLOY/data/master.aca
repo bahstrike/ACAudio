@@ -78,6 +78,9 @@
 // fade [seconds]
 // Fade in/out time. Set to 0 for no fade.
 //
+// precache [seconds]
+// Attempt to keep sound precached in RAM for a while. Set to 0 to disable (best for big files).
+//
 // mode [song/2d/3d/hybrid]
 // Mode types:
 //   song - Plays in 2d but is "exclusive" in that any song trigger will crossfade from previous song to new.
