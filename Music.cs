@@ -55,18 +55,28 @@ namespace ACAudio
             if (!EnablePortal && isPortal)
             {
                 Log("prevent playing portal song");
+                Stop();
                 return;
             }
 
             if (!EnableWorld && !isPortal)
             {
                 Log("prevent playing world song");
+                Stop();
                 return;
             }
 
 
 
-            // if already playing something; stop it
+            // if playing same filename just bail (though we can update the isPortal flag)
+            if(Channel != null && Channel.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
+            {
+                Channel.IsPortal = isPortal;
+                return;
+            }
+
+
+            // kill old music
             Stop();
 
 

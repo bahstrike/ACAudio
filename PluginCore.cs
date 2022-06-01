@@ -203,6 +203,11 @@ namespace ACAudio
 
                 };
 
+                View["Reload"].Hit += delegate (object sender, EventArgs e)
+                {
+                    ReloadConfig();
+                };
+
                 View["Defaults"].Hit += delegate (object sender, EventArgs e)
                 {
                     (View["Enable"] as HudCheckBox).Checked = true;
@@ -1319,7 +1324,10 @@ namespace ACAudio
         private void StartPortalSong()
         {
             if (PortalSongHeat >= PortalSongHeatMax)
+            {
+                Music.Stop();// ensure existing music is stopped even if we decide not to play
                 return;
+            }
 
             Music.Play(PortalSongFilename, true);
             PortalSongHeat += 1.0;
@@ -1330,8 +1338,6 @@ namespace ACAudio
         {
             if(e.Type == PortalEventType.EnterPortal)
             {
-                Music.Stop();// kill existing music if present
-
                 // start sound
                 Log("changeportalmode START");
 
@@ -1340,18 +1346,32 @@ namespace ACAudio
             {
                 Log("changeportalmode DONE");
 
-                Music.Stop();// STOP the portal music
 
+                bool handled = false;
 
                 // bg music?
-                if (true)
+                if (GetUserEnableMusic())
                 {
+                    Position? plrPos = Position.FromObject(Player);
+
                     // for now (testing) just start playing a song depending on terrain or inside lol
-                    if (Position.FromObject(Player)?.IsTerrain ?? false)
+                    if (plrPos?.IsTerrain ?? false)
                         Music.Play("ac_anotherorch.mp3", false);
                     else
-                        Music.Play("ac_someoffbeat.mp3", false);
+                    {
+                        // test haxx;  try to keep portal music going for town network
+                        if (plrPos?.DungeonID == 0x0007)
+                            Music.Play(PortalSongFilename, false);
+                        else
+                            Music.Play("ac_someoffbeat.mp3", false);
+                    }
+
+                    handled = true;
                 }
+
+                // we must ensure to stop portal music even of something else didnt decide to transition
+                if(!handled)
+                    Music.Stop();
             }
         }
 

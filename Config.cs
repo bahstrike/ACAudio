@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Smith;
 using System.IO;
+using Decal.Adapter.Wrappers;
 
 namespace ACAudio
 {
@@ -81,6 +82,7 @@ namespace ACAudio
         {
             try
             {
+                Log($"Parsing {filename}...");
                 using (StreamReader sr = File.OpenText(filename))
                     while (!sr.EndOfStream)
                     {
@@ -232,13 +234,26 @@ namespace ACAudio
                                 }
                                 break;
 
+                            case "dynamic":
+                                {
+                                    ObjectClass oc;
+
+                                    int _oc;
+                                    if (int.TryParse(content, out _oc))
+                                        oc = (ObjectClass)_oc;
+                                    else
+                                        oc = (ObjectClass)Enum.Parse(typeof(ObjectClass), content, true);
+
+                                    Log($"NEED TO REGISTER DYNAMIC {oc}");
+                                }
+                                break;
+
                             case "pos":
                                 {
                                     // content better have 4 parts
                                     string[] parts = content.Split(',');
                                     if (parts.Length < 4)
                                         throw new Exception($"cant parse landblock,localX,localY,localZ from: {content}");
-
 
                                     Position pos;
                                     try
@@ -257,6 +272,33 @@ namespace ACAudio
 
 
                                     Log($"NEED TO REGISTER POS {pos}");// need to do stuff
+                                }
+                                break;
+
+                            case "dungeon":
+                                {
+                                    // content should be 4 hex characters (upper 16-bit of landblock)
+                                    // or 8 hex characters (full landblock)
+                                    ushort dungeonID;
+                                    if (content.Length == 4)
+                                        dungeonID = ushort.Parse(content, System.Globalization.NumberStyles.HexNumber);
+                                    else if (content.Length == 8)
+                                    {
+                                        uint lb = uint.Parse(content, System.Globalization.NumberStyles.HexNumber);
+                                        dungeonID = (ushort)(lb >> 16);
+                                    }
+                                    else
+                                        throw new Exception($"dungeonID must be 4 or 8 hex characters: {content}");
+
+
+                                    Log($"NEED TO REGISTER DUNGEONID {dungeonID.ToString("X4")}");
+                                }
+                                break;
+
+                            case "portal":
+                                {
+
+                                    Log($"NEED TO REGISTER PORTAL");
                                 }
                                 break;
                             #endregion

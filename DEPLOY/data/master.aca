@@ -79,7 +79,9 @@
 // Fade in/out time. Set to 0 for no fade.
 //
 // precache [seconds]
-// Attempt to keep sound precached in RAM for a while. Set to 0 to disable (best for big files).
+// Attempt to keep sound precached in RAM for a while.
+// Set to 0 to disable and stream from file (best for big files).
+// Set to -1 to attempt to keep in RAM forever (not recommended).
 //
 // mode [song/2d/3d/hybrid]
 // Mode types:
@@ -95,8 +97,8 @@
 // static [id]
 // All known coordinates in static.dat for the specified object DID.
 //
-// dynamic [id]
-// A Decal object class ID.
+// dynamic [objectclass]
+// The name or ID number of a Decal ObjectClass.
 //
 // pos [landblock,localX,localY,localZ]
 // Manually specify coordinates.
@@ -105,7 +107,7 @@
 // Trigger for song or 2d sounds whenever in specified dungeon. These are the first 4 characters of landblock.
 //
 // portal
-// Triggers when portaling.
+// Triggers when portaling. Only one sound can be associated.
 //
 
 
@@ -118,11 +120,13 @@ looping on
 randomstart off
 interval 0
 chance 1
+precache 0
 mode song
+
 
 file ac_dnbpor.mp3
 portal
-
+dungeon 0007 // keep portal music going while in town network?
 
 
 pop
@@ -145,10 +149,10 @@ mindist 5.0
 maxdist 35.0
 
 file lifestone.ogg
-dynamic 28//ObjectClass.Lifestone
+dynamic lifestone
 
 file portal.ogg
-dynamic 14//ObjectClass.Portal
+dynamic portal
 
 pop // end dynamic objects
 

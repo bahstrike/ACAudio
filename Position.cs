@@ -23,7 +23,7 @@ namespace ACAudio
 
 
 #if true
-        public bool IsTerrain {  get { return (Landblock & 0x0000FF00) != 0; } }
+        public bool IsTerrain {  get { return (Landblock & 0x0000FF00) == 0; } }
 
         public int DungeonID
         {
