@@ -53,6 +53,62 @@ namespace ACAudio
             }
         }
 
+        public class SoundSource
+        {
+            public readonly SoundAttributes Sound;
+
+            protected SoundSource(SoundAttributes _Sound)
+            {
+                Sound = _Sound.Clone();// clone this in current state! attribute stack may modify _Sound's properties later on
+            }
+        }
+
+        public class SoundSourceStatic : SoundSource
+        {
+            public readonly uint DID;
+
+            public SoundSourceStatic(SoundAttributes _Sound, uint _DID)
+                : base(_Sound)
+            {
+                DID = _DID;
+            }
+        }
+
+        public class SoundSourceDynamic : SoundSource
+        {
+            public readonly ObjectClass ObjectClass;
+
+            public SoundSourceDynamic(SoundAttributes _Sound, ObjectClass _ObjectClass)
+                : base(_Sound)
+            {
+                ObjectClass = _ObjectClass;
+            }
+        }
+
+        public class SoundSourcePosition : SoundSource
+        {
+            public readonly Position Position;
+
+            public SoundSourcePosition(SoundAttributes _Sound, Position _Position)
+                : base(_Sound)
+            {
+                Position = _Position;
+            }
+        }
+
+        public class SoundSourceDungeon : SoundSource
+        {
+            public readonly int DungeonID;
+
+            public SoundSourceDungeon(SoundAttributes _Sound, int _DungeonID)
+                : base(_Sound)
+            {
+                DungeonID = _DungeonID;
+            }
+        }
+
+        public static List<SoundSource> Sources = new List<SoundSource>();
+        public static SoundAttributes PortalSound = null;
 
         private static Stack<SoundAttributes> SoundAttributeStack = new Stack<SoundAttributes>();
         private static SoundAttributes CurrentSound
@@ -65,6 +121,8 @@ namespace ACAudio
 
         public static void Clear()
         {
+            Sources.Clear();
+            PortalSound = null;
 
             // reset stack and prepopulate default
             SoundAttributeStack.Clear();
@@ -83,7 +141,7 @@ namespace ACAudio
             try
             {
                 Log($"Parsing {filename}...");
-                using (StreamReader sr = File.OpenText(filename))
+                using (StreamReader sr = File.OpenText(PluginCore.GenerateDataPath(filename)))
                     while (!sr.EndOfStream)
                     {
                         string ln = sr.ReadLine();
@@ -127,6 +185,12 @@ namespace ACAudio
                         // lets see what we got
                         switch (directive.ToLowerInvariant())
                         {
+                            #region special directives
+                            case "include":
+                                _Load(content);
+                                break;
+                            #endregion
+
                             #region sound attribute directives
                             case "push":
                                 SoundAttributeStack.Push(CurrentSound.Clone());
@@ -224,7 +288,8 @@ namespace ACAudio
                                             numadd++;
                                         }
 
-                                        Log($"NEED TO REGISTER {numadd} STATIC POSITIONS");// need to do stuff
+                                        //Log($"NEED TO REGISTER {numadd} STATIC POSITIONS");// need to do stuff
+                                        Sources.Add(new SoundSourceStatic(CurrentSound, did));
                                     }
                                     catch(Exception ex)
                                     {
@@ -244,7 +309,8 @@ namespace ACAudio
                                     else
                                         oc = (ObjectClass)Enum.Parse(typeof(ObjectClass), content, true);
 
-                                    Log($"NEED TO REGISTER DYNAMIC {oc}");
+                                    //Log($"NEED TO REGISTER DYNAMIC {oc}");
+                                    Sources.Add(new SoundSourceDynamic(CurrentSound, oc));
                                 }
                                 break;
 
@@ -271,7 +337,8 @@ namespace ACAudio
                                     }
 
 
-                                    Log($"NEED TO REGISTER POS {pos}");// need to do stuff
+                                    //Log($"NEED TO REGISTER POS {pos}");// need to do stuff
+                                    Sources.Add(new SoundSourcePosition(CurrentSound, pos));
                                 }
                                 break;
 
@@ -291,14 +358,16 @@ namespace ACAudio
                                         throw new Exception($"dungeonID must be 4 or 8 hex characters: {content}");
 
 
-                                    Log($"NEED TO REGISTER DUNGEONID {dungeonID.ToString("X4")}");
+                                    //Log($"NEED TO REGISTER DUNGEONID {dungeonID.ToString("X4")}");
+                                    Sources.Add(new SoundSourceDungeon(CurrentSound, dungeonID));
                                 }
                                 break;
 
                             case "portal":
                                 {
 
-                                    Log($"NEED TO REGISTER PORTAL");
+                                    //Log($"NEED TO REGISTER PORTAL");
+                                    PortalSound = CurrentSound.Clone();// be sure to clone since attributes stack may modify later
                                 }
                                 break;
                             #endregion

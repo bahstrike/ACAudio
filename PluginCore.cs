@@ -283,7 +283,9 @@ namespace ACAudio
 
         private void ReloadConfig()
         {
-            Config.Load(GenerateDataPath("master.aca"));
+            Config.Load("master.aca");
+
+            Log($"Parsed {Config.Sources.Count} sound sources from config");
         }
 
         public class StaticPosition
@@ -1069,7 +1071,7 @@ namespace ACAudio
             try
             {
                 Log($"Loading file to RAM: {name}");
-                byte[] buf = PluginCore.Instance.ReadDataFile(name);
+                byte[] buf = PluginCore.ReadDataFile(name);
                 if (buf == null || buf.Length == 0)
                     return null;
 
@@ -1247,12 +1249,12 @@ namespace ACAudio
             Log($"channel ({newoa.Channel.ID}): added weenie play {filename} from ID {obj.Id}");
         }
 
-        public byte[] ReadDataFile(string filename)
+        public static byte[] ReadDataFile(string filename)
         {
             return System.IO.File.ReadAllBytes(GenerateDataPath(filename));
         }
 
-        public string GenerateDataPath(string filename)
+        public static string GenerateDataPath(string filename)
         {
             return System.IO.Path.Combine(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data"), filename);
         }
