@@ -139,8 +139,8 @@ file duracell_chocolates_3.mp3
 dungeon 002E
 
 
-file imbroken.mp3
-dungeon 8A02
+file tax2020_3.mp3
+include olthoidungeons.aca
 
 pop
 
@@ -251,6 +251,8 @@ static 02000485// flame particle effect (for fireplace?)
 static 02000354// fire pit
 
 static 020005AE// open campfire (big flames)
+
+static 020017CF// large wall fire (seen in facility hub entrance)
 
 
 // ------ FOOD SIMMERING --------

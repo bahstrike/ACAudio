@@ -179,10 +179,6 @@ namespace ACAudio
                         Log($"name:{obj.Name}  id:{obj.Id}  class:{obj.ObjectClass}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
                     }
 
-                    /*string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data/ac_anotherorch.mp3");
-                    Audio.Sound snd = Audio.GetSound("test", File.ReadAllBytes(filepath), Audio.DimensionMode._2D, false);
-
-                    Audio.PlaySound(snd);*/
                 };
 
                 View["Coords"].Hit += delegate (object sender, EventArgs e)
@@ -477,37 +473,6 @@ namespace ACAudio
             {
                 sayStuff = 0.0;
 
-                //double maxDist = 35.0;
-
-                /*List<WorldObject> players = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Player), playerPos, maxDist);
-                List<WorldObject> npcs = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Npc), playerPos, maxDist);
-                List<WorldObject> monsters = FilterByDistance(Core.WorldFilter.GetByObjectClass(ObjectClass.Monster), playerPos, maxDist);
-                List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), playerPos, maxDist);*/
-
-                /*if(testObj != null)
-                    WriteToChat($"dist to sound: {(SmithInterop.Vector(testObj.RawCoordinates()) - cameraMat.Position).Magnitude.ToString("0.00")}");*/
-
-
-
-
-                //WorldObject player = Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First;
-                //Log($"behavior:{player.Behavior}  boolkeys:{player.BoolKeys.Count}   doublekeys:{player.DoubleKeys.Count}   gamedataflags1:{player.GameDataFlags1}   longkeys:{player.LongKeys.Count}   physicsdataflags:{player.PhysicsDataFlags}   stringkeys:{player.StringKeys.Count}   type:{player.Type}");
-                /*Log("------------------- LONG KEYS ----------------");
-                foreach(int i in player.DoubleKeys)
-                {
-                    Log($"{(DoubleValueKey)i} = {player.Values((DoubleValueKey)i)}");
-                }*/
-
-                //Log($"{Host.Actions.CombatMode}");
-
-
-                //WriteToChat($"{InstanceNumber}  players:{players.Count}  npcs:{npcs.Count}  monsters:{monsters.Count}  playerPos:{playerPos}");
-
-                //WriteToChat(cameraMat.ToString());
-
-                //WriteToChat($"{InstanceNumber} blah {Core.WorldFilter.GetAll().Count} objects  {Core.WorldFilter.GetLandscape().Count} landscape   player: {coords.NorthSouth},{coords.EastWest}");
-
-
 
                 // only try to play ambient sounds if not portaling
                 if (GetUserEnableAudio() && !IsPortaling)
@@ -518,7 +483,6 @@ namespace ACAudio
 
                         // dynamic objects
 
-#if true
 
                         // now lets play
                         foreach (Config.SoundSourceDynamic src in Config.FindSoundSourcesDynamic())
@@ -567,75 +531,6 @@ namespace ACAudio
                             }
                         }
 
-#else
-                        // lifestone
-                        {
-                            double vol = 1.0;
-                            double minDist = 5.0;
-                            double maxDist = 35.0;
-                            foreach (WorldObject obj in Core.WorldFilter.GetAll())
-                            {
-                                Position? objPos = Position.FromObject(obj);
-                                if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
-                                    continue;
-
-                                double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
-                                if (dist > maxDist)
-                                    continue;
-
-                                if (obj.ObjectClass == ObjectClass.Lifestone)
-                                    PlayForObject(obj, "lifestone.ogg", vol, minDist, maxDist);
-                            }
-                        }
-
-
-                        // portals (dynamic; in case too many are around)
-                        {
-                            double vol = 1.0;
-                            double minDist = 5.0;
-                            double maxDist = 35.0;
-
-                            List<WorldObject> portals = new List<WorldObject>();
-                            foreach (WorldObject obj in Core.WorldFilter.GetAll())
-                            {
-                                Position? objPos = Position.FromObject(obj);
-                                if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
-                                    continue;
-
-                                double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
-                                if (dist > maxDist)
-                                    continue;
-
-                                if (obj.ObjectClass == ObjectClass.Portal)
-                                    portals.Add(obj);
-                            }
-
-
-                            // if we got more than like 3 then tone em back
-                            if (portals.Count > 3)
-                            {
-                                vol *= 0.4;
-                                minDist *= 0.9;
-                                maxDist *= 0.5;
-                            }
-
-                            foreach (WorldObject obj in portals)
-                            {
-                                // re-check with updated maxDist
-                                Position? objPos = Position.FromObject(obj);
-                                if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
-                                    continue;
-
-                                double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
-                                if (dist > maxDist)
-                                    continue;
-
-                                PlayForObject(obj, "portal.ogg", vol, minDist, maxDist);
-                            }
-
-                        }
-
-#endif
 
 
                     }
@@ -644,71 +539,6 @@ namespace ACAudio
                     // static positions
                     {
 
-                        // candle sounds lol
-
-#if false
-                        // add direct coordinates if we can pass inside object..  if standing on top, add to list below
-                        List<Position> positions = new List<Position>(new Position[] {
-                        // town network
-                        Position.FromLocal(0x00070157, 74.9212, -83.2331, 0.0050),
-                        Position.FromLocal(0x00070157, 83.3264, -75.0515, 0.0050),
-                        Position.FromLocal(0x00070157, 83.2375, -64.9197, 0.0050),
-                        Position.FromLocal(0x00070157, 74.9133, -56.6920, 0.0050),
-                        Position.FromLocal(0x00070157, 64.8490, -56.8161, 0.0050),
-                        Position.FromLocal(0x00070157, 56.6511, -65.0491, 0.0050),
-                        Position.FromLocal(0x00070157, 56.7121, -74.9459, 0.0050),
-                        Position.FromLocal(0x00070157, 65.0106, -83.3552, 0.0050),
-
-                        // town network annex
-                        Position.FromLocal(0x00070157, 67.6610, -166.0082, -5.9950),
-                        Position.FromLocal(0x00070157, 72.3911, -166.0279, -5.9950),
-                        Position.FromLocal(0x00070157, 75.9901, -162.3565, -5.9950),
-                        Position.FromLocal(0x00070157, 75.9803, -157.6755, -5.9950),
-                        Position.FromLocal(0x00070157, 64.0190, -157.6426, -5.9950),
-                        Position.FromLocal(0x00070157, 64.0199, -162.3036, -5.9950),
-                        });
-
-
-                        // i was prolly on top of candle post for these; might wanna subtract some Z...
-                        // assuming around 6-foot human toon..  a chest (origin)->foot is estimated at perhaps
-                        // 50" or 1.27 meters
-                        Vec3 adjust = new Vec3(0.0, 0.0, -1.27);
-                        foreach (Position pos in new Position[]
-                        {
-                        // cragstone
-                        /*new Vec3(175.1502, 113.1925, 34.2100),// in town
-                        new Vec3(158.3660, 150.9660, 34.2100),// in town
-                        new Vec3(162.6672, 63.5380, 34.2100), // in town
-                        new Vec3(160.2169, 36.2300, 34.2100), // in town
-                        new Vec3(149.8169, 21.0506, 34.2100), // in town
-                        new Vec3(19.2658, 101.0283, 72.2100), // in town
-                        new Vec3(41.4031, 61.4495, 56.2100), // in town
-
-                        new Vec3(81.0427, 89.3640, 56.2100),//town up hill
-
-                        new Vec3(151.4200, 172.2459, 36.2050),// meeting hall
-                        new Vec3(148.5136, 175.7152, 36.2184),// meeting hall*/
-
-
-                        // holtburg
-                        Position.FromLocal(0xAAB4001C, 83.1785, 80.5087, 57.2859),
-                        Position.FromLocal(0xA9B40035, 155.8313, 114.7828, 68.2100),
-                        Position.FromLocal(0xA9B4002E, 133.4774, 136.2814, 68.2100),
-                        Position.FromLocal(0xA9B4001F, 89.4780, 152.0241, 66.7978),
-                        Position.FromLocal(0xA9B4000E, 41.6327, 132.6815, 68.2100),
-                        Position.FromLocal(0xA9B40006, 18.5117, 126.5471, 68.2100),
-                        Position.FromLocal(0xA9B40021, 105.9395, 17.0463, 96.2100),
-                        Position.FromLocal(0xA9B4002A, 139.0259, 28.3847, 96.2100),
-                        Position.FromLocal(0xA9B40032, 156.8629, 32.3431, 98.0754),
-                        Position.FromLocal(0xA9B40032, 153.2320, 35.5311, 98.1161),
-                        })
-                        {
-                            Position tmp = pos;
-                            tmp.Local += adjust;
-
-                            positions.Add(tmp);
-                        }
-#endif
 
 
                         // build list of final candidates
@@ -735,15 +565,6 @@ namespace ACAudio
                         }
 
 
-#if false
-                        // if we got more than like 3 then tone em back
-                        if (finalPositions.Count > 3)
-                        {
-                            vol *= 0.4;
-                            minDist *= 0.9;
-                            maxDist *= 0.5;
-                        }
-#endif
 
 
                         // dispatch
@@ -775,53 +596,12 @@ namespace ACAudio
                     }
                 }
 
-#if true
 
                 (View["Info"] as HudStaticText).Text =
                     $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0 * 1000.0)}usec  mem:{((double)Audio.MemoryUsageBytes/1024.0/1024.0).ToString("#0.0")}mb\n" +
                     $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  sounds:{Audio.SoundCount}\n" +
                     $"cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
-#else
-                UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8);
-                uint lb = frame.landblock;//(uint)player.Values(LongValueKey.Landblock);
-
-                int lbX = (int)((lb & 0xFF000000) >> 24);
-                int lbY = (int)((lb & 0x00FF0000) >> 16);
-                int area = (int)((lb & 0x0000FF00) >> 8);
-                int cell = (int)(lb & 0x000000FF);  // 1-based
-                int cellX = (cell - 1) / 8;
-                int cellY = (cell - 1) % 8;
-
-
-
-
-                const double cellScale = 24.0;  // terrain landblock is 8x8 -> 192x192   therefore cellX * 24.0  is local coord in landblock
-                Vec2 cellLL = new Vec2((double)cellX * cellScale, (double)cellY * cellScale);
-
-                Vec2 landblockLL = new Vec2((double)lbX * 192.0, (double)lbY * 192.0); // terrain landblock is 192x192
-
-                Vec2 globalLL = landblockLL;// + cellLL;
-
-
-                Vec3 globalCamPos = globalLL.At3DZ(0.0) + cameraPos;
-
-                // SW = lower left = negative
-                // NE = upper right = positive
-                Vec2 cornerSW = new Vec2(-101.95, -101.95); // landblock 0,0
-                Vec2 cornerNE = new Vec2(102.05, 102.05); // landblock 256,256   (note may need to subtract landblock size to get SW corner of last landblock)
-
-
-
-
-                //Log($"activeobjs:{ActiveObjectAmbients.Count}  audiochannels:{Audio.ChannelCount}");
-                (View["Info"] as HudStaticText).Text =
-                    $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  cam:{cameraPos}  lb({(LandblockInside(lb) ? "I" : "T")}):0x{lb.ToString("X8")}\n" +
-                    $"lb:{lbX},{lbY}  area:{area}  cell:{cellX},{cellY}\n" +
-                    $"landblockLL:{landblockLL}\ncellLL:{cellLL}\nglobalLL:{globalLL}\n" +
-                    $"globalCamPos:{globalCamPos}";//    camDist:{camDist}\n" +
-                    //$"quat:{frame.qw},{frame.qx},{frame.qy},{frame.qz}";
-#endif
             }
 
 
@@ -1287,7 +1067,6 @@ namespace ACAudio
                         }
                         else
                         {
-#if true
                             // check for dungeon music?
                             Config.SoundSourceDungeon src = Config.FindSoundSourceDungeonSong(plrPos.Value.DungeonID);
                             if (src != null)
@@ -1302,15 +1081,7 @@ namespace ACAudio
 
                                 handled = true;
                             }
-#else
-                        // test haxx;  try to keep portal music going for town network
-                        if (plrPos?.DungeonID == 0x0007)
-                            Music.Play(PortalSongFilename, false);
-                        else
-                            Music.Play("ac_someoffbeat.mp3", false);
 
-                            handled = true;
-#endif
                         }
 
 

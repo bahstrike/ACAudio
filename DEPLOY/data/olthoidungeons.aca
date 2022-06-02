@@ -1,0 +1,15 @@
+// just a list of dungeon instances
+
+
+// pincer dungeons
+dungeon 0284
+dungeon 0283
+dungeon 6679
+dungeon 0282
+dungeon 027C
+dungeon 027D
+dungeon 6678
+dungeon 667A
+// unknown for hive eviscerator burrow  (use "pos" if above ground?)
+// unknown for hive warrior mound  (use "pos" if above ground?)
+// unknown for marescent plateau  (use "pos" if above ground?)
