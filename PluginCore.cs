@@ -1252,20 +1252,45 @@ namespace ACAudio
                 if (GetUserEnableMusic())
                 {
                     Position? plrPos = Position.FromObject(Player);
-
-                    // for now (testing) just start playing a song depending on terrain or inside lol
-                    if (plrPos?.IsTerrain ?? false)
-                        Music.Play("ac_anotherorch.mp3", false);
-                    else
+                    if (plrPos.HasValue)
                     {
+
+                        // for now (testing) just start playing a song depending on terrain or inside lol
+                        if (plrPos.Value.IsTerrain)
+                        {
+                            Music.Play("ac_anotherorch.mp3", false);
+                            handled = true;
+                        }
+                        else
+                        {
+#if true
+                            // check for dungeon music?
+                            Config.SoundSourceDungeon src = Config.FindSoundSourceDungeonSong(plrPos.Value.DungeonID);
+                            if (src != null)
+                            {
+                                Music.Play(src.Sound.file, false);
+
+                                handled = true;
+                            }
+                            else
+                            {
+                                Music.Play("ac_someoffbeat.mp3", false);
+
+                                handled = true;
+                            }
+#else
                         // test haxx;  try to keep portal music going for town network
                         if (plrPos?.DungeonID == 0x0007)
                             Music.Play(PortalSongFilename, false);
                         else
                             Music.Play("ac_someoffbeat.mp3", false);
-                    }
 
-                    handled = true;
+                            handled = true;
+#endif
+                        }
+
+
+                    }
                 }
 
                 // we must ensure to stop portal music even of something else didnt decide to transition

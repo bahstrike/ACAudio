@@ -164,6 +164,26 @@ namespace ACAudio
             return ret.ToArray();
         }
 
+        public static SoundSourceDungeon FindSoundSourceDungeonSong(int dungeonID)
+        {
+            foreach(SoundSource src in Sources)
+            {
+                SoundSourceDungeon dungeonSrc = src as SoundSourceDungeon;
+                if (dungeonSrc == null)
+                    continue;
+
+                if (dungeonSrc.DungeonID != dungeonID)
+                    continue;
+
+                if (dungeonSrc.Sound.mode != SoundMode.Song)
+                    continue;
+
+                return dungeonSrc;
+            }
+
+            return null;
+        }
+
 
         private static Stack<SoundAttributes> SoundAttributeStack = new Stack<SoundAttributes>();
         private static SoundAttributes CurrentSound
