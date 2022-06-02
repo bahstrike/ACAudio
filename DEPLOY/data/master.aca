@@ -301,6 +301,11 @@ pos DB540102,108.8787,132.4056,19.5050//shoushi casino
 pos A9B20106,84.0530,84.1775,94.0050//holtburg casino
 pos 7E640119,107.5988,107.7285,12.0050//yaraq casino
 
+pos 0xC6A90024,103.6416,91.1191,42.0050 // arwic legendary chests
+
+pos 0xBB9F0114,140.2661,108.2228,63.6600 // manaforge in cragstone
+pos 0xE44D0100,180.0198,116.1441,17.6600 // manaforge in hebian-to
+pos 0x8090015E,12.1244,20.4491,117.6600 // manaforge in zaikhal
 
 // ------ PUB CROWD --------
 file pub.ogg

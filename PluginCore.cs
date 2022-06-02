@@ -380,7 +380,20 @@ namespace ACAudio
             }
         }
 
-        public const int BadWorldID = -1;
+        private long LoginCompleteTimestamp = 0;
+        public double WorldTime
+        {
+            get
+            {
+                if(LoginCompleteTimestamp == 0)
+                {
+                    Log("logincompletetimestamp is 0 so the answer is no");
+                    return 0.0;
+                }
+
+                return PerfTimer.TimeBetween(LoginCompleteTimestamp, PerfTimer.Timestamp);
+            }
+        }
 
         long lastTimestamp = 0;
         private void _Process(object sender, EventArgs e)
@@ -604,7 +617,7 @@ namespace ACAudio
 
 
                 (View["Info"] as HudStaticText).Text =
-                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0 * 1000.0)}usec  mem:{((double)Audio.MemoryUsageBytes/1024.0/1024.0).ToString("#0.0")}mb\n" +
+                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0 * 1000.0)}usec  mem:{((double)Audio.MemoryUsageBytes/1024.0/1024.0).ToString("#0.0")}mb   worldtime:{WorldTime.ToString(MathLib.ScalarFormattingString)}\n" +
                     $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  sounds:{Audio.SoundCount}\n" +
                     $"cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
@@ -1056,43 +1069,7 @@ namespace ACAudio
                 Log("changeportalmode DONE");
 
 
-                bool handled = false;
-
-                // bg music?
-                if (GetUserEnableMusic())
-                {
-                    Position? plrPos = Position.FromObject(Player);
-                    if (plrPos.HasValue)
-                    {
-
-                        // for now (testing) just start playing a song depending on terrain or inside lol
-                        if (plrPos.Value.IsTerrain)
-                        {
-                            Music.Play("ac_anotherorch.mp3", false);
-                            handled = true;
-                        }
-                        else
-                        {
-                            // check for dungeon music?
-                            Config.SoundSourceDungeon src = Config.FindSoundSourceDungeonSong(plrPos.Value.DungeonID);
-                            if (src != null)
-                            {
-                                Music.Play(src.Sound.file, false);
-
-                                handled = true;
-                            }
-                            else
-                            {
-                                Music.Play("ac_someoffbeat.mp3", false);
-
-                                handled = true;
-                            }
-
-                        }
-
-
-                    }
-                }
+                bool handled = TryMusic();
 
                 // we must ensure to stop portal music even of something else didnt decide to transition
                 if(!handled)
@@ -1103,15 +1080,55 @@ namespace ACAudio
             }
         }
 
+        private bool TryMusic()
+        {
+            if (!GetUserEnableMusic())
+                return false;
+
+            Position? plrPos = Position.FromObject(Player);
+            if (plrPos.HasValue)
+            {
+
+                // for now (testing) just start playing a song depending on terrain or inside lol
+                if (plrPos.Value.IsTerrain)
+                {
+                    Music.Play("ac_anotherorch.mp3", false);
+                    return true;
+                }
+                else
+                {
+                    // check for dungeon music?
+                    Config.SoundSourceDungeon src = Config.FindSoundSourceDungeonSong(plrPos.Value.DungeonID);
+                    if (src != null)
+                    {
+                        Music.Play(src.Sound.file, false);
+
+                        return true;
+                    }
+                    else
+                    {
+                        Music.Play("ac_someoffbeat.mp3", false);
+
+                        return true;
+                    }
+
+                }
+
+            }
+
+
+            // nothing played
+            return false;
+        }
+
         [BaseEvent("LoginComplete", "CharacterFilter")]
         private void CharacterFilter_LoginComplete(object sender, EventArgs e)
         {
             WriteToChat($"Startup");
 
 
-            // dont play music here cause its probably within portal music
-
-
+            // start our world timer
+            LoginCompleteTimestamp = PerfTimer.Timestamp;
         }
 
         /// <summary>
