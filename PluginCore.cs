@@ -215,6 +215,33 @@ namespace ACAudio
                     (View["PortalMusicEnable"] as HudCheckBox).Checked = true;
                 };
 
+                View["NearestDID"].Hit += delegate (object sender, EventArgs e)
+                {
+                    List<StaticPosition> list = LoadStaticPositions(true);
+
+                    Position? pos = Position.FromObject(Player);
+                    if(pos.HasValue)
+                    {
+                        double nearestDist = MathLib.Infinity;
+                        uint nearestDid = 0;
+
+                        foreach(StaticPosition sp in list)
+                        {
+                            if (!sp.Position.IsCompatibleWith(pos.Value))
+                                continue;
+
+                            double dist = (sp.Position.Global - pos.Value.Global).Magnitude;
+                            if(dist < nearestDist)
+                            {
+                                nearestDist = dist;
+                                nearestDid = sp.ID;
+                            }
+                        }
+
+                        WriteToChat($"Nearest DID: {nearestDid.ToString("X8")}");
+                    }
+                };
+
                 View["FMOD"].Hit += delegate (object sender, EventArgs e)
                 {
                     //System.Diagnostics.Process.Start("https://fmod.com/");
@@ -264,8 +291,6 @@ namespace ACAudio
                 Core.CharacterFilter.Logoff += _CharacterFilter_Logoff;
 
 
-                LoadStaticPositions();
-
                 ReloadConfig();
 
 
@@ -282,7 +307,13 @@ namespace ACAudio
         {
             Config.Load("master.aca");
 
-            Log($"Parsed {Config.Sources.Count} sound sources from config");
+            Log($"Parsed {Config.Sources.Count} sound sources from master.aca");
+
+
+            // reload static positions;  we will only keep what we registered from configs
+            StaticPositions = LoadStaticPositions(false);
+
+            Log($"Loaded {StaticPositions.Count} positions from static.dat");
         }
 
         public class StaticPosition
@@ -299,32 +330,39 @@ namespace ACAudio
 
         public List<StaticPosition> StaticPositions = new List<StaticPosition>();
 
-        private void LoadStaticPositions()
+        private static List<StaticPosition> LoadStaticPositions(bool forceAll)
         {
-            StaticPositions.Clear();
+            List<StaticPosition> list = new List<StaticPosition>();
 
             ZipUtil zip = null;
             try
             {
-                zip = new ZipUtil_File(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "static.dat"), ZipUtil_File.Mode.Open);
-
-                int numEntries = zip.ReadInt();
-                for (int x = 0; x < numEntries; x++)
+                string filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "static.dat");
+                using (Stream stream = new System.IO.Compression.GZipStream(File.OpenRead(filepath), System.IO.Compression.CompressionMode.Decompress))
                 {
-                    uint id = zip.ReadUInt();
-                    Position pos = Position.FromStream(zip, true/*save filesize*/);
+                    zip = new ZipUtil_Stream(stream);
 
-                    StaticPositions.Add(new StaticPosition(id, pos));
+                    int numEntries = zip.ReadInt();
+                    for (int x = 0; x < numEntries; x++)
+                    {
+                        uint id = zip.ReadUInt();
+                        Position pos = Position.FromStream(zip, true/*save filesize*/);
+
+                        // if config doesnt reference then dont bother keeping
+                        if (!forceAll && Config.FindSoundSourceStatic(id) == null)
+                            continue;
+
+                        list.Add(new StaticPosition(id, pos));
+                    }
                 }
-
-                Log($"Loaded {StaticPositions.Count} from static.dat");
             }
             finally
             {
                 if(zip != null)
                     zip.Close();
             }
-            
+
+            return list;
         }
 
         private bool LogOff = false;
@@ -387,7 +425,7 @@ namespace ACAudio
             {
                 if(LoginCompleteTimestamp == 0)
                 {
-                    Log("logincompletetimestamp is 0 so the answer is no");
+                    //Log("logincompletetimestamp is 0 so the answer is no");
                     return 0.0;
                 }
 
@@ -549,8 +587,6 @@ namespace ACAudio
                                 PlayForObject(obj, src.Sound.file, src.Sound.vol * volAdjust, src.Sound.mindist * minDistAdjust, src.Sound.maxdist * maxDistAdjust);
                             }
                         }
-
-
 
                     }
 
