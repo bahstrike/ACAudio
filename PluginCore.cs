@@ -525,7 +525,45 @@ namespace ACAudio
 
                         // dynamic objects
 
+#if true
 
+                        // now lets play
+                        foreach (Config.SoundSourceDynamic src in Config.FindSoundSourcesDynamic())
+                        {
+                            List<WorldObject> finalObjects = new List<WorldObject>();
+
+                            foreach(WorldObject obj in Core.WorldFilter.GetByObjectClass(src.ObjectClass))
+                            {
+                                Position? objPos = Position.FromObject(obj);
+                                if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
+                                    continue;
+
+                                double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
+                                if (dist > src.Sound.maxdist)
+                                    continue;
+
+                                finalObjects.Add(obj);
+                            }
+
+                            // if we have a cluster, reduce vol/dist
+                            double volAdjust = 1.0;
+                            double minDistAdjust = 1.0;
+                            double maxDistAdjust = 1.0;
+
+                            if (finalObjects.Count > 3)
+                            {
+                                volAdjust = 0.4;
+                                minDistAdjust = 0.9;
+                                maxDistAdjust = 0.5;
+                            }
+
+                            foreach (WorldObject obj in finalObjects)
+                            {
+                                PlayForObject(obj, src.Sound.file, src.Sound.vol * volAdjust, src.Sound.mindist * minDistAdjust, src.Sound.maxdist * maxDistAdjust);
+                            }
+                        }
+
+#else
                         // lifestone
                         {
                             double vol = 1.0;
@@ -592,6 +630,8 @@ namespace ACAudio
                             }
 
                         }
+
+#endif
 
 
                     }

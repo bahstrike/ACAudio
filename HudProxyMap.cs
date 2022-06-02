@@ -155,45 +155,49 @@ namespace ACAudio
 
 
             // dynamic ambients
-            if (false)
-                foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetAll())
+            if (true)
+                foreach (Config.SoundSourceDynamic src in Config.FindSoundSourcesDynamic())
                 {
-                    //if (obj.Id == playerID)
-                        //continue;
-
-                    Position? objPos = Position.FromObject(obj);
-                    if (!objPos.HasValue)
-                        continue;
-
-                    Vec3 offset = (objPos.Value.Global - playerPos);
-
-
-                    Vec2 pt = offset.XY * drawScale;
-
-                    // up is down, down is up :P
-                    pt.y *= -1.0;
-
-                    //PluginCore.Log($"lol {pt}");
-
-
-                    bool isAmbient = false;
-                    foreach(PluginCore.Ambient amb in pc.ActiveAmbients)
+                    foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetByObjectClass(src.ObjectClass))
                     {
-                        PluginCore.ObjectAmbient objAmb = amb as PluginCore.ObjectAmbient;
-                        if(objAmb != null)
+                        Position? objPos = Position.FromObject(obj);
+                        if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(camPos))
+                            continue;
+
+                        Vec3 offset = (objPos.Value.Global - playerPos);
+
+                        if (offset.Magnitude > searchDist)//src.Sound.maxdist)
+                            continue;
+
+
+                        Vec2 pt = offset.XY * drawScale;
+
+                        // up is down, down is up :P
+                        pt.y *= -1.0;
+
+                        //PluginCore.Log($"lol {pt}");
+
+
+                        bool isAmbient = false;
+                        foreach (PluginCore.Ambient amb in pc.ActiveAmbients)
                         {
-                            if(objAmb.WeenieID == obj.Id)
+                            PluginCore.ObjectAmbient objAmb = amb as PluginCore.ObjectAmbient;
+                            if (objAmb != null)
                             {
-                                isAmbient = true;
-                                break;
+                                if (objAmb.WeenieID == obj.Id)
+                                {
+                                    isAmbient = true;
+                                    break;
+                                }
+
                             }
 
                         }
 
+                        iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
                     }
-
-                    iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
                 }
+
 
 
 

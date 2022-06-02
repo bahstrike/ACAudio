@@ -128,6 +128,7 @@ namespace ACAudio
             return null;
         }
 
+        // does not search distance; just compatible landblock
         public static SoundSourcePosition[] FindSoundSourcesPosition(Position compatiblePos)
         {
             List<SoundSourcePosition> ret = new List<SoundSourcePosition>();
@@ -142,6 +143,22 @@ namespace ACAudio
                     continue;
 
                 ret.Add(posSrc);
+            }
+
+            return ret.ToArray();
+        }
+
+        public static SoundSourceDynamic[] FindSoundSourcesDynamic()
+        {
+            List<SoundSourceDynamic> ret = new List<SoundSourceDynamic>();
+
+            foreach(SoundSource src in Sources)
+            {
+                SoundSourceDynamic dynSrc = src as SoundSourceDynamic;
+                if (dynSrc == null)
+                    continue;
+
+                ret.Add(dynSrc);
             }
 
             return ret.ToArray();
