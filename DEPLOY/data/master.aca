@@ -2,6 +2,8 @@
 //
 // All plugin music and sound behaviors are controlled from MASTER.ACA so feel free to customize
 // and make your own sound pack :)
+//
+// Note:  .OGG is preferred over .MP3 for sounds that should seamlessly loop.
 
 
 
@@ -114,9 +116,7 @@
 
 
 //--------------------------------------------------------------------------------------------------------
-
-include test.aca
-
+//             END OF COMMENTS, START OF REAL CONFIG
 //--------------------------------------------------------------------------------------------------------
 
 
@@ -166,6 +166,15 @@ dynamic lifestone
 
 file portal.ogg
 dynamic portal
+
+
+// LOL this wil be annoying
+push
+	vol 0.3
+	file questcomplete.mp3
+	//dynamic npc "Town Crier"
+pop
+
 
 pop // end dynamic objects
 
@@ -243,8 +252,8 @@ static 02000AA3// fancy water fountain
 // ------ FIRES --------
 file campfire.ogg
 vol 0.3
-mindist 4.0
-maxdist 12.0
+mindist 3.0
+maxdist 16.0
 
 static 02000485// flame particle effect (for fireplace?)
 

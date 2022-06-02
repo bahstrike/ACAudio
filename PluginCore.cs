@@ -147,7 +147,7 @@ namespace ACAudio
                 Log("----------------------------------------------------------------------");
 
 
-                Log("Generate virindi view");
+                //Log("Generate virindi view");
                 VirindiViewService.XMLParsers.Decal3XMLParser parser = new VirindiViewService.XMLParsers.Decal3XMLParser();
                 VirindiViewService.ViewProperties properties;
                 VirindiViewService.ControlGroup controls;
@@ -157,7 +157,7 @@ namespace ACAudio
 
 
 
-                Log("hook events");
+                //Log("hook events");
                 View.ThemeChanged += delegate (object sender, EventArgs e)
                 {
                     RegenerateLogos();
@@ -185,7 +185,8 @@ namespace ACAudio
                 {
                     WriteToChat("WEEE");
 
-                    Log($"Position.FromLocal({Position.FromObject(Player)}),");
+                    // the log message is intended to be copy&paste to the .ACA files
+                    Log($"pos {Position.FromObject(Player).ToString().Replace(" ", "")/*condense*/}");
                 };
 
                 (View["Enable"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
@@ -195,6 +196,11 @@ namespace ACAudio
 
                 View["Reload"].Hit += delegate (object sender, EventArgs e)
                 {
+                    // kill ambients; let reloaded config generate them again
+                    foreach(Ambient amb in ActiveAmbients)
+                        amb.Channel.Stop();
+                    ActiveAmbients.Clear();
+                    
                     ReloadConfig();
                 };
 
@@ -240,21 +246,21 @@ namespace ACAudio
                 }
 
 
-                Log("regen logos");
+                //Log("regen logos");
                 RegenerateLogos();
 
 
-                Log("init audio");
+                //Log("init audio");
                 if (!Audio.Init(1000, dopplerscale: 0.135f))
                     Log("Failed to initialize Audio");
 
                 Music.Init();
 
-                Log("hook render");
+                //Log("hook render");
                 Core.RenderFrame += _Process;
 
 
-                Log("hook logoff");
+                //Log("hook logoff");
                 Core.CharacterFilter.Logoff += _CharacterFilter_Logoff;
 
 

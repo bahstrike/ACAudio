@@ -13,3 +13,10 @@ dungeon 667A
 // unknown for hive eviscerator burrow  (use "pos" if above ground?)
 // unknown for hive warrior mound  (use "pos" if above ground?)
 // unknown for marescent plateau  (use "pos" if above ground?)
+
+
+// matron
+dungeon 6346
+dungeon 6347
+dungeon 6145
+dungeon 6146
