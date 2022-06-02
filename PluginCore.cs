@@ -531,6 +531,17 @@ namespace ACAudio
                                 if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
                                     continue;
 
+                                // ignore items that were previously on ground but now picked up
+                                if (obj.Values(LongValueKey.Container) != 0)
+                                    continue;
+
+                                // optionally filter by name
+                                if(!string.IsNullOrEmpty(src.Name))
+                                {
+                                    if (!obj.Name.Equals(src.Name))
+                                        continue;
+                                }
+
                                 double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
                                 if (dist > src.Sound.maxdist)
                                     continue;
@@ -870,6 +881,19 @@ namespace ACAudio
                         discardReason = $"bad dist {dist} > {maxDist}";
                 }
 
+
+                if(discardReason == null)
+                {
+                    ObjectAmbient oa = a as ObjectAmbient;
+                    if(oa != null)
+                    {
+                        WorldObject wo = oa.WorldObject;
+                        if (wo == null)
+                            discardReason = "object disappeared";
+                        else if (wo.Values(LongValueKey.Container) != 0)
+                            discardReason = "object in container";
+                    }
+                }
 
 
                 // decide whether to remove or update

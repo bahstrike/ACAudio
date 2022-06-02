@@ -77,11 +77,13 @@ namespace ACAudio
         public class SoundSourceDynamic : SoundSource
         {
             public readonly ObjectClass ObjectClass;
+            public readonly string Name;
 
-            public SoundSourceDynamic(SoundAttributes _Sound, ObjectClass _ObjectClass)
+            public SoundSourceDynamic(SoundAttributes _Sound, ObjectClass _ObjectClass, string _Name)
                 : base(_Sound)
             {
                 ObjectClass = _ObjectClass;
+                Name = _Name;
             }
         }
 
@@ -376,16 +378,31 @@ namespace ACAudio
 
                             case "dynamic":
                                 {
+                                    string className;
+                                    string objectName;
+
+                                    int spaceI = content.IndexOfAny(new char[] { ' ', '\t' });
+                                    if(spaceI == -1)
+                                    {
+                                        className = content;
+                                        objectName = null;
+                                    } else
+                                    {
+                                        className = content.Substring(0, spaceI);
+                                        objectName = content.Substring(spaceI).Trim(new char[] { ' ', '\t', '\"' });
+                                    }
+
+
                                     ObjectClass oc;
 
                                     int _oc;
-                                    if (int.TryParse(content, out _oc))
+                                    if (int.TryParse(className, out _oc))
                                         oc = (ObjectClass)_oc;
                                     else
-                                        oc = (ObjectClass)Enum.Parse(typeof(ObjectClass), content, true);
+                                        oc = (ObjectClass)Enum.Parse(typeof(ObjectClass), className, true);
 
                                     //Log($"NEED TO REGISTER DYNAMIC {oc}");
-                                    Sources.Add(new SoundSourceDynamic(CurrentSound, oc));
+                                    Sources.Add(new SoundSourceDynamic(CurrentSound, oc, objectName));
                                 }
                                 break;
 

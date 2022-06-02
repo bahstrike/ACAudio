@@ -97,8 +97,10 @@
 // static [id]
 // All known coordinates in static.dat for the specified object DID.
 //
-// dynamic [objectclass]
-// The name or ID number of a Decal ObjectClass.
+// dynamic [objectclass {"Name"}]
+// objectclass is the name or ID number of a Decal ObjectClass.
+// "Name" is optional and allows filtering by name.
+//
 //
 // pos [landblock,localX,localY,localZ]
 // Manually specify coordinates.
@@ -201,6 +203,7 @@ static 020009A3// standing blue flame
 
 static 01000A2F// fireplace
 
+dynamic misc "Torch" // dropped torches
 
 
 // ------ LANTERNS --------
