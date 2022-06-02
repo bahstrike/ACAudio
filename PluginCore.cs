@@ -86,16 +86,7 @@ namespace ACAudio
             return cb.Checked;
         }
 
-        public bool IsPlayingPortalMusic
-        {
-            get
-            {
-                if (Music.Channel == null || !Music.Channel.IsPortal)
-                    return false;
-
-                return true;
-            }
-        }
+        public bool IsPortaling = false;
 
         public double GetUserVolume()
         {
@@ -276,6 +267,7 @@ namespace ACAudio
                 ReloadConfig();
 
 
+                IsPortaling = true;
                 StartPortalSong();// first time login portal deserves one
             }
             catch (Exception ex)
@@ -340,6 +332,7 @@ namespace ACAudio
                 return;
 
             Log("LOGOFF LOL");
+            IsPortaling = true;
             StartPortalSong();
 
             LogOff = true;
@@ -517,7 +510,7 @@ namespace ACAudio
 
 
                 // only try to play ambient sounds if not portaling
-                if (GetUserEnableAudio() && !IsPlayingPortalMusic)
+                if (GetUserEnableAudio() && !IsPortaling)
                 {
 
 
@@ -839,7 +832,7 @@ namespace ACAudio
                 // kill all ambients if portaling
                 if (discardReason == null)
                 {
-                    if (IsPlayingPortalMusic)
+                    if (IsPortaling)
                         discardReason = "portaling";
                 }
 
@@ -1246,6 +1239,7 @@ namespace ACAudio
                 // start sound
                 Log("changeportalmode START");
 
+                IsPortaling = true;
                 StartPortalSong();
             } else
             {
@@ -1277,6 +1271,9 @@ namespace ACAudio
                 // we must ensure to stop portal music even of something else didnt decide to transition
                 if(!handled)
                     Music.Stop();
+
+
+                IsPortaling = false;
             }
         }
 
