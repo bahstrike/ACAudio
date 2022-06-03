@@ -959,6 +959,10 @@ namespace ACAudio
                 Channel.Volume = 0.0;
                 Channel.SetTargetVolume(FinalVolume, 0.08);//slide fade-in; especially in case of portaling
                 Channel.SetMinMaxDistance(FinalMinDist, FinalMaxDist);
+
+                if (Source.Sound.randomstart)
+                    Channel.Time = MathLib.random.NextDouble() * snd.Length;
+
                 Channel.Play();
             }
 
