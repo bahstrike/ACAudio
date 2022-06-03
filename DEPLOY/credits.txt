@@ -38,3 +38,5 @@ pub				https://freesound.org/people/Islabonita/sounds/178525/
 simmering			https://freesound.org/people/Selector/sounds/415892/
 campfire			https://freesound.org/people/florianreichelt/sounds/563764/
 forge				https://freesound.org/people/joe_anderson22/sounds/390562/
+towncrier_f_unwanteditems	https://ttsreader.com/
+towncrier_m_unwanteditems	https://ttsreader.com/
