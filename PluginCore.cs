@@ -176,15 +176,16 @@ namespace ACAudio
                     Log("--------------- WE BE DUMPIN ------------");
                     foreach (WorldObject obj in allobj)
                     {
-                        /*
+                        
                         string longkeys = string.Empty;
                         foreach(int i in obj.LongKeys)
                             longkeys += $"{(LongValueKey)i},";
 
+                        /*
                         "flags:{obj.Values(LongValueKey.Flags)}  type:{obj.Values(LongValueKey.Type)}   behavior:{obj.Values(LongValueKey.Behavior)}  category:{obj.Values(LongValueKey.Category)}   longkeys:{longkeys}"
                         */
 
-                        Log($"name:{obj.Name}  id:{obj.Id}  class:{obj.ObjectClass}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
+                        Log($"name:{obj.Name}  id:{obj.Id}  class:{obj.ObjectClass}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
                     }
 
                 };
@@ -499,6 +500,9 @@ namespace ACAudio
         double lastProcessTime = 1.0;
 
 
+        double lastRequestIdWorldTime = 0.0;
+
+
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
@@ -578,9 +582,36 @@ namespace ACAudio
                                         continue;
                                 }
 
+
                                 double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
                                 if (dist > src.Sound.maxdist)
                                     continue;
+
+
+
+#if true
+                                if (obj.ObjectClass == ObjectClass.Npc)
+                                {
+                                    // filter by gender?  apparently we need to "appraise" first, if the key is not there
+                                    if (!obj.HasIdData)//!obj.LongKeys.Contains(7))//(int)LongValueKey.Species))
+                                    {
+                                        if ((WorldTime - lastRequestIdWorldTime) > 0.2)// limit our queries
+                                        {
+                                            Log($"REQUESTING INFORMATIONS FOR OBJ {obj.Id}");
+                                            Host.Actions.RequestId(obj.Id);
+
+                                            lastRequestIdWorldTime = WorldTime;
+                                        }
+
+                                        // we should skip for now since the filter data we need is not yet present..
+                                        // but just proceed for now since npc gender check isnt in config yet
+                                        //continue;
+                                    }
+
+                                }
+
+#endif
+
 
                                 finalObjects.Add(obj);
                             }
