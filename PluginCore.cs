@@ -176,6 +176,14 @@ namespace ACAudio
                     Log("--------------- WE BE DUMPIN ------------");
                     foreach (WorldObject obj in allobj)
                     {
+                        /*
+                        string longkeys = string.Empty;
+                        foreach(int i in obj.LongKeys)
+                            longkeys += $"{(LongValueKey)i},";
+
+                        "flags:{obj.Values(LongValueKey.Flags)}  type:{obj.Values(LongValueKey.Type)}   behavior:{obj.Values(LongValueKey.Behavior)}  category:{obj.Values(LongValueKey.Category)}   longkeys:{longkeys}"
+                        */
+
                         Log($"name:{obj.Name}  id:{obj.Id}  class:{obj.ObjectClass}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
                     }
 
@@ -889,6 +897,14 @@ namespace ACAudio
                 }
             }
 
+            public bool IsSong
+            {
+                get
+                {
+                    return (Source.Sound.mode == Config.SoundMode.Song);
+                }
+            }
+
             public int ChannelID
             {
                 get
@@ -957,7 +973,7 @@ namespace ACAudio
                 Channel = Audio.PlaySound(snd, true);
                 Channel.SetPosition(Position.Global, Vec3.Zero);
                 Channel.Volume = 0.0;
-                Channel.SetTargetVolume(FinalVolume, 0.08);//slide fade-in; especially in case of portaling
+                Channel.SetTargetVolume(FinalVolume, Source.Sound.fade);
                 Channel.SetMinMaxDistance(FinalMinDist, FinalMaxDist);
 
                 if (Source.Sound.randomstart)
@@ -966,6 +982,7 @@ namespace ACAudio
                 Channel.Play();
             }
 
+            // should we support fade-out?  was going to be cant really see an existing situation where it would be desired
             public void Stop()
             {
                 if(Channel != null)
@@ -981,8 +998,7 @@ namespace ACAudio
             {
                 Source = _Source;
 
-
-                TimeUntilCheck = Source.Sound.interval;
+                TimeUntilCheck = MathLib.random.NextDouble() * Source.Sound.interval;
             }
 
             public abstract Position Position
@@ -1019,7 +1035,7 @@ namespace ACAudio
                 {
                     Channel.SetPosition(Position.Global, Vec3.Zero);
 
-                    Channel.SetTargetVolume(FinalVolume, 0.08);//slide
+                    Channel.SetTargetVolume(FinalVolume, Source.Sound.fade);
                     Channel.SetMinMaxDistance(FinalMinDist, FinalMaxDist);
                 }
             }
@@ -1104,13 +1120,13 @@ namespace ACAudio
 
 
                     // changing sounds? kill existing
-                    sa.Stop();
+                    //sa.Stop();
 
-                    ActiveAmbients.Remove(sa);
+                    //ActiveAmbients.Remove(sa);
 
                     //Log("playforposition removed an ambient");
 
-                    break;
+                    //break;
                 }
             }
 
@@ -1152,11 +1168,11 @@ namespace ACAudio
                     }
 
                     // changing sounds? kill existing
-                    oa.Stop();
+                    //oa.Stop();
 
-                    ActiveAmbients.Remove(oa);
+                    //ActiveAmbients.Remove(oa);
 
-                    break;
+                    //break;
                 }
             }
 
