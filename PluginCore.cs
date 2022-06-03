@@ -198,7 +198,7 @@ namespace ACAudio
                 {
                     // kill ambients; let reloaded config generate them again
                     foreach(Ambient amb in ActiveAmbients)
-                        amb.Channel.Stop();
+                        amb.Stop();
                     ActiveAmbients.Clear();
                     
                     ReloadConfig();
@@ -305,6 +305,9 @@ namespace ACAudio
 
         private void ReloadConfig()
         {
+            PerfTimer pt = new PerfTimer();
+            pt.Start();
+
             Config.Load("master.aca");
 
             Log($"Parsed {Config.Sources.Count} sound sources from master.aca");
@@ -314,6 +317,10 @@ namespace ACAudio
             StaticPositions = LoadStaticPositions(false);
 
             Log($"Loaded {StaticPositions.Count} positions from static.dat");
+
+
+            pt.Stop();
+            Log($"config reload took {pt.Duration.ToString("#0.000")} sec");
         }
 
         public class StaticPosition
@@ -584,7 +591,7 @@ namespace ACAudio
 
                             foreach (WorldObject obj in finalObjects)
                             {
-                                PlayForObject(obj, src.Sound.file, src.Sound.vol * volAdjust, src.Sound.mindist * minDistAdjust, src.Sound.maxdist * maxDistAdjust);
+                                PlayForObject(obj, src, volAdjust, minDistAdjust, maxDistAdjust);
                             }
                         }
 
@@ -633,7 +640,7 @@ namespace ACAudio
                             if (dist >= src.Sound.maxdist)
                                 continue;
 
-                            PlayForPosition(pos.Position, src.Sound.file, src.Sound.vol, src.Sound.mindist, src.Sound.maxdist);
+                            PlayForPosition(pos.Position, src);
                         }
 
 
@@ -646,7 +653,7 @@ namespace ACAudio
                             if (dist >= src.Sound.maxdist)
                                 continue;
 
-                            PlayForPosition(src.Position, src.Sound.file, src.Sound.vol, src.Sound.mindist, src.Sound.maxdist);
+                            PlayForPosition(src.Position, src);
                         }
                     }
                 }
@@ -658,7 +665,6 @@ namespace ACAudio
                     $"cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
             }
-
 
 
             // kill/forget sounds for objects out of range?
@@ -704,16 +710,26 @@ namespace ACAudio
 
                 if (discardReason == null)
                 {
+                    double dist = (cameraPos.Global - a.Position.Global).Magnitude;
+#if true
+                    // if FinalMaxDist is adjusted to be lower than what's in Source, then engine will keep recreating ambients every frame
+                    double maxDist = Math.Max(a.FinalMaxDist, a.Source.Sound.maxdist);
+
+                    // fudge dist a bit?
+                    maxDist += 2.0;
+
+                    if (dist > maxDist)
+                        discardReason = $"bad dist {dist} > {maxDist}";
+#else
                     float minDist, maxDist;
                     a.Channel.channel.get3DMinMaxDistance(out minDist, out maxDist);
-
-                    double dist = (cameraPos.Global - a.Position.Global).Magnitude;
 
                     // fudge dist a bit?
                     maxDist += 2.0f;
 
                     if (dist > (double)maxDist)
                         discardReason = $"bad dist {dist} > {maxDist}";
+#endif
                 }
 
 
@@ -736,25 +752,27 @@ namespace ACAudio
                 {
 
                     if (a is ObjectAmbient)
-                        Log($"channel ({a.Channel.ID}): removing for weenie {(a as ObjectAmbient).WeenieID}: {discardReason}");
+                        Log($"removing for weenie {(a as ObjectAmbient).WeenieID}: {discardReason}");
                     else if (a is StaticAmbient)
-                        Log($"channel ({a.Channel.ID}): removing for static {(a as StaticAmbient).Position}: {discardReason}");
+                        Log($"removing for static {(a as StaticAmbient).Position}: {discardReason}");
 
 
 
-                    a.Channel.Stop();
+                    a.Stop();
 
                     ActiveAmbients.RemoveAt(x);
                     x--;
                 }
                 else
                 {
-                    // update position
-                    a.Channel.SetPosition(a.Position.Global, Vec3.Zero);
+
                 }
             }
 
 
+            // process ambients
+            foreach (Ambient a in ActiveAmbients)
+                a.Process(dt);
 
 
             // lets sync time positions for active ambient loopables that want to
@@ -762,23 +780,26 @@ namespace ACAudio
             for (int x = 0; x < ActiveAmbients.Count - 1; x++)
             {
                 Ambient aa = ActiveAmbients[x];
-                if (!aa.Channel.IsPlaying)
+                if (!aa.IsPlaying)
                     continue;
 
-                if (alreadyDone.Contains(aa.Channel.Sound.Name))
+                if (!aa.Source.Sound.sync)
                     continue;
 
-                alreadyDone.Add(aa.Channel.Sound.Name);
+                if (alreadyDone.Contains(aa.Source.Sound.file))
+                    continue;
+
+                alreadyDone.Add(aa.Source.Sound.file);
 
 
                 for (int y = 1; y < ActiveAmbients.Count; y++)
                 {
                     Ambient ab = ActiveAmbients[y];
-                    if (!ab.Channel.IsPlaying)
+                    if (!ab.IsPlaying)
                         continue;
 
                     // if not playing same sound, skip
-                    if (!aa.Channel.Sound.Name.Equals(ab.Channel.Sound.Name, StringComparison.InvariantCultureIgnoreCase))
+                    if (!aa.Source.Sound.file.Equals(ab.Source.Sound.file, StringComparison.InvariantCultureIgnoreCase))
                         continue;
 
                     // do we want to sync sound timestamps? skip now if not
@@ -787,9 +808,10 @@ namespace ACAudio
 
 
                     // copy A timestamp to B
-                    uint posFmod;
+                    /*uint posFmod;
                     aa.Channel.channel.getPosition(out posFmod, FMOD.TIMEUNIT.PCM);
-                    ab.Channel.channel.setPosition(posFmod, FMOD.TIMEUNIT.PCM);
+                    ab.Channel.channel.setPosition(posFmod, FMOD.TIMEUNIT.PCM);*/
+                    ab.SamplePosition = aa.SamplePosition;
                 }
             }
 
@@ -836,17 +858,153 @@ namespace ACAudio
 
         public abstract class Ambient
         {
-            public Audio.Channel Channel;
+            protected Audio.Channel Channel = null;
+            public readonly Config.SoundSource Source;
+
+            public double VolScale = 1.0;
+            public double MinDistScale = 1.0;
+            public double MaxDistScale = 1.0;
+
+            public double FinalVolume
+            {
+                get
+                {
+                    return Source.Sound.vol * VolScale;
+                }
+            }
+
+            public double FinalMinDist
+            {
+                get
+                {
+                    return Source.Sound.mindist * MinDistScale;
+                }
+            }
+
+            public double FinalMaxDist
+            {
+                get
+                {
+                    return Source.Sound.maxdist * MaxDistScale;
+                }
+            }
+
+            public int ChannelID
+            {
+                get
+                {
+                    if (Channel == null)
+                        return -1;
+
+                    return Channel.ID;
+                }
+            }
+
+            public bool IsPlaying
+            {
+                get
+                {
+                    return (Channel != null && Channel.IsPlaying);
+                }
+            }
+
+            public uint SamplePosition
+            {
+                get
+                {
+                    if (Channel == null)
+                        return 0;
+
+                    uint pcm;
+                    Channel.channel.getPosition(out pcm, FMOD.TIMEUNIT.PCM);
+
+                    return pcm;
+                }
+
+                set
+                {
+                    if (Channel == null)
+                        return;
+
+                    Channel.channel.setPosition(value, FMOD.TIMEUNIT.PCM);
+                }
+            }
+
+            protected void Play()
+            {
+                Log($"we wanna play");
+
+                // if channel exists, kill it?
+                if(Channel != null)
+                {
+                    Log($"killing internal ambient channel for another play");
+                    Channel.Stop();
+                    Channel = null;
+                }
+
+                // get sound
+                Audio.Sound snd = GetOrLoadSound(Source.Sound.file, Audio.DimensionMode._3DPositional, true);
+                if (snd == null)
+                    return;
+
+                Channel = Audio.PlaySound(snd, true);
+                Channel.SetPosition(Position.Global, Vec3.Zero);
+                Channel.Volume = 0.0;
+                Channel.SetTargetVolume(FinalVolume, 0.08);//slide fade-in; especially in case of portaling
+                Channel.SetMinMaxDistance(FinalMinDist, FinalMaxDist);
+                Channel.Play();
+            }
+
+            public void Stop()
+            {
+                if(Channel != null)
+                {
+                    Channel.Stop();
+                    Channel = null;
+                }
+            }
+
+            protected Ambient(Config.SoundSource _Source)
+            {
+                Source = _Source;
+            }
 
             public abstract Position Position
             {
                 get;
             }
+
+            public virtual void Process(double dt)
+            {
+                if(Channel != null && !Channel.IsPlaying)
+                    Channel = null;
+
+
+                // should we be playing?
+                if (Channel == null)
+                    Play();
+
+
+                // if playing, update values
+                if(Channel != null)
+                {
+                    Channel.SetPosition(Position.Global, Vec3.Zero);
+
+                    Channel.SetTargetVolume(FinalVolume, 0.08);//slide
+                    Channel.SetMinMaxDistance(FinalMinDist, FinalMaxDist);
+                }
+            }
         }
 
         public class ObjectAmbient : Ambient
         {
-            public int WeenieID;
+            public readonly int WeenieID;
+
+            public ObjectAmbient(Config.SoundSource _Source, int _WeenieID)
+                : base(_Source)
+            {
+                WeenieID = _WeenieID;
+            }
 
             public override Position Position
             {
@@ -863,11 +1021,18 @@ namespace ACAudio
                     return Instance.Core.WorldFilter[WeenieID];
                 }
             }
+
         }
 
         public class StaticAmbient : Ambient
         {
-            public Position StaticPosition;
+            public readonly Position StaticPosition;
+
+            public StaticAmbient(Config.SoundSource _Source, Position _StaticPosition)
+                : base(_Source)
+            {
+                StaticPosition = _StaticPosition;
+            }
 
             public override Position Position
             {
@@ -876,11 +1041,12 @@ namespace ACAudio
                     return StaticPosition;
                 }
             }
+
         }
 
         public List<Ambient> ActiveAmbients = new List<Ambient>();
 
-        public void PlayForPosition(Position pos, string filename, double vol, double minDist, double maxDist)
+        public void PlayForPosition(Position pos, Config.SoundSource src)
         {
             //Log($"playforposition {pos} | {filename}");
 
@@ -901,7 +1067,7 @@ namespace ACAudio
                     //Log("checking");
 
                     // if same name, bail
-                    if (sa.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
+                    if (sa.Source.Sound.file.Equals(src.Sound.file, StringComparison.InvariantCultureIgnoreCase))
                     {
                         //Log("playforposition bailed on same filename");
                         return;
@@ -909,7 +1075,7 @@ namespace ACAudio
 
 
                     // changing sounds? kill existing
-                    sa.Channel.Stop();
+                    sa.Stop();
 
                     ActiveAmbients.Remove(sa);
 
@@ -919,29 +1085,18 @@ namespace ACAudio
                 }
             }
 
-            // get sound
-            Audio.Sound snd = GetOrLoadSound(filename, Audio.DimensionMode._3DPositional, true);
-            if (snd == null)
-                return;
 
 
             // start new sound
-            StaticAmbient newsa = new StaticAmbient();
-
-            newsa.StaticPosition = pos;
-
-            newsa.Channel = Audio.PlaySound(snd, true);
-            newsa.Channel.SetPosition(pos.Global, Vec3.Zero);
-            newsa.Channel.Volume = vol;
-            newsa.Channel.SetMinMaxDistance(minDist, maxDist);
-            newsa.Channel.Play();
+            StaticAmbient newsa = new StaticAmbient(src, pos);
 
             ActiveAmbients.Add(newsa);
 
-            Log($"channel ({newsa.Channel.ID}): added static play {filename} at {pos}");
+
+            Log($"added static ambient {src.Sound.file} at {pos}");
         }
 
-        public void PlayForObject(WorldObject obj, string filename, double vol, double minDist, double maxDist)
+        public void PlayForObject(WorldObject obj, Config.SoundSource src, double volScale, double mindistScale, double maxdistScale)
         {
             // check if playing already
             foreach (Ambient a in ActiveAmbients)
@@ -957,17 +1112,18 @@ namespace ACAudio
                         continue;
 
                     // if same name, bail
-                    if (oa.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
+                    if (oa.Source.Sound.file.Equals(src.Sound.file, StringComparison.InvariantCultureIgnoreCase))
                     {
                         // do we want to update properties?
-                        oa.Channel.Volume = vol;
-                        oa.Channel.SetMinMaxDistance(minDist, maxDist);
+                        oa.VolScale = volScale;
+                        oa.MinDistScale = mindistScale;
+                        oa.MaxDistScale = maxdistScale;
 
                         return;
                     }
 
                     // changing sounds? kill existing
-                    oa.Channel.Stop();
+                    oa.Stop();
 
                     ActiveAmbients.Remove(oa);
 
@@ -975,27 +1131,17 @@ namespace ACAudio
                 }
             }
 
-            // get sound
-            Audio.Sound snd = GetOrLoadSound(filename, Audio.DimensionMode._3DPositional, true);
-            if (snd == null)
-                return;
-
 
             // start new sound
-            ObjectAmbient newoa = new ObjectAmbient();
+            ObjectAmbient newoa = new ObjectAmbient(src, obj.Id);
 
-            newoa.WeenieID = obj.Id;
-
-            newoa.Channel = Audio.PlaySound(snd, true);
-            newoa.Channel.SetPosition(SmithInterop.Vector(obj.RawCoordinates()), Vec3.Zero);
-            newoa.Channel.Volume = 0.0;
-            newoa.Channel.SetTargetVolume(vol, 0.08);//slide fade-in; especially in case of portaling
-            newoa.Channel.SetMinMaxDistance(minDist, maxDist);
-            newoa.Channel.Play();
+            newoa.VolScale = volScale;
+            newoa.MinDistScale = mindistScale;
+            newoa.MaxDistScale = maxdistScale;
 
             ActiveAmbients.Add(newoa);
 
-            Log($"channel ({newoa.Channel.ID}): added weenie play {filename} from ID {obj.Id}");
+            Log($"added weenie ambient {src.Sound.file} from ID {obj.Id}");
         }
 
         public static byte[] ReadDataFile(string filename)
