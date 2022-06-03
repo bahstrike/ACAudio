@@ -943,7 +943,14 @@ namespace ACAudio
                 }
 
                 // get sound
-                Audio.Sound snd = GetOrLoadSound(Source.Sound.file, Audio.DimensionMode._3DPositional, true);
+
+                Audio.DimensionMode mode;
+                if (Source.Sound.mode == Config.SoundMode._3D || Source.Sound.mode == Config.SoundMode.Hybrid)
+                    mode = Audio.DimensionMode._3DPositional;
+                else
+                    mode = Audio.DimensionMode._2D;
+
+                Audio.Sound snd = GetOrLoadSound(Source.Sound.file, mode, Source.Sound.looping);
                 if (snd == null)
                     return;
 
@@ -964,9 +971,14 @@ namespace ACAudio
                 }
             }
 
+            private double TimeUntilCheck;
+
             protected Ambient(Config.SoundSource _Source)
             {
                 Source = _Source;
+
+
+                TimeUntilCheck = Source.Sound.interval;
             }
 
             public abstract Position Position
@@ -976,13 +988,26 @@ namespace ACAudio
 
             public virtual void Process(double dt)
             {
+                // clear possible dangling channel ref
                 if(Channel != null && !Channel.IsPlaying)
                     Channel = null;
 
 
                 // should we be playing?
                 if (Channel == null)
-                    Play();
+                {
+                    TimeUntilCheck -= dt;
+                    if (TimeUntilCheck <= 0.0)
+                    {
+                        TimeUntilCheck = Source.Sound.interval;
+
+
+                        if (MathLib.random.NextDouble() <= Source.Sound.chance)
+                        {
+                            Play();
+                        }
+                    }
+                }
 
 
                 // if playing, update values

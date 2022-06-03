@@ -170,9 +170,13 @@ dynamic portal
 
 // LOL this wil be annoying
 push
+	interval 3
+	chance 0.5
+	looping no
+
 	vol 0.3
 	file questcomplete.mp3
-	//dynamic npc "Town Crier"
+	dynamic npc "Town Crier"
 pop
 
 
