@@ -135,6 +135,14 @@ namespace ACAudio
                                 else
                                     key = (StringValueKey)Enum.Parse(typeof(StringValueKey), tv.SubTag, true);
 
+
+                                // if object doesnt have key, attempt to query but say we dont match yet
+                                if (!obj.StringKeys.Contains((int)key))
+                                {
+                                    PluginCore.Instance.QueryForIdInfo(obj);
+                                    return false;
+                                }
+
                                 if (!obj.Values(key).Equals(tv.Value))// i guess we'll leave it case sensitive since user is putting it into quote marks
                                     return false;
                             }
@@ -153,6 +161,14 @@ namespace ACAudio
                                 int val;
                                 if (!int.TryParse(tv.Value, out val))
                                     return false;//if failed to parse then never succeed
+
+
+                                // if object doesnt have key, attempt to query but say we dont match yet
+                                if (!obj.LongKeys.Contains((int)key))
+                                {
+                                    PluginCore.Instance.QueryForIdInfo(obj);
+                                    return false;
+                                }
 
                                 if (obj.Values(key) != val)
                                     return false;

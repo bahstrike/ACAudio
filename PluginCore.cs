@@ -188,7 +188,7 @@ namespace ACAudio
                         "flags:{obj.Values(LongValueKey.Flags)}  type:{obj.Values(LongValueKey.Type)}   behavior:{obj.Values(LongValueKey.Behavior)}  category:{obj.Values(LongValueKey.Category)}   longkeys:{longkeys}"
                         */
 
-                        Log($"class:{obj.ObjectClass}  stringkeys:{{{stringkeys}}}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
+                        Log($"class:{obj.ObjectClass}   id:{obj.Id}   name:{obj.Name}   stringkeys:{{{stringkeys}}}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
                     }
 
                 };
@@ -503,7 +503,23 @@ namespace ACAudio
         double lastProcessTime = 1.0;
 
 
-        double lastRequestIdWorldTime = 0.0;
+        private double lastRequestIdWorldTime = 0.0;
+
+        public void QueryForIdInfo(WorldObject obj)
+        {
+            // already have? nothing to do
+            if (obj.HasIdData)
+                return;
+
+            // limit frequency of queries
+            if ((WorldTime - lastRequestIdWorldTime) < 0.2)
+                return;
+
+            Log($"REQUESTING INFORMATIONS FOR OBJ {obj.Id}");
+            Host.Actions.RequestId(obj.Id);
+
+            lastRequestIdWorldTime = WorldTime;
+        }
 
 
         double sayStuff = 0.0;
@@ -570,9 +586,6 @@ namespace ACAudio
 
                             foreach(WorldObject obj in Core.WorldFilter.GetAll())
                             {
-                                if (!src.CheckObject(obj))
-                                    continue;
-
                                 Position? objPos = Position.FromObject(obj);
                                 if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
                                     continue;
@@ -588,7 +601,11 @@ namespace ACAudio
 
 
 
-#if true
+                                if (!src.CheckObject(obj))
+                                    continue;
+
+
+#if false
                                 if (obj.ObjectClass == ObjectClass.Npc)
                                 {
                                     // filter by gender?  apparently we need to "appraise" first, if the key is not there

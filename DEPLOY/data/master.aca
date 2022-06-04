@@ -178,13 +178,18 @@ push
 	randomstart no
 
 	vol 0.3
-	file questcomplete.mp3
-	dynamic class=npc string(name)="Town Crier"
+	file towncrier_m_unwanteditems.mp3
+	dynamic class=npc string(name)="Town Crier" long(gender)=1
+
+	file towncrier_f_unwanteditems.mp3
+	dynamic class=npc string(name)="Town Crier" long(gender)=2
+
 
 	interval 10
 	chance 0.2
 	file fart.mp3
 	dynamic class=npc
+	dynamic class=vendor
 pop
 
 

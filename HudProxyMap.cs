@@ -158,9 +158,21 @@ namespace ACAudio
             if (true)
                 foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetAll())
                 {
+                    Position? objPos = Position.FromObject(obj);
+                    if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(camPos))
+                        continue;
+
+                    Vec3 offset = (objPos.Value.Global - playerPos);
+
+                    if (offset.Magnitude > searchDist)//src.Sound.maxdist)
+                        continue;
+
+
+
+
                     bool keep = false;
                     foreach (Config.SoundSourceDynamic src in Config.FindSoundSourcesDynamic())
-                        if(src.CheckObject(obj))
+                        if (src.CheckObject(obj))
                         {
                             keep = true;
                             break;
@@ -170,14 +182,6 @@ namespace ACAudio
                         continue;
 
 
-                    Position? objPos = Position.FromObject(obj);
-                    if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(camPos))
-                        continue;
-
-                    Vec3 offset = (objPos.Value.Global - playerPos);
-
-                    if (offset.Magnitude > searchDist)//src.Sound.maxdist)
-                        continue;
 
 
                     Vec2 pt = offset.XY * drawScale;
