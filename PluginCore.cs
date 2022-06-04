@@ -994,6 +994,15 @@ namespace ACAudio
                 }
             }
 
+            public bool Is3D
+            {
+                get
+                {
+                    return (Source.Sound.mode == Config.SoundMode._3D ||
+                        Source.Sound.mode == Config.SoundMode.Hybrid);
+                }
+            }
+
             protected void Play()
             {
                 Log($"we wanna play");
@@ -1006,28 +1015,51 @@ namespace ACAudio
                     Channel = null;
                 }
 
-                // get sound
 
-                Audio.DimensionMode mode;
-                if (Source.Sound.mode == Config.SoundMode._3D || Source.Sound.mode == Config.SoundMode.Hybrid)
-                    mode = Audio.DimensionMode._3DPositional;
+
+                // well... song types are a little magic.. lets divert
+                if (Source.Sound.mode == Config.SoundMode.Song)
+                {
+                    Music.Play(Source.Sound, false);
+
+                    // if we remember the song channel as an ambient.. GOD there will horror
+                    Log($"ooooh we playin music from some silly stuff.. confusing channel references now :D");
+                    Channel = Music.Channel?.Channel;
+                }
                 else
-                    mode = Audio.DimensionMode._2D;
+                {
 
-                Audio.Sound snd = GetOrLoadSound(Source.Sound.file, mode, Source.Sound.looping);
-                if (snd == null)
-                    return;
+                    // get sound
 
-                Channel = Audio.PlaySound(snd, true);
-                Channel.SetPosition(Position.Global, Vec3.Zero);
-                Channel.Volume = 0.0;
-                Channel.SetTargetVolume(FinalVolume, Source.Sound.fade);
-                Channel.SetMinMaxDistance(FinalMinDist, FinalMaxDist);
+                    Audio.DimensionMode mode;
+                    if (Source.Sound.mode == Config.SoundMode._3D || Source.Sound.mode == Config.SoundMode.Hybrid)
+                        mode = Audio.DimensionMode._3DPositional;
+                    else
+                        mode = Audio.DimensionMode._2D;
 
-                if (Source.Sound.randomstart)
-                    Channel.Time = MathLib.random.NextDouble() * snd.Length;
+                    Audio.Sound snd = GetOrLoadSound(Source.Sound.file, mode, Source.Sound.looping);
+                    if (snd == null)
+                        return;
 
-                Channel.Play();
+                    Channel = Audio.PlaySound(snd, true);
+                        
+                    Channel.Volume = 0.0;
+                    Channel.SetTargetVolume(FinalVolume, Source.Sound.fade);
+
+                    if (Source.Sound.randomstart)
+                        Channel.Time = MathLib.random.NextDouble() * snd.Length;
+
+
+                    if (Is3D)
+                    {
+                        Channel.SetPosition(Position.Global, Vec3.Zero);
+                        Channel.SetMinMaxDistance(FinalMinDist, FinalMaxDist);
+                    }
+
+                    Channel.Play();
+                }
+
+
             }
 
             // should we support fade-out?  was going to be cant really see an existing situation where it would be desired
@@ -1081,10 +1113,13 @@ namespace ACAudio
                 // if playing, update values
                 if(Channel != null)
                 {
-                    Channel.SetPosition(Position.Global, Vec3.Zero);
-
                     Channel.SetTargetVolume(FinalVolume, Source.Sound.fade);
-                    Channel.SetMinMaxDistance(FinalMinDist, FinalMaxDist);
+
+                    if (Is3D)
+                    {
+                        Channel.SetPosition(Position.Global, Vec3.Zero);
+                        Channel.SetMinMaxDistance(FinalMinDist, FinalMaxDist);
+                    }
                 }
             }
         }
@@ -1310,13 +1345,13 @@ namespace ACAudio
         public const double PortalSongHeatMax = 1.55;
         public const double PortalSongHeatCooldown = 0.0175;
 
-        public static string PortalSongFilename
+        /*public static string PortalSongFilename
         {
             get
             {
                 return Config.PortalSound?.file;
             }
-        }
+        }*/
         private void StartPortalSong()
         {
             if (PortalSongHeat >= PortalSongHeatMax)
@@ -1325,7 +1360,7 @@ namespace ACAudio
                 return;
             }
 
-            Music.Play(PortalSongFilename, true);
+            Music.Play(Config.PortalSound, true);//Music.Play(PortalSongFilename, true);
             PortalSongHeat += 1.0;
         }
 
@@ -1367,8 +1402,8 @@ namespace ACAudio
                 // for now (testing) just start playing a song depending on terrain or inside lol
                 if (plrPos.Value.IsTerrain)
                 {
-                    Music.Play("ac_anotherorch.mp3", false);
-                    return true;
+                    //Music.Play("ac_anotherorch.mp3", false);
+                    //return true;
                 }
                 else
                 {
@@ -1376,15 +1411,15 @@ namespace ACAudio
                     Config.SoundSourceDungeon src = Config.FindSoundSourceDungeonSong(plrPos.Value.DungeonID);
                     if (src != null)
                     {
-                        Music.Play(src.Sound.file, false);
+                        Music.Play(src.Sound, false);
 
                         return true;
                     }
                     else
                     {
-                        Music.Play("ac_someoffbeat.mp3", false);
+                        //Music.Play("ac_someoffbeat.mp3", false);
 
-                        return true;
+                        //return true;
                     }
 
                 }

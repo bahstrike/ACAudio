@@ -38,7 +38,12 @@ namespace ACAudio
             PluginCore.Log($"MUSIC: {s}");
         }
 
-        public static void Play(string filename, bool isPortal, double fadeTime=0.575)
+        public static void Play(Config.SoundAttributes sound, bool isPortal)
+        {
+            Play(sound.file, isPortal, sound.fade);
+        }
+
+        private static void Play(string filename, bool isPortal, double fadeTime)
         {
             if(string.IsNullOrEmpty(filename))
             {

@@ -124,6 +124,7 @@
 
 push // start music
 
+fade 0.575
 looping on
 randomstart off
 interval 0
@@ -139,7 +140,13 @@ dungeon 0007 // keep portal music going while in town network?
 
 file duracell_chocolates_3.mp3
 dungeon 002E
+
+// testing a town song i guess.. cragstone
+push
+vol 0.2
+maxdist 300
 pos 0xBC9F003D,168.8398,103.7323,32.0050//cragstone
+pop
 
 
 file tax2020_3.mp3
