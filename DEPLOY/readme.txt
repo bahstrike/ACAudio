@@ -1,3 +1,10 @@
+Welcome to ACAudio!
+
+Feel free to customize your own soundpack!
+Everything is in the "data" folder.
+The plugin will load "data/master.aca" to get started.
+
+
 DEVELOPMENT
 --------------------------------------------------------------------------------------------
 Code				Strike
@@ -19,24 +26,8 @@ trevis
 Yonneh
 
 
-MUSIC
+MUSIC and SOUND EFFECTS
 --------------------------------------------------------------------------------------------
-ac_dnbpor			Strike
-ac_someoffbeat			Strike
-ac_anotherorch			Strike
+Please see ./data/credits.txt for whichever soundpack you are using.
 
-
-SOUND EFFECTS
---------------------------------------------------------------------------------------------
-portal				Strike
-lifestone			Strike
-candle				https://www.youtube.com/watch?v=qOhUpdIWrMs
-gasflame			https://freesound.org/people/neilraouf/sounds/435643/
-waterfountain			https://freesound.org/people/roscoetoon/sounds/26402/
-casino				https://freesound.org/people/DylanTheFish/sounds/443455/
-pub				https://freesound.org/people/Islabonita/sounds/178525/
-simmering			https://freesound.org/people/Selector/sounds/415892/
-campfire			https://freesound.org/people/florianreichelt/sounds/563764/
-forge				https://freesound.org/people/joe_anderson22/sounds/390562/
-towncrier_f_unwanteditems	https://ttsreader.com/
-towncrier_m_unwanteditems	https://ttsreader.com/
+Plugin author(s) are not responsible for copyright infringement within user-supplied soundpacks.

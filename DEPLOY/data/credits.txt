@@ -1,24 +1,3 @@
-DEVELOPMENT
---------------------------------------------------------------------------------------------
-Code				Strike
-Additional Code			trevis
-Static Positions Data		OptimShi
-Audio Engine			FMOD (Firelight Technologies Pty Ltd.)
-
-
-ADVICE and DISCUSSION
---------------------------------------------------------------------------------------------
-Advan
-Harli Quin
-Hells
-Immortal Bob
-Maethor
-OptimShi
-paradox
-trevis
-Yonneh
-
-
 MUSIC
 --------------------------------------------------------------------------------------------
 ac_dnbpor			Strike
