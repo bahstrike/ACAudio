@@ -284,6 +284,15 @@ static 02000351// cooking pot on fire pit
 static 02000345// cooking pot hanging over fire
 
 
+// ------ BLACKSMITH FORGE --------
+file forge.ogg
+vol 0.15
+mindist 8.0
+maxdist 18.0
+
+static 01000C20//big forge seen in holtburg
+static 0200033C//big forge seen in gharu town
+
 
 pop // end looping 3d ambience
 
