@@ -176,16 +176,19 @@ namespace ACAudio
                     Log("--------------- WE BE DUMPIN ------------");
                     foreach (WorldObject obj in allobj)
                     {
+                        string stringkeys = string.Empty;
+                        foreach (int i in obj.StringKeys)
+                            stringkeys += $"{(StringValueKey)i}=\"{obj.Values((StringValueKey)i)}\", ";
                         
                         string longkeys = string.Empty;
                         foreach(int i in obj.LongKeys)
-                            longkeys += $"{(LongValueKey)i},";
-
+                            longkeys += $"{(LongValueKey)i}={obj.Values((LongValueKey)i)}, ";
+                        
                         /*
                         "flags:{obj.Values(LongValueKey.Flags)}  type:{obj.Values(LongValueKey.Type)}   behavior:{obj.Values(LongValueKey.Behavior)}  category:{obj.Values(LongValueKey.Category)}   longkeys:{longkeys}"
                         */
 
-                        Log($"name:{obj.Name}  id:{obj.Id}  class:{obj.ObjectClass}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
+                        Log($"class:{obj.ObjectClass}  stringkeys:{{{stringkeys}}}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
                     }
 
                 };
@@ -565,8 +568,11 @@ namespace ACAudio
                         {
                             List<WorldObject> finalObjects = new List<WorldObject>();
 
-                            foreach(WorldObject obj in Core.WorldFilter.GetByObjectClass(src.ObjectClass))
+                            foreach(WorldObject obj in Core.WorldFilter.GetAll())
                             {
+                                if (!src.CheckObject(obj))
+                                    continue;
+
                                 Position? objPos = Position.FromObject(obj);
                                 if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
                                     continue;
@@ -574,13 +580,6 @@ namespace ACAudio
                                 // ignore items that were previously on ground but now picked up
                                 if (obj.Values(LongValueKey.Container) != 0)
                                     continue;
-
-                                // optionally filter by name
-                                if(!string.IsNullOrEmpty(src.Name))
-                                {
-                                    if (!obj.Name.Equals(src.Name))
-                                        continue;
-                                }
 
 
                                 double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
@@ -607,6 +606,7 @@ namespace ACAudio
                                         // but just proceed for now since npc gender check isnt in config yet
                                         //continue;
                                     }
+
 
                                 }
 

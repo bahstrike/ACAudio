@@ -99,10 +99,12 @@
 // static [id]
 // All known coordinates in static.dat for the specified object DID.
 //
-// dynamic [objectclass {"Name"}]
-// objectclass is the name or ID number of a Decal ObjectClass.
-// "Name" is optional and allows filtering by name.
-//
+// dynamic [tag=value] [tag=value] . . .
+// Use any combination of tag=value to filter. Example:  dynamic class=npc string(name)="Town Crier"
+// Tag types:
+//   class - Decal ObjectClass. Example: dynamic class=npc
+//   long(id) - Decal LongValueKey name/number. Example: dynamic long(gender)=1
+//   string(id) - Decal StringValueKey name/number. Example: dynamic string(name)="Town Crier"
 //
 // pos [landblock,localX,localY,localZ]
 // Manually specify coordinates.
@@ -162,10 +164,10 @@ mindist 5.0
 maxdist 35.0
 
 file lifestone.ogg
-dynamic lifestone
+dynamic class=lifestone
 
 file portal.ogg
-dynamic portal
+dynamic class=portal
 
 
 // LOL this wil be annoying
@@ -177,12 +179,12 @@ push
 
 	vol 0.3
 	file questcomplete.mp3
-	dynamic npc "Town Crier"
+	dynamic class=npc string(name)="Town Crier"
 
 	interval 10
 	chance 0.2
 	file fart.mp3
-	dynamic npc
+	dynamic class=npc
 pop
 
 
@@ -222,7 +224,7 @@ static 020009A3// standing blue flame
 
 static 01000A2F// fireplace
 
-dynamic misc "Torch" // dropped torches
+dynamic class=misc string(name)="Torch" // dropped torches
 
 
 // ------ LANTERNS --------

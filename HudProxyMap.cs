@@ -156,46 +156,55 @@ namespace ACAudio
 
             // dynamic ambients
             if (true)
-                foreach (Config.SoundSourceDynamic src in Config.FindSoundSourcesDynamic())
+                foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetAll())
                 {
-                    foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetByObjectClass(src.ObjectClass))
-                    {
-                        Position? objPos = Position.FromObject(obj);
-                        if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(camPos))
-                            continue;
-
-                        Vec3 offset = (objPos.Value.Global - playerPos);
-
-                        if (offset.Magnitude > searchDist)//src.Sound.maxdist)
-                            continue;
-
-
-                        Vec2 pt = offset.XY * drawScale;
-
-                        // up is down, down is up :P
-                        pt.y *= -1.0;
-
-                        //PluginCore.Log($"lol {pt}");
-
-
-                        bool isAmbient = false;
-                        foreach (PluginCore.Ambient amb in pc.ActiveAmbients)
+                    bool keep = false;
+                    foreach (Config.SoundSourceDynamic src in Config.FindSoundSourcesDynamic())
+                        if(src.CheckObject(obj))
                         {
-                            PluginCore.ObjectAmbient objAmb = amb as PluginCore.ObjectAmbient;
-                            if (objAmb != null)
-                            {
-                                if (objAmb.WeenieID == obj.Id)
-                                {
-                                    isAmbient = true;
-                                    break;
-                                }
+                            keep = true;
+                            break;
+                        }
 
+                    if (!keep)
+                        continue;
+
+
+                    Position? objPos = Position.FromObject(obj);
+                    if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(camPos))
+                        continue;
+
+                    Vec3 offset = (objPos.Value.Global - playerPos);
+
+                    if (offset.Magnitude > searchDist)//src.Sound.maxdist)
+                        continue;
+
+
+                    Vec2 pt = offset.XY * drawScale;
+
+                    // up is down, down is up :P
+                    pt.y *= -1.0;
+
+                    //PluginCore.Log($"lol {pt}");
+
+
+                    bool isAmbient = false;
+                    foreach (PluginCore.Ambient amb in pc.ActiveAmbients)
+                    {
+                        PluginCore.ObjectAmbient objAmb = amb as PluginCore.ObjectAmbient;
+                        if (objAmb != null)
+                        {
+                            if (objAmb.WeenieID == obj.Id)
+                            {
+                                isAmbient = true;
+                                break;
                             }
 
                         }
 
-                        iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
                     }
+
+                    iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
                 }
 
 

@@ -76,14 +76,93 @@ namespace ACAudio
 
         public class SoundSourceDynamic : SoundSource
         {
-            public readonly ObjectClass ObjectClass;
-            public readonly string Name;
+            public class TagValue
+            {
+                public readonly string Tag;
+                public readonly string SubTag;
+                public readonly string Value;
 
-            public SoundSourceDynamic(SoundAttributes _Sound, ObjectClass _ObjectClass, string _Name)
+                public TagValue(string _Tag, string _SubTag, string _Value)
+                {
+                    Tag = _Tag;
+                    SubTag = _SubTag;
+                    Value = _Value;
+                }
+            }
+
+            public readonly TagValue[] TagValues;
+
+            public SoundSourceDynamic(SoundAttributes _Sound, TagValue[] _TagValues)
                 : base(_Sound)
             {
-                ObjectClass = _ObjectClass;
-                Name = _Name;
+                if (_TagValues.Length == 0)
+                    throw new Exception("CANT HAVE A DYNAMIC SOURCE WITH NO FILTER");
+
+                TagValues = _TagValues;
+            }
+
+            public bool CheckObject(WorldObject obj)
+            {
+                if (obj == null)
+                    return false;
+
+                foreach(TagValue tv in TagValues)
+                {
+                    switch (tv.Tag)
+                    {
+                        case "class":
+                            {
+                                ObjectClass oc;
+
+                                int _oc;
+                                if (int.TryParse(tv.Value, out _oc))
+                                    oc = (ObjectClass)_oc;
+                                else
+                                    oc = (ObjectClass)Enum.Parse(typeof(ObjectClass), tv.Value, true);
+
+                                if (obj.ObjectClass != oc)
+                                    return false;
+                            }
+                            break;
+
+                        case "string":
+                            {
+                                StringValueKey key;
+
+                                int _key;
+                                if (int.TryParse(tv.SubTag, out _key))
+                                    key = (StringValueKey)_key;
+                                else
+                                    key = (StringValueKey)Enum.Parse(typeof(StringValueKey), tv.SubTag, true);
+
+                                if (!obj.Values(key).Equals(tv.Value))// i guess we'll leave it case sensitive since user is putting it into quote marks
+                                    return false;
+                            }
+                            break;
+
+                        case "long":
+                            {
+                                LongValueKey key;
+
+                                int _key;
+                                if (int.TryParse(tv.SubTag, out _key))
+                                    key = (LongValueKey)_key;
+                                else
+                                    key = (LongValueKey)Enum.Parse(typeof(LongValueKey), tv.SubTag, true);
+
+                                int val;
+                                if (!int.TryParse(tv.Value, out val))
+                                    return false;//if failed to parse then never succeed
+
+                                if (obj.Values(key) != val)
+                                    return false;
+                            }
+                            break;
+                    }
+
+                }
+
+                return true;
             }
         }
 
@@ -378,6 +457,66 @@ namespace ACAudio
 
                             case "dynamic":
                                 {
+#if true
+                                    // split content into  tag=value  pairs
+                                    List<SoundSourceDynamic.TagValue> tagvalues = new List<SoundSourceDynamic.TagValue>();
+
+                                    string curcontent = content;
+                                    while (!string.IsNullOrEmpty(curcontent))
+                                    {
+                                        int eqI = curcontent.IndexOf('=');
+                                        if (eqI == -1)
+                                            throw new Exception($"dynamic content must be in form of tag=value: {content}");
+                                        
+                                        string left = curcontent.Substring(0, eqI).Trim().ToLowerInvariant();
+                                        curcontent = curcontent.Substring(eqI + 1).Trim();
+
+                                        string right;
+                                        if (left.StartsWith("string"))
+                                        {
+                                            int startQuote = curcontent.IndexOf('"');
+                                            if (startQuote == -1)
+                                                throw new Exception($"bad string in dynamic: {content}");
+
+                                            int endQuote = curcontent.IndexOf('"', startQuote + 1);
+                                            if (endQuote == -1)
+                                                throw new Exception($"bad string in dynamic: {content}");
+
+
+                                            right = curcontent.Substring(startQuote + 1, endQuote - startQuote - 1);
+
+                                            curcontent = curcontent.Substring(endQuote + 1).Trim();
+                                        }
+                                        else
+                                        {
+                                            int spaceI = curcontent.IndexOfAny(new char[] { ' ', '\t' });
+                                            if (spaceI == -1)
+                                                spaceI = curcontent.Length;//end of line?
+
+                                            right = curcontent.Substring(0, spaceI);
+                                            curcontent = curcontent.Substring(spaceI).Trim();
+                                        }
+
+
+
+                                        // postprocess left to extract possible subtag
+                                        string subtag = string.Empty;
+                                        int parenI = left.IndexOf('(');
+                                        if(parenI != -1)
+                                        {
+                                            subtag = left.Substring(parenI + 1, left.Length - parenI - 2).Trim();
+                                            left = left.Substring(0, parenI).Trim();
+                                        }
+
+                                        //Log($"GOT STUFF   {left}({subtag})={right}");
+
+
+                                        tagvalues.Add(new SoundSourceDynamic.TagValue(left, subtag, right));
+                                    }
+
+
+                                    Sources.Add(new SoundSourceDynamic(CurrentSound, tagvalues.ToArray()));
+#else
                                     string className;
                                     string objectName;
 
@@ -403,6 +542,7 @@ namespace ACAudio
 
                                     //Log($"NEED TO REGISTER DYNAMIC {oc}");
                                     Sources.Add(new SoundSourceDynamic(CurrentSound, oc, objectName));
+#endif
                                 }
                                 break;
 
@@ -462,7 +602,7 @@ namespace ACAudio
                                     PortalSound = CurrentSound.Clone();// be sure to clone since attributes stack may modify later
                                 }
                                 break;
-                            #endregion
+#endregion
 
                             default:
                                 Log($"config {filename} has unrecognized directive: {directive}");
