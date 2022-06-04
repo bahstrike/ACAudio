@@ -185,8 +185,9 @@ push
 	dynamic class=npc string(name)="Town Crier" long(gender)=2
 
 
-	interval 10
-	chance 0.2
+	// HAHHAHA
+	interval 2400
+	chance 0.03
 	file fart.mp3
 	dynamic class=npc
 	dynamic class=vendor
@@ -279,6 +280,8 @@ static 02000354// fire pit
 static 020005AE// open campfire (big flames)
 
 static 020017CF// large wall fire (seen in facility hub entrance)
+
+static 01003633//big fireplace/chimney seen at fiun outpost
 
 
 // ------ FOOD SIMMERING --------
