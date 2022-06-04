@@ -515,7 +515,7 @@ namespace ACAudio
             if ((WorldTime - lastRequestIdWorldTime) < 0.2)
                 return;
 
-            Log($"REQUESTING INFORMATIONS FOR OBJ {obj.Id}");
+            Log($"REQUESTING INFORMATIONS FOR OBJ {obj.Id}  class:{obj.ObjectClass}  name:{obj.Name}");
             Host.Actions.RequestId(obj.Id);
 
             lastRequestIdWorldTime = WorldTime;

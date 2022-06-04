@@ -139,6 +139,7 @@ dungeon 0007 // keep portal music going while in town network?
 
 file duracell_chocolates_3.mp3
 dungeon 002E
+pos 0xBC9F003D,168.8398,103.7323,32.0050//cragstone
 
 
 file tax2020_3.mp3
@@ -177,12 +178,19 @@ push
 	looping no
 	randomstart no
 
-	vol 0.3
-	file towncrier_m_unwanteditems.mp3
-	dynamic class=npc string(name)="Town Crier" long(gender)=1
 
-	file towncrier_f_unwanteditems.mp3
-	dynamic class=npc string(name)="Town Crier" long(gender)=2
+	// town criers saying the only good they're good for ;)
+	push
+		interval 23
+		chance 0.25
+		maxdist 18
+		vol 0.25
+		file towncrier_m_unwanteditems.mp3
+		dynamic class=npc string(name)="Town Crier" long(gender)=1
+
+		file towncrier_f_unwanteditems.mp3
+		dynamic class=npc string(name)="Town Crier" long(gender)=2
+	pop
 
 
 	// HAHHAHA
