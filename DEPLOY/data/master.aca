@@ -138,13 +138,14 @@ portal
 dungeon 0007 // keep portal music going while in town network?
 
 
-file duracell_chocolates_3.mp3
-dungeon 002E
+//dungeon 002E // i donno what this was
 
 // testing a town song i guess.. cragstone
 push
 vol 0.2
+file whatchoocall.ogg
 maxdist 300
+
 pos 0xBC9F003D,168.8398,103.7323,32.0050//cragstone
 pop
 
@@ -197,12 +198,26 @@ push
 
 		file towncrier_f_unwanteditems.mp3
 		dynamic class=npc string(name)="Town Crier" long(gender)=2
+
+
+		file collector_m_creatureparts.mp3
+		dynamic class=npc string(name)="Collector" long(gender)=1
+
+		file collector_f_creatureparts.mp3
+		dynamic class=npc string(name)="Collector" long(gender)=2
+
+
+		file arcanum_m_forstudy.mp3
+		dynamic class=npc string(name)="Agent of the Arcanum" long(gender)=1
+
+		file arcanum_f_forstudy.mp3
+		dynamic class=npc string(name)="Agent of the Arcanum" long(gender)=2
 	pop
 
 
 	// HAHHAHA
-	interval 2400
-	chance 0.03
+	interval 1200
+	chance 0.06
 	file fart.mp3
 	dynamic class=npc
 	dynamic class=vendor
