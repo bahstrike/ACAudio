@@ -45,7 +45,7 @@ namespace ACAudio
 
         private static void Play(string filename, bool isPortal, double fadeTime)
         {
-            if(string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(filename))
             {
                 Log("wanted to play nothing; stopping music");
                 Stop();
@@ -68,9 +68,10 @@ namespace ACAudio
             }
 
 
-
             // if playing same filename just bail (though we can update the isPortal flag)
-            if(Channel != null && Channel.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
+            if (Channel != null && Channel.Channel != null && Channel.Channel.IsPlaying &&
+                Channel.Channel.Sound != null &&    // had issue where this could be null.. not sure why but i guess fmod forgot about it internally?
+                Channel.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
             {
                 Channel.IsPortal = isPortal;
                 return;
@@ -114,7 +115,7 @@ namespace ACAudio
         {
             if (Channel != null)
             {
-                Log($"beginning fadeout stop for {Channel.Channel.Sound.Name}");
+                Log($"beginning fadeout stop for {Channel.Channel.Sound?.Name}");
 
                 Channel.Channel.FadeToStop(fadeTime);
 

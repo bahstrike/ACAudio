@@ -1008,7 +1008,7 @@ namespace ACAudio
                 Log($"we wanna play");
 
                 // if channel exists, kill it?
-                if(Channel != null)
+                if (Channel != null)
                 {
                     Log($"killing internal ambient channel for another play");
                     Channel.Stop();
