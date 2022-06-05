@@ -120,6 +120,7 @@ namespace ACAudio
 
 
                         bool isAmbient = false;
+                        double maxdist = src.Sound.maxdist;
                         foreach (PluginCore.Ambient amb in pc.ActiveAmbients)
                         {
                             PluginCore.StaticAmbient stAmb = amb as PluginCore.StaticAmbient;
@@ -127,6 +128,7 @@ namespace ACAudio
                             {
                                 if (stAmb.Position.Equals(sp.Position))
                                 {
+                                    maxdist = stAmb.FinalMaxDist;
                                     isAmbient = true;
                                     break;
                                 }
@@ -137,7 +139,7 @@ namespace ACAudio
 
                         //iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
                         gfx.FillRectangle(new SolidBrush(isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0));
-                        gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * src.Sound.maxdist * 2.0 * drawScale));
+                        gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * maxdist * 2.0 * drawScale));
                     }
 
 
@@ -161,6 +163,7 @@ namespace ACAudio
 
 
                         bool isAmbient = false;
+                        double maxdist = src.Sound.maxdist;
                         foreach (PluginCore.Ambient amb in pc.ActiveAmbients)
                         {
                             PluginCore.StaticAmbient stAmb = amb as PluginCore.StaticAmbient;
@@ -168,6 +171,7 @@ namespace ACAudio
                             {
                                 if (stAmb.Position.Equals(src.Position))
                                 {
+                                    maxdist = stAmb.FinalMaxDist;
                                     isAmbient = true;
                                     break;
                                 }
@@ -178,7 +182,7 @@ namespace ACAudio
 
                         //iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
                         gfx.FillRectangle(new SolidBrush(isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0));
-                        gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * src.Sound.maxdist * 2.0 * drawScale));
+                        gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * maxdist * 2.0 * drawScale));
                     }
 
 
@@ -221,6 +225,7 @@ namespace ACAudio
 
 
                         bool isAmbient = false;
+                        double maxdist = src.Sound.maxdist;
                         foreach (PluginCore.Ambient amb in pc.ActiveAmbients)
                         {
                             PluginCore.ObjectAmbient objAmb = amb as PluginCore.ObjectAmbient;
@@ -228,6 +233,7 @@ namespace ACAudio
                             {
                                 if (objAmb.WeenieID == obj.Id)
                                 {
+                                    maxdist = objAmb.FinalMaxDist;
                                     isAmbient = true;
                                     break;
                                 }
@@ -238,7 +244,7 @@ namespace ACAudio
 
                         //iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
                         gfx.FillRectangle(new SolidBrush(isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0));
-                        gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * src.Sound.maxdist * 2.0 * drawScale));
+                        gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * maxdist * 2.0 * drawScale));
                     }
 
 

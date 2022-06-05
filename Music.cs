@@ -70,7 +70,7 @@ namespace ACAudio
 
             // if playing same filename just bail (though we can update the isPortal flag)
             if (Channel != null && Channel.Channel != null && Channel.Channel.IsPlaying &&
-                Channel.Channel.Sound != null &&    // had issue where this could be null.. not sure why but i guess fmod forgot about it internally?
+                Channel.Channel.Sound != null &&    // had issue where this could be null when sharing channel references and was stopped elsewhere
                 Channel.Channel.Sound.Name.Equals(filename, StringComparison.InvariantCultureIgnoreCase))
             {
                 Channel.IsPortal = isPortal;

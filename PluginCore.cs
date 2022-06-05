@@ -761,7 +761,7 @@ namespace ACAudio
                 {
                     // cull incompatible dungeon id
                     if (!cameraPos.IsCompatibleWith(a.Position))
-                        discardReason = "wrong dungeon";
+                        discardReason = $"wrong dungeon  camera:{cameraPos.DungeonID}  vs  amb:{a.Position.DungeonID}";
                 }
 
                 if (discardReason == null)
@@ -1065,7 +1065,11 @@ namespace ACAudio
             // should we support fade-out?  was going to be cant really see an existing situation where it would be desired
             public void Stop()
             {
-                if(Channel != null)
+                // if we are sharing music channel then inform music system of stop
+                if(Source.Sound.mode == Config.SoundMode.Song && Music.Channel.Channel == Channel)
+                    Music.Stop();
+
+                if (Channel != null)
                 {
                     Channel.Stop();
                     Channel = null;
