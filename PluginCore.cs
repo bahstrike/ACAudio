@@ -1003,8 +1003,25 @@ namespace ACAudio
                 }
             }
 
+            private bool _WantSongPlay = false;
+            public bool WantSongPlay
+            {
+                get
+                {
+                    return _WantSongPlay;
+                }
+            }
+
             protected void Play()
             {
+                // if we are song, this is handled elsewhere. just track if we WANT to be playing
+                if(IsSong)
+                {
+                    _WantSongPlay = true;
+                    return;
+                }
+
+
                 Log($"we wanna play");
 
                 // if channel exists, kill it?
@@ -1018,7 +1035,7 @@ namespace ACAudio
 
 
                 // well... song types are a little magic.. lets divert
-                if (Source.Sound.mode == Config.SoundMode.Song)
+                /*if (Source.Sound.mode == Config.SoundMode.Song)
                 {
                     Music.Play(Source.Sound, false);
 
@@ -1026,7 +1043,7 @@ namespace ACAudio
                     Log($"ooooh we playin music from some silly stuff.. confusing channel references now :D");
                     Channel = Music.Channel?.Channel;
                 }
-                else
+                else*/
                 {
 
                     // get sound
@@ -1065,8 +1082,16 @@ namespace ACAudio
             // should we support fade-out?  was going to be cant really see an existing situation where it would be desired
             public void Stop()
             {
+                // if we are song, this is handled elsewhere. just track if we WANT to be playing
+                if(IsSong)
+                {
+                    _WantSongPlay = false;
+                    return;
+                }
+
+
                 // if we are sharing music channel then inform music system of stop
-                if(Source.Sound.mode == Config.SoundMode.Song && Music.Channel.Channel == Channel)
+                if (Source.Sound.mode == Config.SoundMode.Song && Music.Channel.Channel == Channel)
                     Music.Stop();
 
                 if (Channel != null)
@@ -1095,6 +1120,11 @@ namespace ACAudio
                 // clear possible dangling channel ref
                 if(Channel != null && !Channel.IsPlaying)
                     Channel = null;
+
+
+                // song handled elsewhere
+                if (IsSong)
+                    return;
 
 
                 // should we be playing?
@@ -1399,33 +1429,75 @@ namespace ACAudio
             if (!GetUserEnableMusic())
                 return false;
 
-            Position? plrPos = Position.FromObject(Player);
-            if (plrPos.HasValue)
+            //Position? plrPos = Position.FromObject(Player);
+            //if (plrPos.HasValue)
+            Position camPos;
+            Mat4 camMat;
+            GetCameraInfo(out camPos, out camMat);
             {
 
-                // for now (testing) just start playing a song depending on terrain or inside lol
-                if (plrPos.Value.IsTerrain)
+                // "placeable" song triggers should take priority over dungeon or default sources
+                double closestDist = MathLib.Infinity;
+                Ambient closestAmb = null;
+                foreach (Ambient a in ActiveAmbients)
                 {
-                    //Music.Play("ac_anotherorch.mp3", false);
-                    //return true;
+                    if (!a.IsSong || !a.WantSongPlay)
+                        continue;
+
+                    double dist = (a.Position.Global - camPos.Global).Magnitude;
+
+                    if(dist < closestDist)
+                    {
+                        closestDist = dist;
+                        closestAmb = a;
+                    }
                 }
+
+
+                Config.SoundAttributes musicSound = null;
+
+                // if we found a placed trigger, select it straight away
+                if (closestAmb != null)
+                    musicSound = closestAmb.Source.Sound;
                 else
                 {
-                    // check for dungeon music?
-                    Config.SoundSourceDungeon src = Config.FindSoundSourceDungeonSong(plrPos.Value.DungeonID);
-                    if (src != null)
-                    {
-                        Music.Play(src.Sound, false);
+                    // check for defaults?
 
-                        return true;
+
+                    // for now (testing) just start playing a song depending on terrain or inside lol
+                    if (camPos.IsTerrain)
+                    {
+                        //Music.Play("ac_anotherorch.mp3", false);
+                        //return true;
+
                     }
                     else
                     {
-                        //Music.Play("ac_someoffbeat.mp3", false);
+                        // check for dungeon music?
+                        Config.SoundSourceDungeon src = Config.FindSoundSourceDungeonSong(camPos.DungeonID);
+                        if (src != null)
+                        {
+                            musicSound = src.Sound;
+                            //Music.Play(src.Sound, false);
 
-                        //return true;
+                            //return true;
+                        }
+                        else
+                        {
+                            //Music.Play("ac_someoffbeat.mp3", false);
+
+                            //return true;
+                        }
+
                     }
+                }
 
+
+                // if we found something to use, fire it off
+                if(musicSound != null)
+                {
+                    Music.Play(musicSound, false);
+                    return true;
                 }
 
             }
