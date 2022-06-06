@@ -19,7 +19,6 @@ namespace ACAudio
             return new Vec3(v.X, v.Y, v.Z);
         }
 
-        //used with permission by trevis (UtilityBelt)
         public static Mat4 Matrix(Frame f)
         {
             return new Mat4(
@@ -35,14 +34,39 @@ namespace ACAudio
             return ACAudio.Position.FromLocal(f.landblock, (double)f.x, (double)f.y, (double)f.z);
         }
 
+        public static void GetCameraInfo(out Position pos, out Mat4 mat)
+        {
+            UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(PluginCore.PluginHost.Actions.Underlying.SmartboxPtr() + 8);//used with permission by trevis (UtilityBelt)
+
+            pos = SmithInterop.Position(frame);
+            mat = SmithInterop.Matrix(frame);
+        }
+
+        public static Position? Position(WorldObject obj)
+        {
+            if (!PluginCore.PluginHost.Actions.Underlying.IsValidObject(obj.Id))
+                return null;
+
+            var p = PluginCore.PluginHost.Actions.Underlying.GetPhysicsObjectPtr(obj.Id);
+
+            uint lb = (uint)UtilityBelt.Lib.PhysicsObject.GetLandcell_ByPointer(p);
+            float[] fv = UtilityBelt.Lib.PhysicsObject.GetPosition_ByPointer(p);
+
+            return ACAudio.Position.FromLocal(lb, new Vec3((double)fv[0], (double)fv[1], (double)fv[2]));
+        }
+
         // returns Vec3.Infinite if obj is invalid
         public static Vec3 ObjectGlobalPosition(WorldObject obj)
         {
+#if true
+            return Position(obj)?.Global ?? Vec3.Infinite;
+#else
             ACAudio.Position? pos = ACAudio.Position.FromObject(obj);
             if (!pos.HasValue)
                 return Vec3.Infinite;
 
             return pos.Value.Global;
+#endif
         }
     }
 }

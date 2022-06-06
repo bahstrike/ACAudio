@@ -59,10 +59,11 @@ namespace ACAudio
                 if (!_playerPos.HasValue)
                     return;
 
+
 #if true
                 Position camPos;
                 Mat4 camMat;
-                pc.GetCameraInfo(out camPos, out camMat);
+                SmithInterop.GetCameraInfo(out camPos, out camMat);
 
                 Vec3 viewPos = camPos.Global;
                 Vec2 viewVec = camMat.Forward.XY;
@@ -81,9 +82,7 @@ namespace ACAudio
                 gfx.Transform = Mat3.RotationAround(rc.Center, MathLib.ToRad(pc.Player.Values(DoubleValueKey.Heading) - 90.0)).Inverse;
 #endif
 
-
-                double range = 35.0;
-                double drawScale = rc.Size.Magnitude / range * 0.3;
+                double drawScale = 13.0 / ((_playerPos.Value.Global - camPos.Global).XY.Magnitude);
 
 
                 double searchDist = 200.0;// make artifically high since proxymap should show sounds even out of range (should really calculate this based on zoom level and control size)
@@ -99,7 +98,6 @@ namespace ACAudio
 
                 //iSavedTarget.DrawLine(rc.Center, rc.Center + playerLookVec * 12.0, Color.Orange, 2.0f);
 #if true
-                // feels "sticky" i think _playerPos needs to be sourced from physics object
                 gfx.FillEllipse(new SolidBrush(Color.Yellow), (Rectangle)Box2.Around(rc.Center + (_playerPos.Value.Global - viewPos).XY.MultComps(1.0, -1.0) * drawScale, Vec2.One * 4.0));
                 gfx.DrawLine(new Pen(Color.Orange, 2.0f), rc.Center, rc.Center + (_playerPos.Value.Global - viewPos).XY.MultComps(1.0, -1.0) * drawScale);
 #else

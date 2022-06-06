@@ -35,4 +35,19 @@ namespace UtilityBelt.Lib
             return $"landblock: 0x{landblock:X8}\nqw: {qw}, qx: {qx}, qy: {qy}, qz: {qz}\nm11: {m11}, m12: {m12}, m13: {m13}\nm21: {m21}, m22: {m22}, m23: {m23}\nm31: {m31}, m32: {m32}, m33: {m33}\nx: {x}, y: {y}, z: {z}";
         }
     }
+
+    public static class PhysicsObject
+    {
+        public static unsafe float[] GetPosition_ByPointer(int p)
+        {
+            return new float[] { *(float*)(p + 0x84), *(float*)(p + 0x88), *(float*)(p + 0x8C) };
+        }
+
+        public static unsafe int GetLandcell_ByPointer(int p)
+        {
+            return *(int*)(p + 0x4C);
+        }
+
+    }
+
 }

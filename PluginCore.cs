@@ -423,7 +423,7 @@ namespace ACAudio
             {
                 Position p;
                 Mat4 m;
-                GetCameraInfo(out p, out m);
+                SmithInterop.GetCameraInfo(out p, out m);
 
                 return p.Global;
             }
@@ -481,14 +481,6 @@ namespace ACAudio
             {
                 Log($"Process exception: {ex.Message}");
             }
-        }
-
-        public void GetCameraInfo(out Position pos, out Mat4 mat)
-        {
-            UtilityBelt.Lib.Frame frame = UtilityBelt.Lib.Frame.Get(Host.Actions.Underlying.SmartboxPtr() + 8);//used with permission by trevis (UtilityBelt)
-
-            pos = SmithInterop.Position(frame);
-            mat = SmithInterop.Matrix(frame);
         }
 
         [DllImport("user32.dll")]
@@ -552,7 +544,7 @@ namespace ACAudio
 
             Position cameraPos;
             Mat4 cameraMat;
-            GetCameraInfo(out cameraPos, out cameraMat);
+            SmithInterop.GetCameraInfo(out cameraPos, out cameraMat);
 
 
             //WorldObject w;
@@ -1449,7 +1441,7 @@ namespace ACAudio
             //if (plrPos.HasValue)
             Position camPos;
             Mat4 camMat;
-            GetCameraInfo(out camPos, out camMat);
+            SmithInterop.GetCameraInfo(out camPos, out camMat);
             {
 
                 // "placeable" song triggers should take priority over dungeon or default sources
