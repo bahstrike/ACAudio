@@ -124,6 +124,7 @@
 
 push // start music
 
+vol 1.0
 fade 0.575
 looping on
 randomstart off

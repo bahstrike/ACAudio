@@ -11,6 +11,15 @@ namespace ACAudio
         public static bool EnablePortal = true;
         public static double Volume = 0.35;
 
+        public static double DesiredVolume = 1.0;//scale factor
+        public static double FinalVolume
+        {
+            get
+            {
+                return Volume * DesiredVolume;//scale
+            }
+        }
+
         public class MusicChannel
         {
             public bool IsPortal;
@@ -40,10 +49,10 @@ namespace ACAudio
 
         public static void Play(Config.SoundAttributes sound, bool isPortal)
         {
-            Play(sound.file, isPortal, sound.fade);
+            Play(sound.file, isPortal, sound.vol, sound.fade);
         }
 
-        private static void Play(string filename, bool isPortal, double fadeTime)
+        private static void Play(string filename, bool isPortal, double vol, double fadeTime)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -95,8 +104,13 @@ namespace ACAudio
                         Log("cant make sound channel");
                     else
                     {
+                        // store desired scale factor before we use FinalVolume
+                        DesiredVolume = vol;
+
+                        Log($"STARTING music to finalvol:{FinalVolume.ToString("#0.0")} = musicvol:{Volume.ToString("#0.0")} * desiredvol:{DesiredVolume.ToString("#0.0")}");
+
                         Channel.Channel.Volume = 0.0;
-                        Channel.Channel.SetTargetVolume(Volume, fadeTime);
+                        Channel.Channel.SetTargetVolume(FinalVolume, fadeTime);
 
                         Channel.Channel.Play();
 
@@ -141,7 +155,7 @@ namespace ACAudio
 
             if (Channel != null)
             {
-                Channel.Channel.Volume = Volume;
+                Channel.Channel.ChangeTargetVolume(FinalVolume);
             }
 
         }
