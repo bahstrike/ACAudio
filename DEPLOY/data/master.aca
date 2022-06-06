@@ -153,6 +153,12 @@ pop
 file tax2020_3.mp3
 include olthoidungeons.aca
 
+
+// HAHA lets test tying a song to an enemy
+file feel clip_2.mp3
+dynamic class=monster string(name)="Mite Scion"
+
+
 pop
 
 

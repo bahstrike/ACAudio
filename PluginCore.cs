@@ -877,6 +877,11 @@ namespace ACAudio
 
 
 
+            // always look for what should be playing
+            TryMusic();
+
+
+
             // Z is up
 
             Audio.Process(dt, truedt, cameraPos.Global, Vec3.Zero, cameraMat.Up, cameraMat.Forward);
@@ -1017,7 +1022,12 @@ namespace ACAudio
                 // if we are song, this is handled elsewhere. just track if we WANT to be playing
                 if(IsSong)
                 {
-                    _WantSongPlay = true;
+                    if (!_WantSongPlay)
+                    {
+                        Log("WE WANT SONG");
+                        _WantSongPlay = true;
+                    }
+
                     return;
                 }
 
@@ -1085,7 +1095,12 @@ namespace ACAudio
                 // if we are song, this is handled elsewhere. just track if we WANT to be playing
                 if(IsSong)
                 {
-                    _WantSongPlay = false;
+                    if (_WantSongPlay)
+                    {
+                        Log("WE DONT WANT SONG");
+                        _WantSongPlay = false;
+                    }
+
                     return;
                 }
 
@@ -1117,14 +1132,13 @@ namespace ACAudio
 
             public virtual void Process(double dt)
             {
+                // NOTE:   Channel is null for Song types.  there are overrides to handle that via Music class.
+                //         but we still use the Ambient  Play/Stop   for logic to trigger music.
+
+
                 // clear possible dangling channel ref
-                if(Channel != null && !Channel.IsPlaying)
+                if (Channel != null && !Channel.IsPlaying)
                     Channel = null;
-
-
-                // song handled elsewhere
-                if (IsSong)
-                    return;
 
 
                 // should we be playing?
@@ -1412,19 +1426,21 @@ namespace ACAudio
             {
                 Log("changeportalmode DONE");
 
-
-                bool handled = TryMusic();
-
-                // we must ensure to stop portal music even of something else didnt decide to transition
-                if(!handled)
-                    Music.Stop();
-
+                // dont have to do here..  Process will pick it up
+                //TryMusic();
 
                 IsPortaling = false;
             }
         }
 
-        private bool TryMusic()
+        private void TryMusic()
+        {
+            // try to play something.. if nothing desired then kill it
+            if (!_TryMusic())
+                Music.Stop();
+        }
+
+        private bool _TryMusic()
         {
             if (!GetUserEnableMusic())
                 return false;
@@ -1501,6 +1517,11 @@ namespace ACAudio
                 }
 
             }
+
+
+            // if we are portaling, keep whatever might be active, active..
+            if (IsPortaling)
+                return true;
 
 
             // nothing played
