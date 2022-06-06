@@ -143,7 +143,7 @@ dungeon 0007 // keep portal music going while in town network?
 
 // testing a town song i guess.. cragstone
 push
-vol 0.2
+vol 0.6//good town music volume?
 file whatchoocall.ogg
 maxdist 300
 
