@@ -8,6 +8,7 @@ The plugin will load "data/master.aca" to get started.
 DEVELOPMENT
 --------------------------------------------------------------------------------------------
 Code				Strike
+Dynamic Music Concept		Maethor
 Additional Code			trevis
 Static Positions Data		OptimShi
 Audio Engine			FMOD (Firelight Technologies Pty Ltd.)
