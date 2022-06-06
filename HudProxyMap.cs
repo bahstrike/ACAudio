@@ -64,23 +64,22 @@ namespace ACAudio
                 Mat4 camMat;
                 pc.GetCameraInfo(out camPos, out camMat);
 
-                Vec3 playerPos = camPos.Global;
-                Vec2 playerLookVec = camMat.Forward.XY;
+                Vec3 viewPos = camPos.Global;
+                Vec2 viewVec = camMat.Forward.XY;
 
-                playerLookVec.y *= -1.0;
+                viewVec.y *= -1.0;
 #else
             Vec3 playerPos = _playerPos.Value.Global;
             Vec2 playerLookVec = new Vec2(MathLib.ToRad(pc.Player.Values(DoubleValueKey.Heading) - 90.0));
 #endif
 
-                // draw "player" in center UI
-                //iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center, Vec2.One * 8.0), Color.Orange);
-                gfx.FillEllipse(new SolidBrush(Color.Orange), (Rectangle)Box2.Around(rc.Center, Vec2.One * 8.0));
 
-                //iSavedTarget.DrawLine(rc.Center, rc.Center + playerLookVec * 12.0, Color.Orange, 2.0f);
-                gfx.DrawLine(new Pen(Color.Orange, 2.0f), rc.Center, rc.Center + playerLookVec * 12.0);
-
-
+#if true
+                gfx.Transform = Mat3.RotationAround(rc.Center, camMat.Forward.XY.Angle + MathLib.ToRad(-90.0));
+#else
+                // lol lets set up an inverse rotation matrix from player (not camera) heading
+                gfx.Transform = Mat3.RotationAround(rc.Center, MathLib.ToRad(pc.Player.Values(DoubleValueKey.Heading) - 90.0)).Inverse;
+#endif
 
 
                 double range = 35.0;
@@ -88,6 +87,24 @@ namespace ACAudio
 
 
                 double searchDist = 200.0;// make artifically high since proxymap should show sounds even out of range (should really calculate this based on zoom level and control size)
+
+
+
+
+                // draw "player" in center UI
+                //iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center, Vec2.One * 8.0), Color.Orange);
+                gfx.FillEllipse(new SolidBrush(Color.Orange), (Rectangle)Box2.Around(rc.Center, Vec2.One * 8.0));
+
+                //gfx.FillEllipse(new SolidBrush(Color.Yellow), (Rectangle)Box2.Around((playerPos - camPos.Global).XY.MultComps(1.0, -1.0) * drawScale, Vec2.One * 4.0));
+
+                //iSavedTarget.DrawLine(rc.Center, rc.Center + playerLookVec * 12.0, Color.Orange, 2.0f);
+#if true
+                // feels "sticky" i think _playerPos needs to be sourced from physics object
+                gfx.FillEllipse(new SolidBrush(Color.Yellow), (Rectangle)Box2.Around(rc.Center + (_playerPos.Value.Global - viewPos).XY.MultComps(1.0, -1.0) * drawScale, Vec2.One * 4.0));
+                gfx.DrawLine(new Pen(Color.Orange, 2.0f), rc.Center, rc.Center + (_playerPos.Value.Global - viewPos).XY.MultComps(1.0, -1.0) * drawScale);
+#else
+                gfx.DrawLine(new Pen(Color.Orange, 2.0f), rc.Center, rc.Center + viewVec * 12.0);
+#endif
 
 
 
@@ -105,7 +122,7 @@ namespace ACAudio
                             continue;
 
 
-                        Vec3 offset = (sp.Position.Global - playerPos);
+                        Vec3 offset = (sp.Position.Global - viewPos);
 
                         if (offset.Magnitude > searchDist)//src.Sound.maxdist)
                             continue;
@@ -148,7 +165,7 @@ namespace ACAudio
                 if (true)
                     foreach (Config.SoundSourcePosition src in Config.FindSoundSourcesPosition(camPos))
                     {
-                        Vec3 offset = (src.Position.Global - playerPos);
+                        Vec3 offset = (src.Position.Global - viewPos);
 
                         if (offset.Magnitude > searchDist)//src.Sound.maxdist)
                             continue;
@@ -194,7 +211,7 @@ namespace ACAudio
                         if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(camPos))
                             continue;
 
-                        Vec3 offset = (objPos.Value.Global - playerPos);
+                        Vec3 offset = (objPos.Value.Global - viewPos);
 
                         if (offset.Magnitude > searchDist)//src.Sound.maxdist)
                             continue;
@@ -262,8 +279,8 @@ namespace ACAudio
 
 
 #endif
-            // borders
-            Color borderClrLt = Color.FromArgb(200, 200, 200);
+                // borders
+                Color borderClrLt = Color.FromArgb(200, 200, 200);
             Color borderClrDk = Color.FromArgb(32, 32, 32);
             float borderThick = 2.0f;
             iSavedTarget.DrawLine(controlRC.UL, controlRC.UR, borderClrLt, borderThick);
