@@ -2,14 +2,14 @@
 
 ACAudio is a Decal plugin for Asheron's Call that adds in-game music and 3D sound effects.
 
-### What it does
+## What it does
 
 Music plays when you're portaling or entering specific dungeons. You may hear music when near towns or encountering specific boss monsters. 
 
 Candles, campfires, lanterns, blacksmith anvils, portals, lifestones, casinos, town criers... These are just a few examples of objects that have new sounds.
 There are roughly 100,000 sound sources in the provided sound pack.
 
-### How the sound pack works
+## How the sound pack works
 
 The sound pack is 100% customizable through the configuration script [/data/master.aca](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY/data/master.aca).
 All of the .ACA configuration and sound files are stored within the [/data/](https://github.com/bahstrike/ACAudio/tree/main/DEPLOY/data) folder.
@@ -19,7 +19,7 @@ Sound Attributes are defined by not only their filename, but also properties suc
 
 Sound Sources can be anything from the player being inside a certain dungeon, a certain point on the terrain, `Data ID` of static decor _(such as a fireplace.. ALL fireplaces)_, items on the ground, NPCs with a certain species, enemies with a certain name... The possibilities are endless!
 
-### How the audio engine works
+## How the audio engine works
 
 ACAudio does not alter the in-game audio in any way. The plugin's FMOD sound engine runs alongside Asheron Call's DirectSound sound engine.
 Your operating system mixes both audio streams for your final speaker output.
