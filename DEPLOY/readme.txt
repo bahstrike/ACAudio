@@ -43,6 +43,6 @@ SmithLib.dll MAY be used (as-is) in non-commercial projects:
  - The following attribution must be easily visible to the end-user within your application:  "Uses components from Smith Engine (Bad Ass Hackers)"
  - The entirety of this "SmithLib.dll" subsection must be present within your readme file or legal disclaimer.
 
-You MAY NOT modify, decompile, reverse engineer or sell SmithLib.dll. You must contact Bad Ass Hackers to discuss.
+You MAY NOT rename, modify, decompile, reverse engineer or sell SmithLib.dll. You must contact Bad Ass Hackers to discuss.
 You MAY NOT use SmithLib.dll in a commercial project. You must contact Bad Ass Hackers to discuss.
-You MAY NOT distribute SmithLib.dll in any fashion, unless the entirety of this "SmithLib.dll" subsection is included.
+You MAY NOT distribute SmithLib.dll in any fashion, unless the entirety of this "SmithLib.dll" subsection is present within your readme file or legal disclaimer.
