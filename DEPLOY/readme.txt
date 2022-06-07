@@ -8,10 +8,10 @@ The plugin will load "data/master.aca" to get started.
 DEVELOPMENT
 --------------------------------------------------------------------------------------------
 Code				Strike
-Dynamic Music Concept		Maethor
 Additional Code			trevis
 Static Positions Data		OptimShi
 Audio Engine			FMOD (Firelight Technologies Pty Ltd.)
+Dynamic Music Concept		Maethor
 
 
 ADVICE and DISCUSSION
@@ -31,4 +31,18 @@ MUSIC and SOUND EFFECTS
 --------------------------------------------------------------------------------------------
 Please see ./data/credits.txt for whichever soundpack you are using.
 
-Plugin author(s) are not responsible for copyright infringement within user-supplied soundpacks.
+NOTE: Plugin developer(s) are not responsible for copyright violations in soundpacks made by end-users!
+      The official sound pack has properly attributed music and sounds.
+
+
+SmithLib.dll
+--------------------------------------------------------------------------------------------
+SmithLib.dll is a math and utilities library written by Strike (Bad Ass Hackers) for a proprietary game engine called Smith (https://smith.bah.wtf).
+
+SmithLib.dll MAY be used (as-is) in non-commercial projects:
+ - The following attribution must be clearly and easily visible to the end-user within your application:  "Uses components from Smith Engine (Bad Ass Hackers)"
+ - The entirety of this "SmithLib.dll" subsection must be present within your readme file or legal disclaimer.
+
+You MAY NOT modify, decompile, reverse engineer or sell SmithLib.dll. You must contact Bad Ass Hackers to discuss.
+You MAY NOT use SmithLib.dll in a commercial project. You must contact Bad Ass Hackers to discuss.
+You MAY NOT distribute SmithLib.dll in any fashion, unless the entirety of this "SmithLib.dll" subsection is included.
