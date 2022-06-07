@@ -15,7 +15,7 @@ There are roughly 100,000 sound sources in the provided sound pack.
 
 The sound pack is 100% customizable through the configuration script [/data/master.aca](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY/data/master.aca).
 All of the .ACA configuration and sound files are stored within the [/data/](https://github.com/bahstrike/ACAudio/tree/main/DEPLOY/data) folder.
-_If you make your own sound pack, you should keep your [credits.txt](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY/data/credits.txt) up-to-date!_
+_If you make your own sound pack to distribute, you should keep your [credits.txt](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY/data/credits.txt) up-to-date!_
 
 Sound Attributes are defined by not only their filename, but also properties such as their volume, audible distance or probability to play. The same configuration directives can define a looping song just as easily as they can define a rare chance for NPC speech.
 
@@ -28,6 +28,8 @@ Your operating system mixes both audio streams for your final speaker output.
 
 ACAudio is able to play sounds that truly feel as though the game is playing them. This is because FMOD supports 3D positional audio and Decal can provide 3D coordinates for in-game objects.
 Speech from an NPC or sizzling from a fireplace seem as though they are really coming from the object; fading out as you move farther away and panning as you turn around.
+
+_The real magic is mapping customizable .ACA files to in-game elements. I hope the plugin does the game justice and you enjoy using and/or modifying it!_
 
 ## readme.txt
 
@@ -81,5 +83,5 @@ SmithLib.dll MAY be used (as-is) in non-commercial projects:
 
 You MAY NOT rename, modify, decompile, reverse engineer or sell SmithLib.dll. You must contact Bad Ass Hackers to discuss.
 You MAY NOT use SmithLib.dll in a commercial project. You must contact Bad Ass Hackers to discuss.
-You MAY NOT distribute SmithLib.dll in any fashion, unless the entirety of this "SmithLib.dll" subsection is included.
+You MAY NOT distribute SmithLib.dll in any fashion, unless the entirety of this "SmithLib.dll" subsection is present within your readme file or legal disclaimer.
 ```
