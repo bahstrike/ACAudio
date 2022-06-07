@@ -497,6 +497,15 @@ namespace ACAudio
 
         private double lastRequestIdWorldTime = 0.0;
 
+
+        private class QueryIdAttempt
+        {
+            public int tries = 0;
+            public double lastTryWorldTime = MathLib.Infinity;
+        }
+
+        private Dictionary<int, QueryIdAttempt> queryAttempts = new Dictionary<int, QueryIdAttempt>();
+
         public void QueryForIdInfo(WorldObject obj)
         {
             // already have? nothing to do
@@ -507,10 +516,34 @@ namespace ACAudio
             if ((WorldTime - lastRequestIdWorldTime) < 0.2)
                 return;
 
-            Log($"REQUESTING INFORMATIONS FOR OBJ {obj.Id}  class:{obj.ObjectClass}  name:{obj.Name}");
+            QueryIdAttempt q;
+            if(!queryAttempts.TryGetValue(obj.Id, out q))
+            {
+                q = new QueryIdAttempt();
+                queryAttempts.Add(obj.Id, q);
+            }
+
+
+#if true
+            // if we have already tried a lot, reduce frequency
+            double reqTime = 0.0;
+            if (q.tries > 20)
+                reqTime = 3.0;
+            else if (q.tries > 5)
+                reqTime = 1.0;
+
+            if ((WorldTime - q.lastTryWorldTime) >= reqTime)
+                return;
+#endif
+
+
+            Log($"REQUESTING INFORMATIONS FOR OBJ {obj.Id}  class:{obj.ObjectClass}  name:{obj.Name}  tries:{q.tries}");
             Host.Actions.RequestId(obj.Id);
 
             lastRequestIdWorldTime = WorldTime;
+
+            q.tries++;
+            q.lastTryWorldTime = WorldTime;
         }
 
 
@@ -1024,7 +1057,7 @@ namespace ACAudio
                 }
 
 
-                Log($"we wanna play");
+                Log($"we wanna play {Source.Sound.file}");
 
                 // if channel exists, kill it?
                 if (Channel != null)
@@ -1130,7 +1163,10 @@ namespace ACAudio
 
                 // clear possible dangling channel ref
                 if (Channel != null && !Channel.IsPlaying)
+                {
+                    _WantSongPlay = false;
                     Channel = null;
+                }
 
 
                 // should we be playing?

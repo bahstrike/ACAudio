@@ -144,6 +144,9 @@ dungeon 0007 // keep portal music going while in town network?
 // testing a town song i guess.. cragstone
 push
 vol 0.6//good town music volume?
+looping off
+interval 120
+chance 0.3
 file whatchoocall.ogg
 maxdist 300
 
@@ -237,6 +240,25 @@ pop // end dynamic objects
 
 //--------------------------------------------------------------------------------------------------------
 
+push // start random one-shot 3d sounds
+
+looping off
+randomstart off
+interval 25
+chance 0.2
+mindist 10
+maxdist 18
+mode 3d
+
+vol 0.3
+file anvil.mp3
+static 020000A7// blacksmith anvil
+
+pop // end random one-shot 3d sounds
+
+
+//--------------------------------------------------------------------------------------------------------
+
 
 push // start looping 3d ambience
 
@@ -263,9 +285,11 @@ static 02000706// fancy candle
 static 020001E5// wall torch
 
 static 02000372// wall blue flame oil jar
+static 020005C1// wall blue flame
 static 020009A3// standing blue flame
 
 static 01000A2F// fireplace
+static 02000344// fireplace
 
 dynamic class=misc string(name)="Torch" // dropped torches
 
@@ -318,7 +342,11 @@ static 020005AE// open campfire (big flames)
 
 static 020017CF// large wall fire (seen in facility hub entrance)
 
+static 020005B6// big blue fire in stone stand
+
 static 01003633//big fireplace/chimney seen at fiun outpost
+
+dynamic class=misc string(name)="Bonfire" // fires seen with some random monster spawns
 
 
 // ------ FOOD SIMMERING --------

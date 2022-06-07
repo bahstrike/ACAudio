@@ -49,10 +49,10 @@ namespace ACAudio
 
         public static void Play(Config.SoundAttributes sound, bool isPortal)
         {
-            Play(sound.file, isPortal, sound.vol, sound.fade);
+            Play(sound.file, isPortal, sound.vol, sound.fade, sound.looping);
         }
 
-        private static void Play(string filename, bool isPortal, double vol, double fadeTime)
+        private static void Play(string filename, bool isPortal, double vol, double fadeTime, bool looping)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -93,7 +93,7 @@ namespace ACAudio
 
             try
             {
-                Audio.Sound snd = PluginCore.GetOrLoadSound(filename, Audio.DimensionMode._2D, true);
+                Audio.Sound snd = PluginCore.GetOrLoadSound(filename, Audio.DimensionMode._2D, looping);
                 if (snd == null)
                     Log("cant get music sound");
                 else
@@ -140,6 +140,10 @@ namespace ACAudio
 
         public static void Process(double dt)
         {
+            if(Channel != null && !Channel.Channel.IsPlaying)
+                Channel = null;
+
+
             if(Channel != null)
             {
                 if((Channel.IsPortal && !EnablePortal) ||
