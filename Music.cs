@@ -93,11 +93,12 @@ namespace ACAudio
 
             try
             {
-                Audio.Sound snd = PluginCore.GetOrLoadSound(filename, Audio.DimensionMode._2D, looping);
+                Audio.Sound snd = PluginCore.GetOrLoadSound(filename, Audio.DimensionMode._2D, looping, true/*should be using precache setting? i mean its music so could hardcode it to filestream*/);
                 if (snd == null)
                     Log("cant get music sound");
                 else
                 {
+                    Log($"CREATED FILE STREAM FOR: {filename}");
 
                     Channel = new MusicChannel(isPortal, Audio.PlaySound(snd, true));
                     if (Channel == null)
@@ -132,6 +133,7 @@ namespace ACAudio
                 Log($"beginning fadeout stop for {Channel.Channel.Sound?.Name}");
 
                 Channel.Channel.FadeToStop(fadeTime);
+
 
                 // pre-forget about it?
                 Channel = null;

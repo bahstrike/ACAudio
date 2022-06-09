@@ -124,6 +124,7 @@ namespace ACAudio
             return cb.Checked;
         }
 
+        public static bool PluginEnable;
 
         /// <summary>
         /// This is called when the plugin is started up. This happens only once.
@@ -137,9 +138,13 @@ namespace ACAudio
             Smith.Log.WarningCallback = _LogWarning;
             Smith.Log.ErrorCallback = _LogError;
 
+
+            using (INIFile ini = INIFile)
+                PluginEnable = ini.GetKeyString(Core.CharacterFilter.AccountName, "PluginEnable", "1") != "0";
+
             try
             {
-                if (File.Exists(FinalLogFilepath))
+                if (PluginEnable && File.Exists(FinalLogFilepath))
                     File.Delete(FinalLogFilepath);
 
                 Log("----------------------------------------------------------------------");
@@ -271,29 +276,21 @@ namespace ACAudio
                 debugLayout.AddControl(hudmap, (Rectangle)(fillRC.Offsetted(-fillRC.UL).Inflated(Vec2.One * -fillRC.Size.Magnitude * 0.01)));
 
 
-
-
                 using (INIFile ini = INIFile)
                 {
-                    (View["Enable"] as HudCheckBox).Checked = ini.GetKeyString("ACAudio", "Enable", "1") != "0";
-                    (View["Volume"] as HudHSlider).Position = int.Parse(ini.GetKeyString("ACAudio", "Volume", "75"));
+                    (View["Enable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "Enable", "1") != "0";
+                    (View["Volume"] as HudHSlider).Position = int.Parse(ini.GetKeyString(Core.CharacterFilter.AccountName, "Volume", "75"));
 
-                    (View["MusicEnable"] as HudCheckBox).Checked = ini.GetKeyString("ACAudio", "MusicEnable", "1") != "0";
-                    (View["MusicVolume"] as HudHSlider).Position = int.Parse(ini.GetKeyString("ACAudio", "MusicVolume", "35"));
+                    (View["MusicEnable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "MusicEnable", "1") != "0";
+                    (View["MusicVolume"] as HudHSlider).Position = int.Parse(ini.GetKeyString(Core.CharacterFilter.AccountName, "MusicVolume", "35"));
 
-                    (View["PortalMusicEnable"] as HudCheckBox).Checked = ini.GetKeyString("ACAudio", "PortalMusicEnable", "1") != "0";
+                    (View["PortalMusicEnable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "PortalMusicEnable", "1") != "0";
                 }
 
 
                 //Log("regen logos");
                 RegenerateLogos();
 
-
-                //Log("init audio");
-                if (!Audio.Init(1000, dopplerscale: 0.135f))
-                    Log("Failed to initialize Audio");
-
-                Music.Init();
 
                 //Log("hook render");
                 Core.RenderFrame += _Process;
@@ -303,16 +300,33 @@ namespace ACAudio
                 Core.CharacterFilter.Logoff += _CharacterFilter_Logoff;
 
 
-                ReloadConfig();
-
-
-                IsPortaling = true;
-                StartPortalSong();// first time login portal deserves one
+                Startup_Internal();
             }
             catch (Exception ex)
             {
                 Log($"Startup exception: {ex.Message}");
             }
+        }
+
+        private void Startup_Internal()
+        {
+            Shutdown_Internal();
+
+            if (!PluginEnable)
+                return;
+
+            //Log("init audio");
+            if (!Audio.Init(1000, dopplerscale: 0.135f))
+                Log("Failed to initialize Audio");
+
+            Music.Init();
+
+
+            ReloadConfig();
+
+
+            IsPortaling = true;
+            StartPortalSong();// first time login portal deserves one
         }
 
         private void ReloadConfig()
@@ -387,25 +401,30 @@ namespace ACAudio
         private bool LogOff = false;
         private void _CharacterFilter_Logoff(object sender, LogoffEventArgs e)
         {
-            if (LogOff)
-                return;
+            if (PluginEnable)
+            {
+                if (LogOff)
+                    return;
 
-            Log("LOGOFF LOL");
-            IsPortaling = true;
-            StartPortalSong();
+                Log("LOGOFF LOL");
+                IsPortaling = true;
+                StartPortalSong();
 
-            LogOff = true;
+                LogOff = true;
+            }
 
 
             using (INIFile ini = INIFile)
             {
-                ini.WriteKey("ACAudio", "Enable", (View["Enable"] as HudCheckBox).Checked ? "1" : "0");
-                ini.WriteKey("ACAudio", "Volume", (View["Volume"] as HudHSlider).Position.ToString());
+                ini.WriteKey(Core.CharacterFilter.AccountName, "PluginEnable", (View["PluginEnable"] as HudCheckBox).Checked ? "1" : "0");
 
-                ini.WriteKey("ACAudio", "MusicEnable", (View["MusicEnable"] as HudCheckBox).Checked ? "1" : "0");
-                ini.WriteKey("ACAudio", "MusicVolume", (View["MusicVolume"] as HudHSlider).Position.ToString());
+                ini.WriteKey(Core.CharacterFilter.AccountName, "Enable", (View["Enable"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey(Core.CharacterFilter.AccountName, "Volume", (View["Volume"] as HudHSlider).Position.ToString());
 
-                ini.WriteKey("ACAudio", "PortalMusicEnable", (View["PortalMusicEnable"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey(Core.CharacterFilter.AccountName, "MusicEnable", (View["MusicEnable"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey(Core.CharacterFilter.AccountName, "MusicVolume", (View["MusicVolume"] as HudHSlider).Position.ToString());
+
+                ini.WriteKey(Core.CharacterFilter.AccountName, "PortalMusicEnable", (View["PortalMusicEnable"] as HudCheckBox).Checked ? "1" : "0");
             }
         }
 
@@ -916,7 +935,7 @@ namespace ACAudio
             lastProcessTime = pt_process.Duration;
         }
 
-        public static Audio.Sound GetOrLoadSound(string name, Audio.DimensionMode mode, bool looping)
+        public static Audio.Sound GetOrLoadSound(string name, Audio.DimensionMode mode, bool looping, bool filestream)
         {
             Audio.Sound snd = Audio.GetSound(name, mode, looping);
             if (snd != null)
@@ -927,12 +946,24 @@ namespace ACAudio
 
             try
             {
-                Log($"Loading file to RAM: {name}");
-                byte[] buf = PluginCore.ReadDataFile(name);
-                if (buf == null || buf.Length == 0)
-                    return null;
+                if (filestream)
+                {
+                    Log($"Creating file stream: {name}");
+                    string filepath = GenerateDataPath(name);
+                    if (!File.Exists(filepath))
+                        return null;
 
-                return Audio.GetSound(name, buf, mode, looping);
+                    return Audio.GetFileStream(name, filepath, mode, looping);
+                }
+                else
+                {
+                    Log($"Loading file to RAM: {name}");
+                    byte[] buf = PluginCore.ReadDataFile(name);
+                    if (buf == null || buf.Length == 0)
+                        return null;
+
+                    return Audio.GetSound(name, buf, mode, looping);
+                }
             }
             catch(Exception ex)
             {
@@ -1089,7 +1120,7 @@ namespace ACAudio
                     else
                         mode = Audio.DimensionMode._2D;
 
-                    Audio.Sound snd = GetOrLoadSound(Source.Sound.file, mode, Source.Sound.looping);
+                    Audio.Sound snd = GetOrLoadSound(Source.Sound.file, mode, Source.Sound.looping, false/*should be using precache setting*/);
                     if (snd == null)
                         return;
 
@@ -1575,13 +1606,18 @@ namespace ACAudio
 
             Core.RenderFrame -= _Process;
 
-            Music.Shutdown();
-            Audio.Shutdown();
+            Shutdown_Internal();
 
 
             Log("----------------------------------------------------------------------");
             Log("                           ACAudio Shutdown");
             Log("----------------------------------------------------------------------");
+        }
+
+        private void Shutdown_Internal()
+        {
+            Music.Shutdown();
+            Audio.Shutdown();
         }
 
         private void FilterCore_CommandLineText(object sender, ChatParserInterceptEventArgs e)
@@ -1623,6 +1659,9 @@ namespace ACAudio
 
         public static void Log(string ln)
         {
+            if (!PluginEnable)
+                return;
+
             using (StreamWriter logFile = File.AppendText(FinalLogFilepath))
                 logFile.WriteLine($"{DateTime.Now.ToLongTimeString()}: {ln}");
         }

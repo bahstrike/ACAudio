@@ -4,7 +4,8 @@
     <page label="Main">
       <control progid="DecalControls.FixedLayout" clipped="">
 
-        <control progid="DecalControls.StaticText" name="Info" left="10" top="10" width="400" height="130" text=""/>
+        <control progid="DecalControls.CheckBox" name="PluginEnable" left="10" top="10" width="140" height="20" text="Enable Plugin" checked="True"/>
+        <control progid="DecalControls.StaticText" name="Info" left="10" top="40" width="400" height="130" text=""/>
 
         <control progid="DecalControls.PushButton" name="Dump" left="10" top="150" width="70" height="20" text="Dump"/>
         <control progid="DecalControls.PushButton" name="Coords" left="80" top="150" width="70" height="20" text="Coords"/>
