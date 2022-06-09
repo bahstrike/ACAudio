@@ -917,6 +917,65 @@ namespace ACAudio
 
 
 
+
+            // handle sound cache logic
+            {
+                // build list of all currently playing sounds
+                List<Audio.Sound> activeSounds = new List<Audio.Sound>();
+                foreach (Audio.Channel channel in Audio.GetAllChannels())
+                    if (channel.IsPlaying && !activeSounds.Contains(channel.Sound))
+                        activeSounds.Add(channel.Sound);
+
+
+                // refresh request time for all active sounds (cache timeout should only start when stop playing)
+                foreach (Audio.Sound snd in activeSounds)
+                {
+                    SoundCacheEntry sce;
+                    if (!SoundCache.TryGetValue(snd, out sce))
+                    {
+                        Log($"uh oh, no cache entry for an active sound");
+                        continue;
+                    }
+
+                    sce.RequestTime = WorldTime;
+                }
+
+                // check all loaded sounds to see if they should be unloaded
+                List<Audio.Sound> soundsToUnload = new List<Audio.Sound>();
+                foreach(Audio.Sound snd in Audio.GetAllSounds())
+                {
+                    // if active, skip logic
+                    if (activeSounds.Contains(snd))
+                        continue;
+
+                    SoundCacheEntry sce;
+                    if (!SoundCache.TryGetValue(snd, out sce))
+                    {
+                        Log($"uh oh, no cache entry for an existing sound");
+                        continue;
+                    }
+
+                    // if we want perma-cached then skip
+                    if (sce.Cache < 0.0)
+                        continue;
+
+                    // if we havent been requested past our desired cache time then add to unload list
+                    double timeSincePlay = WorldTime - sce.RequestTime;
+                    if (timeSincePlay > sce.Cache)
+                        soundsToUnload.Add(snd);
+                }
+
+                // wipe out old sounds
+                foreach(Audio.Sound snd in soundsToUnload)
+                {
+                    Audio.CleanupSound(snd);
+                    SoundCache.Remove(snd);
+                }
+            }
+
+
+
+
             (View["ProxyMap"] as HudProxyMap).Invalidate();// draw every frame.. realtime map
 
 
@@ -935,42 +994,66 @@ namespace ACAudio
             lastProcessTime = pt_process.Duration;
         }
 
-        public static Audio.Sound GetOrLoadSound(string name, Audio.DimensionMode mode, bool looping, bool filestream)
+        private static Dictionary<Audio.Sound, SoundCacheEntry> SoundCache = new Dictionary<Audio.Sound, SoundCacheEntry>();
+
+        private class SoundCacheEntry
         {
+            public double Cache;
+            public double RequestTime;
+        }
+
+        public static Audio.Sound GetOrLoadSound(string name, Audio.DimensionMode mode, bool looping, double cache)
+        {
+            if (Instance == null)
+                return null;
+
             Audio.Sound snd = Audio.GetSound(name, mode, looping);
-            if (snd != null)
-                return snd;
 
-            if (PluginCore.Instance == null)
-                return null;
-
-            try
+            if (snd == null)
             {
-                if (filestream)
+                try
                 {
-                    Log($"Creating file stream: {name}");
-                    string filepath = GenerateDataPath(name);
-                    if (!File.Exists(filepath))
-                        return null;
+                    if (cache == 0.0)
+                    {
+                        Log($"Creating file stream: {name}");
+                        string filepath = GenerateDataPath(name);
+                        if (!File.Exists(filepath))
+                            return null;
 
-                    return Audio.GetFileStream(name, filepath, mode, looping);
+                        snd = Audio.GetFileStream(name, filepath, mode, looping);
+                    }
+                    else
+                    {
+                        Log($"Loading file to RAM: {name}");
+                        byte[] buf = PluginCore.ReadDataFile(name);
+                        if (buf == null || buf.Length == 0)
+                            return null;
+
+                        snd = Audio.GetSound(name, buf, mode, looping);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    Log($"Loading file to RAM: {name}");
-                    byte[] buf = PluginCore.ReadDataFile(name);
-                    if (buf == null || buf.Length == 0)
-                        return null;
+                    Log($"GetOrLoadSound() Cant load {name}: {ex.Message}");
 
-                    return Audio.GetSound(name, buf, mode, looping);
+                    return null;
                 }
             }
-            catch(Exception ex)
-            {
-                Log($"GetOrLoadSound() Cant load {name}: {ex.Message}");
 
+            if (snd == null)
                 return null;
+
+            SoundCacheEntry sce;
+            if(!SoundCache.TryGetValue(snd, out sce))
+            {
+                sce = new SoundCacheEntry();
+                SoundCache.Add(snd, sce);
             }
+
+            sce.Cache = cache;
+            sce.RequestTime = Instance.WorldTime;
+
+            return snd;
         }
 
         public abstract class Ambient
@@ -1120,7 +1203,7 @@ namespace ACAudio
                     else
                         mode = Audio.DimensionMode._2D;
 
-                    Audio.Sound snd = GetOrLoadSound(Source.Sound.file, mode, Source.Sound.looping, false/*should be using precache setting*/);
+                    Audio.Sound snd = GetOrLoadSound(Source.Sound.file, mode, Source.Sound.looping, Source.Sound.cache);
                     if (snd == null)
                         return;
 
@@ -1160,10 +1243,6 @@ namespace ACAudio
                     return;
                 }
 
-
-                // if we are sharing music channel then inform music system of stop
-                if (Source.Sound.mode == Config.SoundMode.Song && Music.Channel.Channel == Channel)
-                    Music.Stop();
 
                 if (Channel != null)
                 {
@@ -1618,6 +1697,8 @@ namespace ACAudio
         {
             Music.Shutdown();
             Audio.Shutdown();
+
+            SoundCache.Clear();
         }
 
         private void FilterCore_CommandLineText(object sender, ChatParserInterceptEventArgs e)

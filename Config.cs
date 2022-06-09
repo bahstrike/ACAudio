@@ -29,7 +29,7 @@ namespace ACAudio
             public double interval = 0.0;
             public double chance = 1.0;
             public double fade = 0.08;
-            public double precache = 5.0;
+            public double cache = 5.0;
             public SoundMode mode = SoundMode._3D;
 
             public SoundAttributes Clone()
@@ -46,7 +46,7 @@ namespace ACAudio
                 o.interval = interval;
                 o.chance = chance;
                 o.fade = fade;
-                o.precache = precache;
+                o.cache = cache;
                 o.mode = mode;
 
                 return o;
@@ -412,8 +412,8 @@ namespace ACAudio
                                 GetDouble(content, ref CurrentSound.fade);
                                 break;
 
-                            case "precache":
-                                GetDouble(content, ref CurrentSound.precache);
+                            case "cache":
+                                GetDouble(content, ref CurrentSound.cache);
                                 break;
 
                             case "mode":

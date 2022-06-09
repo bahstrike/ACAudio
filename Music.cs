@@ -49,10 +49,10 @@ namespace ACAudio
 
         public static void Play(Config.SoundAttributes sound, bool isPortal)
         {
-            Play(sound.file, isPortal, sound.vol, sound.fade, sound.looping);
+            Play(sound.file, isPortal, sound.vol, sound.fade, sound.looping, sound.cache);
         }
 
-        private static void Play(string filename, bool isPortal, double vol, double fadeTime, bool looping)
+        private static void Play(string filename, bool isPortal, double vol, double fadeTime, bool looping, double cache)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -93,7 +93,7 @@ namespace ACAudio
 
             try
             {
-                Audio.Sound snd = PluginCore.GetOrLoadSound(filename, Audio.DimensionMode._2D, looping, true/*should be using precache setting? i mean its music so could hardcode it to filestream*/);
+                Audio.Sound snd = PluginCore.GetOrLoadSound(filename, Audio.DimensionMode._2D, looping, cache/*we "probably" should just hardcode music to be file streaming...*/);
                 if (snd == null)
                     Log("cant get music sound");
                 else

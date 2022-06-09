@@ -80,8 +80,8 @@
 // fade [seconds]
 // Fade in/out time. Set to 0 for no fade.
 //
-// precache [seconds]
-// Attempt to keep sound precached in RAM for a while.
+// cache [seconds]
+// Attempt to keep sound cached in RAM for a while.
 // Set to 0 to disable and stream from file (best for big files).
 // Set to -1 to attempt to keep in RAM forever (not recommended).
 //
@@ -130,7 +130,7 @@ looping on
 randomstart off
 interval 0
 chance 1
-precache 0
+cache 0
 mode song
 
 
