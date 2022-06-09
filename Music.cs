@@ -98,8 +98,6 @@ namespace ACAudio
                     Log("cant get music sound");
                 else
                 {
-                    Log($"CREATED FILE STREAM FOR: {filename}");
-
                     Channel = new MusicChannel(isPortal, Audio.PlaySound(snd, true));
                     if (Channel == null)
                         Log("cant make sound channel");
