@@ -105,11 +105,14 @@
 // Manually specify coordinates.
 //
 // dungeon [id]
-// Trigger for song or 2d sounds whenever in specified dungeon. These are the first 4 characters of landblock.
+// Trigger for song or 2d sounds whenever in specified dungeon. These are the first 4 characters of
+// landblock. Only works with song/2d.
 //
 // portal
-// Triggers when portaling. Only one sound can be associated.
+// Triggers when portaling. Only one sound can be associated. Only works with song/2d.
 //
+// text ["blahblah"]
+// Triggers when an exact string is received in chat. Only works with song/2d.
 
 
 //--------------------------------------------------------------------------------------------------------
@@ -157,7 +160,24 @@ file feel clip_2.mp3
 dynamic class=monster string(name)="Mite Scion"
 
 
+
 pop
+
+//--------------------------------------------------------------------------------------------------------
+
+push // start text triggers
+chance 1
+interval 0
+randomstart off
+looping off
+
+vol 0.65
+
+file kegpour.mp3
+text "You tap some beer from the keg."
+
+
+pop // end text triggers
 
 
 //--------------------------------------------------------------------------------------------------------

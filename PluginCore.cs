@@ -312,12 +312,10 @@ namespace ACAudio
                 RegenerateLogos();
 
 
-                //Log("hook render");
+                //Log("hook stuff");
                 Core.RenderFrame += _Process;
-
-
-                //Log("hook logoff");
                 Core.CharacterFilter.Logoff += _CharacterFilter_Logoff;
+                Core.ChatBoxMessage += _ChatBoxMessage;
 
 
                 Startup_Internal();
@@ -325,6 +323,19 @@ namespace ACAudio
             catch (Exception ex)
             {
                 Log($"Startup exception: {ex.Message}");
+            }
+        }
+
+        private void _ChatBoxMessage(object sender, ChatTextInterceptEventArgs e)
+        {
+            //Log($"CHAT: {e.Text}");
+
+            Config.SoundSource snd = Config.FindSoundSourceText(e.Text);
+            if(snd != null)
+            {
+                // we have no position data.. its a 2d effect
+                Log($"wanna play something from text: {e.Text}");
+                PlayFor2DNow(snd);
             }
         }
 
@@ -1367,6 +1378,33 @@ namespace ACAudio
 
         public List<Ambient> ActiveAmbients = new List<Ambient>();
 
+
+        // this is a 1-shot event.. probably triggered via text
+        public void PlayFor2DNow(Config.SoundSource src)
+        {
+#if false
+            // if its a song then divert
+            if(src.Sound.mode == Config.SoundMode.Song)
+            {
+                Music.Play(src.Sound, false/*probably not!*/);
+                return;
+            }
+#endif
+
+
+            Audio.Sound snd = GetOrLoadSound(src.Sound.file, Audio.DimensionMode._2D, false/*src.Sound.looping*/, false);
+            if (snd == null)
+                return;
+
+            Audio.Channel channel = Audio.PlaySound(snd, true);
+
+            channel.Volume = src.Sound.vol;
+
+            channel.Play();
+
+            // i think our audio engine GC will clean up :)
+        }
+
         public void PlayForPosition(Position pos, Config.SoundSource src)
         {
             //Log($"playforposition {pos} | {filename}");
@@ -1688,11 +1726,12 @@ namespace ACAudio
         /// </summary>
         protected override void Shutdown()
         {
-            Core.CharacterFilter.Logoff -= _CharacterFilter_Logoff;
-
-            Core.RenderFrame -= _Process;
-
             Shutdown_Internal();
+
+            //Log("unhook stuff");
+            Core.ChatBoxMessage -= _ChatBoxMessage;
+            Core.CharacterFilter.Logoff -= _CharacterFilter_Logoff;
+            Core.RenderFrame -= _Process;
 
 
             Log("----------------------------------------------------------------------");

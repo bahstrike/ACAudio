@@ -202,9 +202,48 @@ namespace ACAudio
             }
         }
 
+        public class SoundSourceText : SoundSource
+        {
+            public readonly string Text;
+
+            public SoundSourceText(SoundAttributes _Sound, string _Text)
+                : base(_Sound)
+            {
+                Text = _Text;
+            }
+        }
+
         public static List<SoundSource> Sources = new List<SoundSource>();
         public static SoundAttributes PortalSound = null;
 
+
+        public static SoundSourceText FindSoundSourceText(string txt)
+        {
+            if (string.IsNullOrEmpty(txt))
+                return null;
+
+            string[] lines = txt.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);// should be at least 1
+
+            foreach (SoundSource src in Sources)
+            {
+                SoundSourceText txtSrc = src as SoundSourceText;
+                if (txtSrc == null)
+                    continue;
+
+#if false
+                // need to handle multiline in config
+#else
+                if (!lines[0].Equals(txtSrc.Text))
+                    continue;
+
+                Log("found text source!!");
+#endif
+
+                return txtSrc;
+            }
+
+            return null;
+        }
 
         public static SoundSourceStatic FindSoundSourceStatic(uint did)
         {
@@ -582,6 +621,15 @@ namespace ACAudio
 
                                     //Log($"NEED TO REGISTER PORTAL");
                                     PortalSound = CurrentSound.Clone();// be sure to clone since attributes stack may modify later
+                                }
+                                break;
+
+                            case "text":
+                                {
+                                    string txt = content.Replace("\"", "");
+
+                                    Log($"adding text source: {txt}");
+                                    Sources.Add(new SoundSourceText(CurrentSound, txt));
                                 }
                                 break;
 #endregion
