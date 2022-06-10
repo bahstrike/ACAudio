@@ -80,11 +80,6 @@
 // fade [seconds]
 // Fade in/out time. Set to 0 for no fade.
 //
-// cache [seconds]
-// Attempt to keep sound cached in RAM for a while.
-// Set to 0 to disable and stream from file (best for big files).
-// Set to -1 to attempt to keep in RAM forever (not recommended).
-//
 // mode [song/2d/3d/hybrid]
 // Mode types:
 //   song - Plays in 2d but is "exclusive" in that any song trigger will crossfade from previous song to new.
@@ -130,7 +125,6 @@ looping on
 randomstart off
 interval 0
 chance 1
-cache 0
 mode song
 
 

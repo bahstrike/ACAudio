@@ -29,7 +29,6 @@ namespace ACAudio
             public double interval = 0.0;
             public double chance = 1.0;
             public double fade = 0.08;
-            public double cache = 5.0;
             public SoundMode mode = SoundMode._3D;
 
             public SoundAttributes Clone()
@@ -46,7 +45,6 @@ namespace ACAudio
                 o.interval = interval;
                 o.chance = chance;
                 o.fade = fade;
-                o.cache = cache;
                 o.mode = mode;
 
                 return o;
@@ -357,13 +355,13 @@ namespace ACAudio
                         // lets see what we got
                         switch (directive.ToLowerInvariant())
                         {
-                            #region special directives
+#region special directives
                             case "include":
                                 _Load(content);
                                 break;
-                            #endregion
+#endregion
 
-                            #region sound attribute directives
+#region sound attribute directives
                             case "push":
                                 SoundAttributeStack.Push(CurrentSound.Clone());
                                 break;
@@ -412,10 +410,6 @@ namespace ACAudio
                                 GetDouble(content, ref CurrentSound.fade);
                                 break;
 
-                            case "cache":
-                                GetDouble(content, ref CurrentSound.cache);
-                                break;
-
                             case "mode":
                                 switch(content.ToLowerInvariant())
                                 {
@@ -436,9 +430,9 @@ namespace ACAudio
                                         break;
                                 }
                                 break;
-                            #endregion
+#endregion
 
-                            #region sound source directives
+#region sound source directives
                             case "static":
                                 {
                                     try

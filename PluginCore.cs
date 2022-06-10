@@ -976,12 +976,12 @@ namespace ACAudio
                     }
 
                     // if we want perma-cached then skip
-                    if (sce.Cache < 0.0)
-                        continue;
+                    //if (sce.Cache < 0.0)
+                        //continue;
 
                     // if we havent been requested past our desired cache time then add to unload list
                     double timeSincePlay = WorldTime - sce.RequestTime;
-                    if (timeSincePlay > sce.Cache)
+                    if (timeSincePlay > 5.0)//sce.Cache)
                         soundsToUnload.Add(snd);
                 }
 
@@ -1018,11 +1018,10 @@ namespace ACAudio
 
         private class SoundCacheEntry
         {
-            public double Cache;
             public double RequestTime;
         }
 
-        public static Audio.Sound GetOrLoadSound(string name, Audio.DimensionMode mode, bool looping, double cache)
+        public static Audio.Sound GetOrLoadSound(string name, Audio.DimensionMode mode, bool looping, bool filestream)
         {
             if (Instance == null)
                 return null;
@@ -1033,7 +1032,7 @@ namespace ACAudio
             {
                 try
                 {
-                    if (cache == 0.0)
+                    if (filestream)
                     {
                         Log($"Creating file stream: {name}");
                         string filepath = GenerateDataPath(name);
@@ -1070,7 +1069,6 @@ namespace ACAudio
                 SoundCache.Add(snd, sce);
             }
 
-            sce.Cache = cache;
             sce.RequestTime = Instance.WorldTime;
 
             return snd;
@@ -1202,17 +1200,6 @@ namespace ACAudio
                 }
 
 
-
-                // well... song types are a little magic.. lets divert
-                /*if (Source.Sound.mode == Config.SoundMode.Song)
-                {
-                    Music.Play(Source.Sound, false);
-
-                    // if we remember the song channel as an ambient.. GOD there will horror
-                    Log($"ooooh we playin music from some silly stuff.. confusing channel references now :D");
-                    Channel = Music.Channel?.Channel;
-                }
-                else*/
                 {
 
                     // get sound
@@ -1223,7 +1210,7 @@ namespace ACAudio
                     else
                         mode = Audio.DimensionMode._2D;
 
-                    Audio.Sound snd = GetOrLoadSound(Source.Sound.file, mode, Source.Sound.looping, Source.Sound.cache);
+                    Audio.Sound snd = GetOrLoadSound(Source.Sound.file, mode, Source.Sound.looping, false);
                     if (snd == null)
                         return;
 
