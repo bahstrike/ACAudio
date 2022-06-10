@@ -239,6 +239,8 @@ namespace ACAudio
                     Position? pos = Position.FromObject(Player);
                     if(pos.HasValue)
                     {
+                        List<uint> nearDIDs = new List<uint>();
+
                         double nearestDist = MathLib.Infinity;
                         uint nearestDid = 0;
 
@@ -253,9 +255,27 @@ namespace ACAudio
                                 nearestDist = dist;
                                 nearestDid = sp.ID;
                             }
+
+                            if (dist < 5.0)
+                            {
+                                if (!nearDIDs.Contains(sp.ID))
+                                    nearDIDs.Add(sp.ID);
+                            }
                         }
 
+#if false
+                        string nearbytxt = string.Empty;
+                        for(int x=0; x<nearDIDs.Count; x++)
+                        {
+                            nearbytxt += $"{nearDIDs[x].ToString("X8")}";
+                            if (x < (nearDIDs.Count - 1))
+                                nearbytxt += ", ";
+                        }
+
+                        WriteToChat($"Nearest DIDs: {nearbytxt}");
+#else
                         WriteToChat($"Nearest DID: {nearestDid.ToString("X8")}");
+#endif
                     }
                 };
 
