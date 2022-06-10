@@ -473,7 +473,6 @@ namespace ACAudio
 
                             case "dynamic":
                                 {
-#if true
                                     // split content into  tag=value  pairs
                                     List<SoundSourceDynamic.TagValue> tagvalues = new List<SoundSourceDynamic.TagValue>();
 
@@ -532,33 +531,6 @@ namespace ACAudio
 
 
                                     Sources.Add(new SoundSourceDynamic(CurrentSound, tagvalues.ToArray()));
-#else
-                                    string className;
-                                    string objectName;
-
-                                    int spaceI = content.IndexOfAny(new char[] { ' ', '\t' });
-                                    if(spaceI == -1)
-                                    {
-                                        className = content;
-                                        objectName = null;
-                                    } else
-                                    {
-                                        className = content.Substring(0, spaceI);
-                                        objectName = content.Substring(spaceI).Trim(new char[] { ' ', '\t', '\"' });
-                                    }
-
-
-                                    ObjectClass oc;
-
-                                    int _oc;
-                                    if (int.TryParse(className, out _oc))
-                                        oc = (ObjectClass)_oc;
-                                    else
-                                        oc = (ObjectClass)Enum.Parse(typeof(ObjectClass), className, true);
-
-                                    //Log($"NEED TO REGISTER DYNAMIC {oc}");
-                                    Sources.Add(new SoundSourceDynamic(CurrentSound, oc, objectName));
-#endif
                                 }
                                 break;
 

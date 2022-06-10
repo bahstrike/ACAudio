@@ -27,3 +27,7 @@ collector_f_creatureparts	https://ttsreader.com/
 collector_m_creatureparts	https://ttsreader.com/
 arcanum_f_forstudy		https://ttsreader.com/
 arcanum_m_forstudy		https://ttsreader.com/
+ivorycrafter_f_carve		https://ttsreader.com/
+ivorycrafter_m_carve		https://ttsreader.com/
+leathercrafter_f_hides		https://ttsreader.com/
+leathercrafter_m_hides		https://ttsreader.com/

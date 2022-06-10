@@ -202,7 +202,7 @@ push
 		interval 23
 		chance 0.25
 		maxdist 18
-		vol 0.25
+		vol 0.4
 		file towncrier_m_unwanteditems.mp3
 		dynamic class=npc string(name)="Town Crier" long(gender)=1
 
@@ -215,6 +215,21 @@ push
 
 		file collector_f_creatureparts.mp3
 		dynamic class=npc string(name)="Collector" long(gender)=2
+
+
+		file ivorycrafter_m_carve.mp3
+		dynamic class=npc string(name)="Ivory Crafter" long(gender)=1
+
+		file ivorycrafter_f_carve.mp3
+		dynamic class=npc string(name)="Ivory Crafter" long(gender)=2
+
+
+		file leathercrafter_m_hides.mp3
+		dynamic class=npc string(name)="Leather Crafter" long(gender)=1
+
+		file leathercrafter_f_hides.mp3
+		dynamic class=npc string(name)="Leather Crafter" long(gender)=2
+
 
 
 		file arcanum_m_forstudy.mp3
