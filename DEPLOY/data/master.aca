@@ -199,6 +199,7 @@ maxdist 35.0
 file lifestone.ogg
 dynamic class=lifestone
 
+
 file portal.ogg
 dynamic class=portal
 
@@ -274,7 +275,7 @@ push // start random one-shot 3d sounds
 looping off
 randomstart off
 interval 25
-chance 0.2
+chance 0.3
 mindist 10
 maxdist 18
 mode 3d
@@ -288,7 +289,8 @@ pop
 
 push
 vol 0.15
-interval 200
+maxdist 12
+interval 40
 file bedtime.mp3
 static 0200016D// bed
 pop
@@ -324,11 +326,18 @@ static 02000706// fancy candle
 static 020001E5// wall torch
 
 static 02000372// wall blue flame oil jar
+
+static 020005C0// wall green flame
 static 020005C1// wall blue flame
+static 020005C2// wall blue flame
+static 020005C3// wall green flame
+
 static 020009A3// standing blue flame
 
 static 01000A2F// fireplace
 static 02000344// fireplace
+
+static 02000624// kind of a big stone torch. seen in holtburg
 
 dynamic class=misc string(name)="Torch" // dropped torches
 
