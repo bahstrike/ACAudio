@@ -279,9 +279,19 @@ mindist 10
 maxdist 18
 mode 3d
 
+push
 vol 0.3
 file anvil.mp3
 static 020000A7// blacksmith anvil
+pop
+
+
+push
+vol 0.15
+interval 200
+file bedtime.mp3
+static 0200016D// bed
+pop
 
 pop // end random one-shot 3d sounds
 
