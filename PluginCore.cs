@@ -544,6 +544,9 @@ namespace ACAudio
 
         double lastProcessTime = 1.0;
 
+        double maxProcessTime = 0.0;
+        double maxProcessTime_worldtime = 0.0;
+
 
         private double lastRequestIdWorldTime = 0.0;
 
@@ -638,10 +641,13 @@ namespace ACAudio
             //d.OrientToCamera
 
 
+            bool didSayStuff = false;
+
             sayStuff += dt;
             if (sayStuff >= 0.2)
             {
                 sayStuff = 0.0;
+                didSayStuff = true;
 
 
                 // only try to play ambient sounds if not portaling
@@ -791,7 +797,7 @@ namespace ACAudio
 
 
                 (View["Info"] as HudStaticText).Text =
-                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0 * 1000.0)}usec  mem:{((double)Audio.MemoryUsageBytes/1024.0/1024.0).ToString("#0.0")}mb   worldtime:{WorldTime.ToString(MathLib.ScalarFormattingString)}\n" +
+                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0 * 1000.0)}usec  maxprocess:{(int)(maxProcessTime * 1000.0 * 1000.0)}usec  mem:{((double)Audio.MemoryUsageBytes/1024.0/1024.0).ToString("#0.0")}mb   worldtime:{WorldTime.ToString(MathLib.ScalarFormattingString)}\n" +
                     $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  sounds(RAM):{Audio.SoundCount_RAM}  sounds(stream):{Audio.SoundCount_Stream}\n" +
                     $"cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
@@ -1023,6 +1029,22 @@ namespace ACAudio
 
             pt_process.Stop();
             lastProcessTime = pt_process.Duration;
+
+            // anything that decreases frames below XX should be reported
+            double fps = (1.0 / lastProcessTime);
+            if(fps < 20.0)
+            {
+                Log($"process is SLOW: {(lastProcessTime*1000.0).ToString("#0.0")}msec   didSayStuff:{didSayStuff}");
+
+                maxProcessTime = Math.Max(maxProcessTime, lastProcessTime);
+                maxProcessTime_worldtime = WorldTime;
+            }
+            // reset max process time if its been a while
+            if((WorldTime - maxProcessTime_worldtime) > 5.0)
+            {
+                maxProcessTime = 0.0;
+                maxProcessTime_worldtime = WorldTime;
+            }
         }
 
         private static Dictionary<Audio.Sound, SoundCacheEntry> SoundCache = new Dictionary<Audio.Sound, SoundCacheEntry>();
@@ -1043,6 +1065,9 @@ namespace ACAudio
             {
                 try
                 {
+                    PerfTimer pt = new PerfTimer();
+                    pt.Start();
+
                     if (filestream)
                     {
                         Log($"Creating file stream: {name}");
@@ -1061,6 +1086,9 @@ namespace ACAudio
 
                         snd = Audio.GetSound(name, buf, mode, looping);
                     }
+
+                    pt.Stop();
+                    Log($"loading took {(pt.Duration*1000.0).ToString("#0.0")}msec");
                 }
                 catch (Exception ex)
                 {
