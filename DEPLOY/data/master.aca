@@ -324,6 +324,7 @@ static 020001EB// wall candle
 static 02000706// fancy candle
 
 static 020001E5// wall torch
+static 0200026D// wall torch
 
 static 02000372// wall blue flame oil jar
 
@@ -380,8 +381,8 @@ static 02000AA3// fancy water fountain
 
 // ------ FIRES --------
 file campfire.ogg
-vol 0.3
-mindist 3.0
+vol 0.15
+mindist 4.0
 maxdist 16.0
 
 static 02000485// flame particle effect (for fireplace?)
@@ -396,14 +397,17 @@ static 020005B6// big blue fire in stone stand
 
 static 01003633//big fireplace/chimney seen at fiun outpost
 
+static 02000286//big stone fire stand
+
+
 dynamic class=misc string(name)="Bonfire" // fires seen with some random monster spawns
 
 
 // ------ FOOD SIMMERING --------
 file simmering.ogg
-vol 0.3
-mindist 4.0
-maxdist 12.0
+vol 0.4
+mindist 6.0
+maxdist 16.0
 
 static 02000351// cooking pot on fire pit
 static 02000345// cooking pot hanging over fire
