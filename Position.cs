@@ -23,17 +23,40 @@ namespace ACAudio
 
 
 #if true
-        public bool IsTerrain {  get { return (Landblock & 0x0000FF00) == 0; } }
+        public static bool IsLandblockTerrain(uint lb)
+        {
+            return (lb & 0x0000FF00) == 0;
+        }
+        public bool IsTerrain {  get { return IsLandblockTerrain(Landblock); } }
+
+        public static int LandblockDungeonID(uint lb)
+        {
+            if (IsLandblockTerrain(lb))
+                return -1;
+
+            return (int)((lb & 0xFFFF0000) >> 16);
+        }
 
         public int DungeonID
         {
             get
             {
-                if (IsTerrain)
-                    return -1;
-
-                return (int)((Landblock & 0xFFFF0000) >> 16);
+                return LandblockDungeonID(Landblock);
             }
+        }
+
+        public static bool IsLandblockCompatible(uint a, uint b)
+        {
+            // if both are terrain, then definitely compatible
+            if (IsLandblockTerrain(a) && IsLandblockTerrain(b))
+                return true;
+
+            // if neither are terrain, then directly compare the dungeon ID
+            if (!IsLandblockTerrain(a) && !IsLandblockTerrain(b))
+                return (LandblockDungeonID(a) == LandblockDungeonID(b));
+
+            // if one is terrain and other is dungeon then check if landblock XXYY is same, and we'll say its OK.. i guess..
+            return (a & 0xFFFF0000) == (b & 0xFFFF0000);
         }
 
         public bool IsCompatibleWith(Position o)

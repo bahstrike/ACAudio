@@ -174,7 +174,6 @@ namespace ACAudio
                 {
                     WriteToChat("BLAH");
 
-
                     List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), CameraPosition, 35.0);
 
                     // lol lets dump stuff to look at
@@ -188,7 +187,14 @@ namespace ACAudio
                         string longkeys = string.Empty;
                         foreach(int i in obj.LongKeys)
                             longkeys += $"{(LongValueKey)i}={obj.Values((LongValueKey)i)}, ";
-                        
+
+                        /*
+                         NOTE:  i found LongValueKey(134) has the following value on [identified] players
+                            134=2		normal
+                            134=64		pk lite
+                            134=4		pk
+                         */
+
                         /*
                         "flags:{obj.Values(LongValueKey.Flags)}  type:{obj.Values(LongValueKey.Type)}   behavior:{obj.Values(LongValueKey.Behavior)}  category:{obj.Values(LongValueKey.Category)}   longkeys:{longkeys}"
                         */
@@ -279,6 +285,12 @@ namespace ACAudio
                     }
                 };
 
+                View["PerfDump"].Hit += delegate (object sender, EventArgs e)
+                {
+                    // flag next frame to dump a performance report anyway
+                    ForcePerfDump = true;
+                };
+
                 View["FMOD"].Hit += delegate (object sender, EventArgs e)
                 {
                     //System.Diagnostics.Process.Start("https://fmod.com/");
@@ -325,6 +337,8 @@ namespace ACAudio
                 Log($"Startup exception: {ex.Message}");
             }
         }
+
+        bool ForcePerfDump = false;
 
         private void _ChatBoxMessage(object sender, ChatTextInterceptEventArgs e)
         {
@@ -606,6 +620,12 @@ namespace ACAudio
             PerfTimer pt_process = new PerfTimer();
             pt_process.Start();
 
+
+            //PerfTrack.StepReport[] lastFramePerfReport = PerfTrack.GetReport();
+
+            PerfTrack.Reset();
+
+
             Audio.AllowSound = GetUserEnableAudio();
 
             if (DoesACHaveFocus())
@@ -617,7 +637,11 @@ namespace ACAudio
             Music.EnablePortal = GetUserAllowPortalMusic();
             Music.Volume = GetUserMusicVolume();
 
+
+            PerfTrack.Start("Music");
+            PerfTrack.Push();
             Music.Process(dt);
+            PerfTrack.Pop();
 
 
             PortalSongHeat = Math.Max(0.0, PortalSongHeat - PortalSongHeatCooldown * dt);
@@ -644,8 +668,11 @@ namespace ACAudio
             bool didSayStuff = false;
 
             sayStuff += dt;
-            if (sayStuff >= 0.2)
+            if (true || sayStuff >= 0.2)
             {
+                PerfTrack.Start("saystuff");
+                PerfTrack.Push();
+
                 sayStuff = 0.0;
                 didSayStuff = true;
 
@@ -797,14 +824,18 @@ namespace ACAudio
 
 
                 (View["Info"] as HudStaticText).Text =
-                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0 * 1000.0)}usec  maxprocess:{(int)(maxProcessTime * 1000.0 * 1000.0)}usec  mem:{((double)Audio.MemoryUsageBytes/1024.0/1024.0).ToString("#0.0")}mb   worldtime:{WorldTime.ToString(MathLib.ScalarFormattingString)}\n" +
+                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0)}msec  maxprocess:{(int)(maxProcessTime * 1000.0)}msec  mem:{((double)Audio.MemoryUsageBytes/1024.0/1024.0).ToString("#0.0")}mb   worldtime:{WorldTime.ToString(MathLib.ScalarFormattingString)}\n" +
                     $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  sounds(RAM):{Audio.SoundCount_RAM}  sounds(stream):{Audio.SoundCount_Stream}\n" +
                     $"cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
+
+
+                PerfTrack.Pop();
             }
 
 
             // kill/forget sounds for objects out of range?
+            PerfTrack.Start("Reject ambients");
             for (int x = 0; x < ActiveAmbients.Count; x++)
             {
                 Ambient a = ActiveAmbients[x];
@@ -908,11 +939,15 @@ namespace ACAudio
 
 
             // process ambients
+            PerfTrack.Start("Process ambients");
+            PerfTrack.Push();
             foreach (Ambient a in ActiveAmbients)
                 a.Process(dt);
+            PerfTrack.Pop();
 
 
             // lets sync time positions for active ambient loopables that want to
+            PerfTrack.Start("Sync ambients");
             List<string> alreadyDone = new List<string>();
             for (int x = 0; x < ActiveAmbients.Count - 1; x++)
             {
@@ -956,6 +991,7 @@ namespace ACAudio
 
 
             // handle sound cache logic
+            PerfTrack.Start("Cache");
             {
                 // build list of all currently playing sounds
                 List<Audio.Sound> activeSounds = new List<Audio.Sound>();
@@ -1018,29 +1054,62 @@ namespace ACAudio
 
 
             // always look for what should be playing
+            PerfTrack.Start("Try music");
             TryMusic();
 
 
 
             // Z is up
 
+            PerfTrack.Start("Audio.Process");
             Audio.Process(dt, truedt, cameraPos.Global, Vec3.Zero, cameraMat.Up, cameraMat.Forward);
 
 
             pt_process.Stop();
             lastProcessTime = pt_process.Duration;
 
+
+
+            //PerfTrack.Pop();
+            PerfTrack.StopLast();
+
+
+
+            // dont do any more logic after this point that could influence framerate (should be tracked in performance)
+
+
             // anything that decreases frames below XX should be reported
             double fps = (1.0 / lastProcessTime);
-            if(fps < 20.0)
+            if(fps < 20.0 || (ForcePerfDump && didSayStuff/*only report when we did extra logic to get full picture*/))
             {
-                Log($"process is SLOW: {(lastProcessTime*1000.0).ToString("#0.0")}msec   didSayStuff:{didSayStuff}");
+                string title;
+                if (ForcePerfDump)
+                    title = "process report";
+                else
+                    title = $"process is SLOW: {(lastProcessTime * 1000.0).ToString("#0.0")}msec   didSayStuff:{didSayStuff}";
+
+                ForcePerfDump = false;
 
                 maxProcessTime = Math.Max(maxProcessTime, lastProcessTime);
                 maxProcessTime_worldtime = WorldTime;
+
+
+                // dump perf report?
+                Log($"------------ {title}");
+                foreach (PerfTrack.StepReport step in PerfTrack.GetReport())
+                {
+                    string str = string.Empty;
+                    for (int x = 0; x < step.Level; x++)
+                        str += "--";
+
+                    str += $" {step.Name}: {step.Duration.ToString("#0.000")}sec";
+
+                    Log(str);
+                }
+                Log("------------");
             }
             // reset max process time if its been a while
-            if((WorldTime - maxProcessTime_worldtime) > 5.0)
+            if ((WorldTime - maxProcessTime_worldtime) > 8.0)
             {
                 maxProcessTime = 0.0;
                 maxProcessTime_worldtime = WorldTime;
@@ -1063,6 +1132,8 @@ namespace ACAudio
 
             if (snd == null)
             {
+                PerfTrack.Start($"Load sound {name}");
+
                 try
                 {
                     PerfTimer pt = new PerfTimer();

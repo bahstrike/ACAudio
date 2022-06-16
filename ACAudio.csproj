@@ -50,6 +50,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BVH.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="HudProxyMap.cs" />
     <Compile Include="Music.cs" />
@@ -60,7 +61,9 @@
     <Compile Include="UtilityBelt.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="mainView.xml" />
+    <EmbeddedResource Include="mainView.xml">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="FMOD_logo.png" />

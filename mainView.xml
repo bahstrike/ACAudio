@@ -18,6 +18,7 @@
         <control progid="DecalControls.Slider" name="MusicVolume" left="240" top="180" width="170" height="20" minimum="0" maximum="100" position="35" />
 
         <control progid="DecalControls.PushButton" name="NearestDID" left="10" top="210" width="70" height="20" text="Near DID"/>
+        <control progid="DecalControls.PushButton" name="PerfDump" left="80" top="210" width="70" height="20" text="Perf Dump"/>
 
         <control progid="DecalControls.CheckBox" name="PortalMusicEnable" left="160" top="210" width="120" height="20" text="Portal Music" checked="True"/>
 
