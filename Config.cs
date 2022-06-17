@@ -90,6 +90,19 @@ namespace ACAudio
 
             public readonly TagValue[] TagValues;
 
+            public string FriendlyDescription
+            {
+                get
+                {
+                    string str = string.Empty;
+
+                    foreach (TagValue tv in TagValues)
+                        str += $"{tv.Tag}({tv.SubTag})={tv.Value}, ";
+
+                    return str;
+                }
+            }
+
             public SoundSourceDynamic(SoundAttributes _Sound, TagValue[] _TagValues)
                 : base(_Sound)
             {

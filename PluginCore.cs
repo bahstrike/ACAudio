@@ -707,7 +707,7 @@ namespace ACAudio
                         {
                             List<WorldObject> finalObjects = new List<WorldObject>();
 
-                            PerfTrack.Start("Scan");
+                            PerfTrack.Start($"Scan: {src.FriendlyDescription}");
                             PerfTrack.Push();
                             foreach(WorldObject obj in objects)
                             {
