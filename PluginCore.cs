@@ -688,27 +688,40 @@ namespace ACAudio
 
 
                         // now lets play
+                        PerfTrack.Start("Sound sources dynamic");
+                        PerfTrack.Push();
+
+#if true
+                        WorldObject[] objects = new List<WorldObject>(Core.WorldFilter.GetAll()).ToArray();
+#else
+                        WorldObjectCollection objects = Core.WorldFilter.GetAll();
+#endif
                         foreach (Config.SoundSourceDynamic src in Config.FindSoundSourcesDynamic())
                         {
                             List<WorldObject> finalObjects = new List<WorldObject>();
 
-                            foreach(WorldObject obj in Core.WorldFilter.GetAll())
+                            PerfTrack.Start("Scan");
+                            PerfTrack.Push();
+                            foreach(WorldObject obj in objects)
                             {
+                                PerfTrack.Start("Initial check");
                                 Position? objPos = Position.FromObject(obj);
                                 if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
                                     continue;
 
                                 // ignore items that were previously on ground but now picked up
+                                PerfTrack.Start("Container check");
                                 if (obj.Values(LongValueKey.Container) != 0)
                                     continue;
 
 
+                                PerfTrack.Start("Distance check");
                                 double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
                                 if (dist > src.Sound.maxdist)
                                     continue;
 
 
-
+                                PerfTrack.Start("CheckObject");
                                 if (!src.CheckObject(obj))
                                     continue;
 
@@ -740,6 +753,8 @@ namespace ACAudio
 
                                 finalObjects.Add(obj);
                             }
+                            PerfTrack.Pop();
+
 
                             // if we have a cluster, reduce vol/dist
                             double volAdjust = 1.0;
@@ -753,21 +768,26 @@ namespace ACAudio
                                 maxDistAdjust = 0.5;
                             }
 
+                            PerfTrack.Start($"PlayForObject for {finalObjects.Count} objs");
                             foreach (WorldObject obj in finalObjects)
                             {
                                 PlayForObject(obj, src, volAdjust, minDistAdjust, maxDistAdjust);
                             }
                         }
 
+
+                        PerfTrack.Pop();
                     }
 
 
-                    // static positions
+                    // static objects
                     {
-
+                        PerfTrack.Start("Static objects");
+                        PerfTrack.Push();
 
 
                         // build list of final candidates
+                        PerfTrack.Start("Build candidates");
                         List<StaticPosition> finalPositions = new List<StaticPosition>();
                         foreach (StaticPosition pos in StaticPositions)
                         {
@@ -794,6 +814,7 @@ namespace ACAudio
 
 
                         // dispatch
+                        PerfTrack.Start("Dispatch");
                         foreach (StaticPosition pos in finalPositions)
                         {
                             Config.SoundSourceStatic src = Config.FindSoundSourceStatic(pos.ID);
@@ -808,9 +829,16 @@ namespace ACAudio
                         }
 
 
+                        PerfTrack.Pop();
+                    }
 
 
+
+                    // static positions
+                    {
                         // dispatch static positions
+                        PerfTrack.Start("Static positions");
+
                         foreach (Config.SoundSourcePosition src in Config.FindSoundSourcesPosition(cameraPos))
                         {
                             double dist = (cameraPos.Global - src.Position.Global).Magnitude;
@@ -1084,9 +1112,9 @@ namespace ACAudio
             {
                 string title;
                 if (ForcePerfDump)
-                    title = "process report";
+                    title = $"process report";
                 else
-                    title = $"process is SLOW: {(lastProcessTime * 1000.0).ToString("#0.0")}msec   didSayStuff:{didSayStuff}";
+                    title = $"process is SLOW";
 
                 ForcePerfDump = false;
 
@@ -1095,14 +1123,25 @@ namespace ACAudio
 
 
                 // dump perf report?
-                Log($"------------ {title}");
+                Log($"------------ {title}: {(lastProcessTime * 1000.0).ToString("#0.0")}msec");
                 foreach (PerfTrack.StepReport step in PerfTrack.GetReport())
                 {
                     string str = string.Empty;
                     for (int x = 0; x < step.Level; x++)
                         str += "--";
 
-                    str += $" {step.Name}: {step.Duration.ToString("#0.000")}sec";
+                    string dur;
+                    if (step.Duration < 0.0005/*report above X microseconds*/)
+                    {
+                        // just skip altogether?
+                        continue;
+
+                        dur = string.Empty;
+                    }
+                    else
+                        dur = $": {(step.Duration*1000.0).ToString("#0.00")}msec";
+
+                    str += $" {step.Name}{dur}";
 
                     Log(str);
                 }
