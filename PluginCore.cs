@@ -1126,22 +1126,15 @@ namespace ACAudio
                 Log($"------------ {title}: {(lastProcessTime * 1000.0).ToString("#0.0")}msec");
                 foreach (PerfTrack.StepReport step in PerfTrack.GetReport())
                 {
+                    // only report above X microseconds
+                    if ((step.Duration * 1000.0 * 1000.0) < 10.0)
+                        continue;
+
                     string str = string.Empty;
                     for (int x = 0; x < step.Level; x++)
                         str += "--";
 
-                    string dur;
-                    if (step.Duration < 0.0005/*report above X microseconds*/)
-                    {
-                        // just skip altogether?
-                        continue;
-
-                        dur = string.Empty;
-                    }
-                    else
-                        dur = $": {(step.Duration*1000.0).ToString("#0.00")}msec";
-
-                    str += $" {step.Name}{dur}";
+                    str += $" {step.Name}: {(step.Duration*1000.0).ToString("#0.00")}msec";
 
                     Log(str);
                 }
