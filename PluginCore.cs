@@ -664,6 +664,7 @@ namespace ACAudio
             //Decal.Adapter.Wrappers.D3DObj d;
             //d.OrientToCamera
 
+            List<string> perfmsgs = new List<string>();
 
             bool didSayStuff = false;
 
@@ -691,12 +692,18 @@ namespace ACAudio
                         PerfTrack.Start("Sound sources dynamic");
                         PerfTrack.Push();
 
+                        PerfTrack.Start("GetAll");
 #if true
                         WorldObject[] objects = new List<WorldObject>(Core.WorldFilter.GetAll()).ToArray();
 #else
                         WorldObjectCollection objects = Core.WorldFilter.GetAll();
 #endif
-                        foreach (Config.SoundSourceDynamic src in Config.FindSoundSourcesDynamic())
+                        Config.SoundSourceDynamic[] dynamicSources = Config.FindSoundSourcesDynamic();
+                        string perfmsg = $"Looping for {dynamicSources.Length} dynamic sources upon {objects.Length} objects  ({dynamicSources.Length * objects.Length} iterations)";
+                        PerfTimer pt = new PerfTimer();
+                        pt.Start();
+                        PerfTrack.Start(perfmsg);
+                        foreach (Config.SoundSourceDynamic src in dynamicSources)
                         {
                             List<WorldObject> finalObjects = new List<WorldObject>();
 
@@ -773,11 +780,19 @@ namespace ACAudio
                             {
                                 PlayForObject(obj, src, volAdjust, minDistAdjust, maxDistAdjust);
                             }
+
+                            PerfTrack.StopLast();
                         }
+
+
+                        pt.Stop();
+                        perfmsgs.Add($"{perfmsg}: {(pt.Duration*1000.0).ToString("#0.000")}msec");
 
 
                         PerfTrack.Pop();
                     }
+
+
 
 
                     // static objects
@@ -1139,6 +1154,15 @@ namespace ACAudio
                     Log(str);
                 }
                 Log("------------");
+
+
+
+#if true
+                foreach (string str in perfmsgs)
+                    Log(str);
+
+                Log("------------");
+#endif
             }
             // reset max process time if its been a while
             if ((WorldTime - maxProcessTime_worldtime) > 8.0)
