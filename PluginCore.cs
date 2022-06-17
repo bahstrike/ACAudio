@@ -174,7 +174,7 @@ namespace ACAudio
                 {
                     WriteToChat("BLAH");
 
-                    List<WorldObject> allobj = FilterByDistance(Core.WorldFilter.GetAll(), CameraPosition, 35.0);
+                    List<WorldObject> allobj = FilterByDistance(FrameObjects, CameraPosition, 35.0);
 
                     // lol lets dump stuff to look at
                     Log("--------------- WE BE DUMPIN ------------");
@@ -613,6 +613,7 @@ namespace ACAudio
             q.lastTryWorldTime = WorldTime;
         }
 
+        public WorldObject[] FrameObjects;
 
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
@@ -624,6 +625,10 @@ namespace ACAudio
             //PerfTrack.StepReport[] lastFramePerfReport = PerfTrack.GetReport();
 
             PerfTrack.Reset();
+
+
+            PerfTrack.Start("Get frame objects");
+            FrameObjects = new List<WorldObject>(Core.WorldFilter.GetAll()).ToArray();
 
 
             Audio.AllowSound = GetUserEnableAudio();
@@ -692,12 +697,8 @@ namespace ACAudio
                         PerfTrack.Start("Sound sources dynamic");
                         PerfTrack.Push();
 
-                        PerfTrack.Start("GetAll");
-#if true
-                        WorldObject[] objects = new List<WorldObject>(Core.WorldFilter.GetAll()).ToArray();
-#else
-                        WorldObjectCollection objects = Core.WorldFilter.GetAll();
-#endif
+                        PerfTrack.Start("dynamic sources");
+                        WorldObject[] objects = FrameObjects;
                         Config.SoundSourceDynamic[] dynamicSources = Config.FindSoundSourcesDynamic();
                         string perfmsg = $"Looping for {dynamicSources.Length} dynamic sources upon {objects.Length} objects  ({dynamicSources.Length * objects.Length} iterations)";
                         PerfTimer pt = new PerfTimer();

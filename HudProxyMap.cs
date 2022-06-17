@@ -203,7 +203,7 @@ namespace ACAudio
 
                 // dynamic ambients
                 if (true)
-                    foreach (WorldObject obj in PluginCore.CoreManager.WorldFilter.GetAll())
+                    foreach (WorldObject obj in PluginCore.Instance.FrameObjects)
                     {
                         Position? objPos = Position.FromObject(obj);
                         if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(camPos))
