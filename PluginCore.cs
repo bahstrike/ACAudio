@@ -615,6 +615,18 @@ namespace ACAudio
 
         public WorldObject[] FrameObjects;
 
+        private class ObjectInstance
+        {
+            public readonly WorldObject obj;
+            public readonly Position pos;
+
+            public ObjectInstance(WorldObject _obj, Position _pos)
+            {
+                obj = _obj;
+                pos = _pos;
+            }
+        }
+
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
@@ -697,41 +709,68 @@ namespace ACAudio
                         PerfTrack.Start("Sound sources dynamic");
                         PerfTrack.Push();
 
+
+                        
+                        // lets pre-filter objects list to compatible landblock and container
+                        PerfTrack.Start("prefilter objects");
+                        List<ObjectInstance> objects = new List<ObjectInstance>();
+                        foreach(WorldObject obj in FrameObjects)
+                        {
+                            PerfTrack.Start("Initial check");
+                            Position? objPos = Position.FromObject(obj);
+                            if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
+                                continue;
+
+                            // ignore items that were previously on ground but now picked up
+                            if (obj.Values(LongValueKey.Container) != 0)
+                                continue;
+
+                            objects.Add(new ObjectInstance(obj, objPos.Value));
+                        }
+
+
                         PerfTrack.Start("dynamic sources");
-                        WorldObject[] objects = FrameObjects;
                         Config.SoundSourceDynamic[] dynamicSources = Config.FindSoundSourcesDynamic();
-                        string perfmsg = $"Looping for {dynamicSources.Length} dynamic sources upon {objects.Length} objects  ({dynamicSources.Length * objects.Length} iterations)";
+                        string perfmsg = $"Looping for {dynamicSources.Length} dynamic sources upon {objects.Count} objects  ({dynamicSources.Length * objects.Count} iterations)";
                         PerfTimer pt = new PerfTimer();
                         pt.Start();
                         PerfTrack.Start(perfmsg);
+
+                        double time_distanceCheck = 0.0; int count_distanceCheck = 0;
+                        double time_checkObject = 0.0; int count_checkObject = 0;
+
                         foreach (Config.SoundSourceDynamic src in dynamicSources)
                         {
                             List<WorldObject> finalObjects = new List<WorldObject>();
 
                             PerfTrack.Start($"Scan: {src.FriendlyDescription}");
                             PerfTrack.Push();
-                            foreach(WorldObject obj in objects)
+
+                            foreach(ObjectInstance obj in objects)
                             {
-                                PerfTrack.Start("Initial check");
-                                Position? objPos = Position.FromObject(obj);
-                                if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
-                                    continue;
-
-                                // ignore items that were previously on ground but now picked up
-                                PerfTrack.Start("Container check");
-                                if (obj.Values(LongValueKey.Container) != 0)
-                                    continue;
-
+                                long tm;
 
                                 PerfTrack.Start("Distance check");
-                                double dist = (cameraPos.Global - objPos.Value.Global).Magnitude;
+                                tm = PerfTimer.Timestamp;
+                                count_distanceCheck++;
+                                double dist = (cameraPos.Global - obj.pos.Global).Magnitude;
                                 if (dist > src.Sound.maxdist)
+                                {
+                                    time_distanceCheck += PerfTimer.TimeBetween(tm, PerfTimer.Timestamp);
                                     continue;
+                                }
+                                time_distanceCheck += PerfTimer.TimeBetween(tm, PerfTimer.Timestamp);
 
 
                                 PerfTrack.Start("CheckObject");
-                                if (!src.CheckObject(obj))
+                                tm = PerfTimer.Timestamp;
+                                count_checkObject++;
+                                if (!src.CheckObject(obj.obj))
+                                {
+                                    time_checkObject += PerfTimer.TimeBetween(tm, PerfTimer.Timestamp);
                                     continue;
+                                }
+                                time_checkObject += PerfTimer.TimeBetween(tm, PerfTimer.Timestamp);
 
 
 #if false
@@ -759,7 +798,7 @@ namespace ACAudio
 #endif
 
 
-                                finalObjects.Add(obj);
+                                finalObjects.Add(obj.obj);
                             }
                             PerfTrack.Pop();
 
@@ -788,6 +827,11 @@ namespace ACAudio
 
                         pt.Stop();
                         perfmsgs.Add($"{perfmsg}: {(pt.Duration*1000.0).ToString("#0.000")}msec");
+
+                        //perfmsgs.Add($"initial ({count_initialCheck}): {(time_initialCheck*1000.0).ToString("#0")}msec total,   {(time_initialCheck/(double)count_initialCheck* 1000.0 * 1000.0).ToString("#0")}usec avg");
+                        //perfmsgs.Add($"container ({count_containerCheck}): {(time_containerCheck * 1000.0).ToString("#0")}msec total,   {(time_containerCheck / (double)count_containerCheck * 1000.0 * 1000.0).ToString("#0")}usec avg");
+                        perfmsgs.Add($"distance ({count_distanceCheck}): {(time_distanceCheck * 1000.0).ToString("#0")}msec total,   {(time_distanceCheck / (double)count_distanceCheck * 1000.0 * 1000.0).ToString("#0")}usec avg");
+                        perfmsgs.Add($"checkObject ({count_checkObject}): {(time_checkObject * 1000.0).ToString("#0")}msec total,   {(time_checkObject / (double)count_checkObject * 1000.0 * 1000.0).ToString("#0")}usec avg");
 
 
                         PerfTrack.Pop();
