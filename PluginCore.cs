@@ -558,10 +558,6 @@ namespace ACAudio
 
         double lastProcessTime = 1.0;
 
-        double maxProcessTime = 0.0;
-        double maxProcessTime_worldtime = 0.0;
-
-
         private double lastRequestIdWorldTime = 0.0;
 
 
@@ -683,16 +679,10 @@ namespace ACAudio
 
             List<string> perfmsgs = new List<string>();
 
-            bool didSayStuff = false;
-
-            sayStuff += dt;
-            if (true || sayStuff >= 0.2)
+            
             {
-                PerfTrack.Start("saystuff");
+                PerfTrack.Start("Internal Process");
                 PerfTrack.Push();
-
-                sayStuff = 0.0;
-                didSayStuff = true;
 
 
                 // only try to play ambient sounds if not portaling
@@ -910,15 +900,21 @@ namespace ACAudio
                     }
                 }
 
+                PerfTrack.Pop();
+            }
+
+
+
+            sayStuff += dt;
+            if (sayStuff >= 0.2)
+            {
+                sayStuff = 0.0;
 
                 (View["Info"] as HudStaticText).Text =
-                    $"fps:{(int)(1.0/dt)}  process:{(int)(lastProcessTime * 1000.0)}msec  maxprocess:{(int)(maxProcessTime * 1000.0)}msec  mem:{((double)Audio.MemoryUsageBytes/1024.0/1024.0).ToString("#0.0")}mb   worldtime:{WorldTime.ToString(MathLib.ScalarFormattingString)}\n" +
+                    $"fps:{(int)(1.0 / dt)}  cpu:{(int)(lastProcessTime / dt * 100.0)}%  process:{(int)(lastProcessTime * 1000.0)}msec  mem:{((double)Audio.MemoryUsageBytes / 1024.0 / 1024.0).ToString("#0.0")}mb   worldtime:{WorldTime.ToString(MathLib.ScalarFormattingString)}\n" +
                     $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  sounds(RAM):{Audio.SoundCount_RAM}  sounds(stream):{Audio.SoundCount_Stream}\n" +
                     $"cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
-
-
-                PerfTrack.Pop();
             }
 
 
@@ -1168,7 +1164,7 @@ namespace ACAudio
 
             // anything that decreases frames below XX should be reported
             double fps = (1.0 / lastProcessTime);
-            if(fps < 20.0 || (ForcePerfDump && didSayStuff/*only report when we did extra logic to get full picture*/))
+            if(fps < 20.0 || ForcePerfDump)
             {
                 string title;
                 if (ForcePerfDump)
@@ -1177,9 +1173,6 @@ namespace ACAudio
                     title = $"process is SLOW";
 
                 ForcePerfDump = false;
-
-                maxProcessTime = Math.Max(maxProcessTime, lastProcessTime);
-                maxProcessTime_worldtime = WorldTime;
 
 
                 // dump perf report?
@@ -1208,12 +1201,6 @@ namespace ACAudio
 
                 Log("------------");
 #endif
-            }
-            // reset max process time if its been a while
-            if ((WorldTime - maxProcessTime_worldtime) > 8.0)
-            {
-                maxProcessTime = 0.0;
-                maxProcessTime_worldtime = WorldTime;
             }
         }
 
