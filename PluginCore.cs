@@ -696,9 +696,13 @@ namespace ACAudio
 
 
 
+                // as long as we did a single Process after registering static objects, we shouldnt need to update anymore since nothing changes.
+                // its a dynamic BVH but used in a static way.
+#if false
                 // this might be the WRONG PLACE to process BVH; just stuffin it in for now
                 PerfTrack.Start("Process BVH");
                 BVH.Process(dt);
+#endif
 
 
 
