@@ -611,18 +611,6 @@ namespace ACAudio
 
         public WorldObject[] FrameObjects;
 
-        private class ObjectInstance
-        {
-            public readonly WorldObject obj;
-            public readonly Position pos;
-
-            public ObjectInstance(WorldObject _obj, Position _pos)
-            {
-                obj = _obj;
-                pos = _pos;
-            }
-        }
-
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
@@ -703,19 +691,19 @@ namespace ACAudio
                         
                         // lets pre-filter objects list to compatible landblock and container
                         PerfTrack.Start("prefilter objects");
-                        List<ObjectInstance> objects = new List<ObjectInstance>();
-                        foreach(WorldObject obj in FrameObjects)
+                        List<ShadowObject> objects = new List<ShadowObject>();
+                        foreach(WorldObject _obj in FrameObjects)
                         {
-                            PerfTrack.Start("Initial check");
-                            Position? objPos = Position.FromObject(obj);
-                            if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(cameraPos))
+                            ShadowObject obj = new ShadowObject(_obj);
+
+                            if (!obj.Position.IsCompatibleWith(cameraPos))
                                 continue;
 
                             // ignore items that were previously on ground but now picked up
                             if (obj.Values(LongValueKey.Container) != 0)
                                 continue;
 
-                            objects.Add(new ObjectInstance(obj, objPos.Value));
+                            objects.Add(obj);
                         }
 
 
@@ -736,14 +724,14 @@ namespace ACAudio
                             PerfTrack.Start($"Scan: {src.FriendlyDescription}");
                             PerfTrack.Push();
 
-                            foreach(ObjectInstance obj in objects)
+                            foreach(ShadowObject obj in objects)
                             {
                                 long tm;
 
                                 PerfTrack.Start("Distance check");
                                 tm = PerfTimer.Timestamp;
                                 count_distanceCheck++;
-                                double dist = (cameraPos.Global - obj.pos.Global).Magnitude;
+                                double dist = (cameraPos.Global - obj.Position.Global).Magnitude;
                                 if (dist > src.Sound.maxdist)
                                 {
                                     time_distanceCheck += PerfTimer.TimeBetween(tm, PerfTimer.Timestamp);
@@ -755,7 +743,7 @@ namespace ACAudio
                                 PerfTrack.Start("CheckObject");
                                 tm = PerfTimer.Timestamp;
                                 count_checkObject++;
-                                if (!src.CheckObject(obj.obj))
+                                if (!src.CheckObject(obj))
                                 {
                                     time_checkObject += PerfTimer.TimeBetween(tm, PerfTimer.Timestamp);
                                     continue;
@@ -788,7 +776,7 @@ namespace ACAudio
 #endif
 
 
-                                finalObjects.Add(obj.obj);
+                                finalObjects.Add(obj.Object);
                             }
                             PerfTrack.Pop();
 

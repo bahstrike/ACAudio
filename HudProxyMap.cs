@@ -219,7 +219,7 @@ namespace ACAudio
 
                         Config.SoundSourceDynamic src = null;
                         foreach (Config.SoundSourceDynamic _src in Config.FindSoundSourcesDynamic())
-                            if (_src.CheckObject(obj))
+                            if (_src.CheckObject(new ShadowObject(obj)/*DAMNIT WE SHOULD NOT BE CONSTRUCTING A SHADOWOBJECT;  SHOULD HAVE SYSTEM TO GET FROM*/))
                             {
                                 src = _src;
                                 break;

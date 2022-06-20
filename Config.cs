@@ -112,7 +112,7 @@ namespace ACAudio
                 TagValues = _TagValues;
             }
 
-            public bool CheckObject(WorldObject obj)
+            public bool CheckObject(ShadowObject obj)
             {
                 if (obj == null)
                     return false;
@@ -150,7 +150,7 @@ namespace ACAudio
                                 // if object doesnt have key, attempt to query but say we dont match yet
                                 if (!obj.StringKeys.Contains((int)key))
                                 {
-                                    PluginCore.Instance.QueryForIdInfo(obj);
+                                    PluginCore.Instance.QueryForIdInfo(obj.Object);
                                     return false;
                                 }
 
@@ -177,7 +177,7 @@ namespace ACAudio
                                 // if object doesnt have key, attempt to query but say we dont match yet
                                 if (!obj.LongKeys.Contains((int)key))
                                 {
-                                    PluginCore.Instance.QueryForIdInfo(obj);
+                                    PluginCore.Instance.QueryForIdInfo(obj.Object);
                                     return false;
                                 }
 
