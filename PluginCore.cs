@@ -379,6 +379,8 @@ namespace ACAudio
             PerfTimer pt = new PerfTimer();
             pt.Start();
 
+            BVH.Reset();
+
             Config.Load("master.aca");
 
             Log($"Parsed {Config.Sources.Count} sound sources from master.aca");
@@ -386,8 +388,26 @@ namespace ACAudio
 
             // reload static positions;  we will only keep what we registered from configs
             StaticPositions = LoadStaticPositions(false);
-
             Log($"Loaded {StaticPositions.Count} positions from static.dat");
+
+
+            // flush static positions to BVH (there may be hundreds of thousands)
+            foreach (StaticPosition sp in StaticPositions)
+            {
+                Config.SoundSourceStatic src = Config.FindSoundSourceStatic(sp.ID);
+                if (src == null)
+                    continue;
+
+                BVH.Add(sp, src);
+            }
+
+            BVH.Process(0.00001);//flush with a nonzero dt?
+
+            {
+                int numBVHs, numNodes, numThings;
+                BVH.GetTreeInfo(out numBVHs, out numNodes, out numThings);
+                Log($"BVH INFO: numBVHs:{numBVHs}  numNodes:{numNodes}  numThings:{numThings}");//report so far lol
+            }
 
 
             pt.Stop();
@@ -623,10 +643,6 @@ namespace ACAudio
             PerfTrack.Reset();
 
 
-            PerfTrack.Start("Get frame objects");
-            FrameObjects = new List<WorldObject>(Core.WorldFilter.GetAll()).ToArray();
-
-
             Audio.AllowSound = GetUserEnableAudio();
 
             if (DoesACHaveFocus())
@@ -671,6 +687,20 @@ namespace ACAudio
             {
                 PerfTrack.Start("Internal Process");
                 PerfTrack.Push();
+
+
+
+
+                PerfTrack.Start("Get frame objects");
+                FrameObjects = new List<WorldObject>(Core.WorldFilter.GetAll()).ToArray();
+
+
+
+                // this might be the WRONG PLACE to process BVH; just stuffin it in for now
+                PerfTrack.Start("Process BVH");
+                BVH.Process(dt);
+
+
 
 
                 // only try to play ambient sounds if not portaling
@@ -820,9 +850,21 @@ namespace ACAudio
 
                     // static objects
                     {
+                        long tm_staticobject = PerfTimer.Timestamp;
+
                         PerfTrack.Start("Static objects");
                         PerfTrack.Push();
 
+#if true
+                        // BVH METHOD
+
+
+                        // dispatch
+                        PerfTrack.Start("Dispatch");
+                        foreach (BVH.BVHEntry_StaticPosition pos in BVH.QueryStaticPositions(cameraPos))
+                            PlayForPosition(pos.StaticPosition.Position, pos.Source);
+#else
+                        // OLD BRUTE FORCE METHOD
 
                         // build list of final candidates
                         PerfTrack.Start("Build candidates");
@@ -866,8 +908,11 @@ namespace ACAudio
                             PlayForPosition(pos.Position, src);
                         }
 
-
+#endif
                         PerfTrack.Pop();
+
+
+                        perfmsgs.Add($"static objects: {(PerfTimer.TimeBetween(tm_staticobject, PerfTimer.Timestamp)*1000.0).ToString("#0.00")}msec");
                     }
 
 
