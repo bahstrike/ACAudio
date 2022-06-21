@@ -174,7 +174,7 @@ namespace ACAudio
                 {
                     WriteToChat("BLAH");
 
-                    List<WorldObject> allobj = FilterByDistance(FrameObjects, CameraPosition, 35.0);
+                    List<WorldObject> allobj = FilterByDistance(WorldObjects, CameraPosition, 35.0);
 
                     // lol lets dump stuff to look at
                     Log("--------------- WE BE DUMPIN ------------");
@@ -326,6 +326,8 @@ namespace ACAudio
 
                 //Log("hook stuff");
                 Core.RenderFrame += _Process;
+                Core.WorldFilter.CreateObject += _CreateObject;
+                Core.WorldFilter.ReleaseObject += _ReleaseObject;
                 Core.CharacterFilter.Logoff += _CharacterFilter_Logoff;
                 Core.ChatBoxMessage += _ChatBoxMessage;
 
@@ -339,6 +341,19 @@ namespace ACAudio
         }
 
         bool ForcePerfDump = false;
+
+        public List<WorldObject> WorldObjects = new List<WorldObject>();
+        private void _CreateObject(object sender, CreateObjectEventArgs e)
+        {
+            if (!WorldObjects.Contains(e.New))
+                WorldObjects.Add(e.New);
+        }
+
+        private void _ReleaseObject(object sender, ReleaseObjectEventArgs e)
+        {
+            if (WorldObjects.Contains(e.Released))
+                WorldObjects.Remove(e.Released);
+        }
 
         private void _ChatBoxMessage(object sender, ChatTextInterceptEventArgs e)
         {
@@ -629,8 +644,6 @@ namespace ACAudio
             q.lastTryWorldTime = WorldTime;
         }
 
-        public WorldObject[] FrameObjects;
-
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
@@ -690,12 +703,6 @@ namespace ACAudio
 
 
 
-
-                PerfTrack.Start("Get frame objects");
-                FrameObjects = new List<WorldObject>(Core.WorldFilter.GetAll()).ToArray();
-
-
-
                 // as long as we did a single Process after registering static objects, we shouldnt need to update anymore since nothing changes.
                 // its a dynamic BVH but used in a static way.
 #if false
@@ -703,8 +710,6 @@ namespace ACAudio
                 PerfTrack.Start("Process BVH");
                 BVH.Process(dt);
 #endif
-
-
 
 
                 // only try to play ambient sounds if not portaling
@@ -726,7 +731,7 @@ namespace ACAudio
                         // lets pre-filter objects list to compatible landblock and container
                         PerfTrack.Start("prefilter objects");
                         List<ShadowObject> objects = new List<ShadowObject>();
-                        foreach(WorldObject _obj in FrameObjects)
+                        foreach(WorldObject _obj in WorldObjects)
                         {
                             ShadowObject obj = new ShadowObject(_obj);
 
