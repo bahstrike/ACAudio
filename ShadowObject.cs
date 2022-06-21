@@ -9,6 +9,7 @@ namespace ACAudio
     public class ShadowObject
     {
 #if true
+        public readonly int Id;
         public readonly WorldObject Object;
 #else
         public readonly int ID;
@@ -34,11 +35,14 @@ namespace ACAudio
 
         public ShadowObject(WorldObject _Object)
         {
+            Id = _Object.Id;
             Object = _Object;
 
             ObjectClass = Object.ObjectClass;
         }
 
+        // used to help scramble query timers
+        private double TimerVariance = MathLib.random.NextDouble() * (1.0 / 20.0)/*potentially offset by upwards of a frame at 20fps??*/;
 
         private double _Position_Timestamp = 0.0;
         private Position _Position = Position.Invalid;
@@ -46,7 +50,7 @@ namespace ACAudio
         {
             get
             {
-                if (_Position.Equals(Position.Invalid) || (PluginCore.Instance.WorldTime - _Position_Timestamp) > 0.1)
+                if (_Position.Equals(Position.Invalid) || (PluginCore.Instance.WorldTime - _Position_Timestamp) > 0.1 + TimerVariance)
                 {
                     _Position_Timestamp = PluginCore.Instance.WorldTime;
                     _Position = Position.FromObject(Object) ?? Position.Invalid;
@@ -58,11 +62,11 @@ namespace ACAudio
 
         private double _GlobalCoords_Timestamp = 0.0;
         private Vec3 _GlobalCoords = Vec3.Infinite;
-        public Vec3 Vec3
+        public Vec3 GlobalCoords
         {
             get
             {
-                if (_GlobalCoords.Equals(Vec3.Infinite) || (PluginCore.Instance.WorldTime - _GlobalCoords_Timestamp) > 0.1)
+                if (_GlobalCoords.Equals(Vec3.Infinite) || (PluginCore.Instance.WorldTime - _GlobalCoords_Timestamp) > 0.1 + TimerVariance)
                 {
                     _GlobalCoords_Timestamp = PluginCore.Instance.WorldTime;
                     _GlobalCoords = Position.Global;
@@ -78,7 +82,7 @@ namespace ACAudio
         {
             get
             {
-                if (_LongKeys == null || (PluginCore.Instance.WorldTime - _LongKeys_Timestamp) > 0.1)
+                if (_LongKeys == null || (PluginCore.Instance.WorldTime - _LongKeys_Timestamp) > 0.1 + TimerVariance)
                 {
                     _LongKeys_Timestamp = PluginCore.Instance.WorldTime;
 
@@ -95,7 +99,7 @@ namespace ACAudio
         public int Values(LongValueKey key)
         {
             int val;
-            if(!_LongValues.TryGetValue(key, out val) || (PluginCore.Instance.WorldTime - _LongValues_Timestamp) > 0.1)
+            if(!_LongValues.TryGetValue(key, out val) || (PluginCore.Instance.WorldTime - _LongValues_Timestamp) > 0.1 + TimerVariance)
             {
                 _LongValues_Timestamp = PluginCore.Instance.WorldTime;
 
@@ -112,7 +116,7 @@ namespace ACAudio
         {
             get
             {
-                if (_StringKeys == null || (PluginCore.Instance.WorldTime - _StringKeys_Timestamp) > 0.1)
+                if (_StringKeys == null || (PluginCore.Instance.WorldTime - _StringKeys_Timestamp) > 0.1 + TimerVariance)
                 {
                     _StringKeys_Timestamp = PluginCore.Instance.WorldTime;
 
@@ -129,7 +133,7 @@ namespace ACAudio
         public string Values(StringValueKey key)
         {
             string val;
-            if (!_StringValues.TryGetValue(key, out val) || (PluginCore.Instance.WorldTime - _StringValues_Timestamp) > 0.1)
+            if (!_StringValues.TryGetValue(key, out val) || (PluginCore.Instance.WorldTime - _StringValues_Timestamp) > 0.1 + TimerVariance)
             {
                 _StringValues_Timestamp = PluginCore.Instance.WorldTime;
 

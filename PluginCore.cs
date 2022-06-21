@@ -174,11 +174,11 @@ namespace ACAudio
                 {
                     WriteToChat("BLAH");
 
-                    List<WorldObject> allobj = FilterByDistance(WorldObjects, CameraPosition, 35.0);
+                    List<ShadowObject> allobj = FilterByDistance(WorldObjects, CameraPosition, 35.0);
 
                     // lol lets dump stuff to look at
                     Log("--------------- WE BE DUMPIN ------------");
-                    foreach (WorldObject obj in allobj)
+                    foreach (ShadowObject obj in allobj)
                     {
                         string stringkeys = string.Empty;
                         foreach (int i in obj.StringKeys)
@@ -199,7 +199,7 @@ namespace ACAudio
                         "flags:{obj.Values(LongValueKey.Flags)}  type:{obj.Values(LongValueKey.Type)}   behavior:{obj.Values(LongValueKey.Behavior)}  category:{obj.Values(LongValueKey.Category)}   longkeys:{longkeys}"
                         */
 
-                        Log($"class:{obj.ObjectClass}   id:{obj.Id}   name:{obj.Name}   stringkeys:{{{stringkeys}}}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.RawCoordinates())}");
+                        Log($"class:{obj.ObjectClass}   id:{obj.Id}   name:{obj.Object.Name}   stringkeys:{{{stringkeys}}}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.Object.RawCoordinates())}");
                     }
 
                 };
@@ -342,17 +342,33 @@ namespace ACAudio
 
         bool ForcePerfDump = false;
 
-        public List<WorldObject> WorldObjects = new List<WorldObject>();
+        public List<ShadowObject> WorldObjects = new List<ShadowObject>();
+
+        private ShadowObject GetByWorldObject(int id)
+        {
+            foreach (ShadowObject so in WorldObjects)
+                if (so.Id == id)
+                    return so;
+
+            return null;
+        }
+
+        private ShadowObject GetByWorldObject(WorldObject wo)
+        {
+            return GetByWorldObject(wo.Id);
+        }
+
         private void _CreateObject(object sender, CreateObjectEventArgs e)
         {
-            if (!WorldObjects.Contains(e.New))
-                WorldObjects.Add(e.New);
+            if (GetByWorldObject(e.New) == null)
+                WorldObjects.Add(new ShadowObject(e.New));
         }
 
         private void _ReleaseObject(object sender, ReleaseObjectEventArgs e)
         {
-            if (WorldObjects.Contains(e.Released))
-                WorldObjects.Remove(e.Released);
+            ShadowObject so = GetByWorldObject(e.Released);
+            if (so != null)
+                WorldObjects.Remove(so);
         }
 
         private void _ChatBoxMessage(object sender, ChatTextInterceptEventArgs e)
@@ -731,10 +747,8 @@ namespace ACAudio
                         // lets pre-filter objects list to compatible landblock and container
                         PerfTrack.Start("prefilter objects");
                         List<ShadowObject> objects = new List<ShadowObject>();
-                        foreach(WorldObject _obj in WorldObjects)
+                        foreach(ShadowObject obj in WorldObjects)
                         {
-                            ShadowObject obj = new ShadowObject(_obj);
-
                             if (!obj.Position.IsCompatibleWith(cameraPos))
                                 continue;
 
@@ -1742,13 +1756,13 @@ namespace ACAudio
             return System.IO.Path.Combine(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data"), filename);
         }
 
-        public List<WorldObject> FilterByDistance(IEnumerable<WorldObject> objects, Vec3 pt, double dist)
+        public List<ShadowObject> FilterByDistance(IEnumerable<ShadowObject> objects, Vec3 pt, double dist)
         {
-            List<WorldObject> objs = new List<WorldObject>();
+            List<ShadowObject> objs = new List<ShadowObject>();
 
-            foreach (WorldObject obj in objects)
+            foreach (ShadowObject obj in objects)
             {
-                if ((pt - SmithInterop.ObjectGlobalPosition(obj)).Magnitude > dist)
+                if ((pt - obj.GlobalCoords).Magnitude > dist)
                     continue;
 
                 objs.Add(obj);

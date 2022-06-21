@@ -203,13 +203,12 @@ namespace ACAudio
 
                 // dynamic ambients
                 if (true)
-                    foreach (WorldObject obj in PluginCore.Instance.WorldObjects)
+                    foreach (ShadowObject obj in PluginCore.Instance.WorldObjects)
                     {
-                        Position? objPos = Position.FromObject(obj);
-                        if (!objPos.HasValue || !objPos.Value.IsCompatibleWith(camPos))
+                        if (!obj.Position.IsCompatibleWith(camPos))
                             continue;
 
-                        Vec3 offset = (objPos.Value.Global - viewPos);
+                        Vec3 offset = (obj.GlobalCoords - viewPos);
 
                         if (offset.Magnitude > searchDist)//src.Sound.maxdist)
                             continue;
@@ -219,7 +218,7 @@ namespace ACAudio
 
                         Config.SoundSourceDynamic src = null;
                         foreach (Config.SoundSourceDynamic _src in Config.FindSoundSourcesDynamic())
-                            if (_src.CheckObject(new ShadowObject(obj)/*DAMNIT WE SHOULD NOT BE CONSTRUCTING A SHADOWOBJECT;  SHOULD HAVE SYSTEM TO GET FROM*/))
+                            if (_src.CheckObject(obj))
                             {
                                 src = _src;
                                 break;
