@@ -269,19 +269,20 @@ namespace ACAudio
                             }
                         }
 
-#if false
+
                         string nearbytxt = string.Empty;
                         for(int x=0; x<nearDIDs.Count; x++)
                         {
+                            // we'll list nearest one seperately
+                            if (nearDIDs[x] == nearestDid)
+                                continue;
+
                             nearbytxt += $"{nearDIDs[x].ToString("X8")}";
                             if (x < (nearDIDs.Count - 1))
                                 nearbytxt += ", ";
                         }
 
-                        WriteToChat($"Nearest DIDs: {nearbytxt}");
-#else
-                        WriteToChat($"Nearest DID: {nearestDid.ToString("X8")}");
-#endif
+                        WriteToChat($"Nearest DID: {nearestDid.ToString("X8")}    more: {nearbytxt}");
                     }
                 };
 
