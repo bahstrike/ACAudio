@@ -693,25 +693,9 @@ namespace ACAudio
 
             PortalSongHeat = Math.Max(0.0, PortalSongHeat - PortalSongHeatCooldown * dt);
 
-
-            //Mat4 cameraMat = GetCameraMatrix();
-
-
-            //Vec3 cameraPos = cameraMat.Position;//SmithInterop.Vector(Core.WorldFilter.GetByName(Core.CharacterFilter.Name).First.RawCoordinates());
-
             Position cameraPos;
             Mat4 cameraMat;
             SmithInterop.GetCameraInfo(out cameraPos, out cameraMat);
-
-
-            //WorldObject w;
-            //w.RawCoordinates
-            //Vector3Object v;
-
-            //Decal.Adapter.Wrappers.D3DObj d;
-            //d.OrientToCamera
-
-            List<string> perfmsgs = new List<string>();
 
             
             {
@@ -937,8 +921,6 @@ namespace ACAudio
 #endif
                         PerfTrack.Pop();
 
-
-                        perfmsgs.Add($"static objects: {(PerfTimer.TimeBetween(tm_staticobject, PerfTimer.Timestamp)*1000.0).ToString("#0.00")}msec");
                     }
 
 
@@ -1251,15 +1233,6 @@ namespace ACAudio
                     Log(str);
                 }
                 Log("------------");
-
-
-
-#if true
-                foreach (string str in perfmsgs)
-                    Log(str);
-
-                Log("------------");
-#endif
             }
         }
 
