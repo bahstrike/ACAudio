@@ -43,7 +43,7 @@ namespace ACAudio
                 Engine.ThingBVH bvh = Universe[key];
 
                 List<Engine.IThing> things = new List<Engine.IThing>();
-                bvh.GetRoughFromBox(Box3.Around(globalPos, Vec3.One * 0.001/*just some tiny point; just anything*/), ref things, null);
+                bvh.GetRoughFromPoint(globalPos, ref things, null, false/*static bvh*/);
 
                 foreach (Engine.IThing t in things)
                 {
