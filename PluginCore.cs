@@ -744,7 +744,9 @@ namespace ACAudio
                         PerfTrack.Push();
 
 
-                        
+#if true
+                        DynamicObjectsTick(dt, cameraPos);
+#else
                         // lets pre-filter objects list to compatible landblock and container
                         PerfTrack.Start("prefilter objects");
                         List<ShadowObject> objects = new List<ShadowObject>();
@@ -865,7 +867,7 @@ namespace ACAudio
                         perfmsgs.Add($"distance ({count_distanceCheck}): {(time_distanceCheck * 1000.0).ToString("#0")}msec total,   {(time_distanceCheck / (double)count_distanceCheck * 1000.0 * 1000.0).ToString("#0")}usec avg");
                         perfmsgs.Add($"checkObject ({count_checkObject}): {(time_checkObject * 1000.0).ToString("#0")}msec total,   {(time_checkObject / (double)count_checkObject * 1000.0 * 1000.0).ToString("#0")}usec avg");
 
-
+#endif
                         PerfTrack.Pop();
                     }
 
@@ -1258,6 +1260,80 @@ namespace ACAudio
 
                 Log("------------");
 #endif
+            }
+        }
+
+
+        private uint _dynamicObjectIndex = 0;
+        private void DynamicObjectsTick(double dt, Position cameraPos)
+        {
+            int objectCount = WorldObjects.Count;
+            if (objectCount == 0)
+                return;
+
+            // target 1 per 10fps...   max of i guess the whole set
+            int numToCheck = Math.Min(objectCount, Math.Max(1, (int)Math.Ceiling((1.0 / dt) / 10.0)));
+            //Log($"check OBJECTS {numToCheck}");
+            {
+
+                // lets pre-filter objects list to compatible landblock and container
+                PerfTrack.Start("prefilter objects");
+                List<ShadowObject> objects = new List<ShadowObject>();
+                //foreach (ShadowObject obj in WorldObjects)
+                for(int x=0; x<numToCheck; x++)
+                {
+                    ShadowObject obj = WorldObjects[(int)unchecked(_dynamicObjectIndex++) % objectCount];
+
+                    if (!obj.Position.IsCompatibleWith(cameraPos))
+                        continue;
+
+                    // ignore items that were previously on ground but now picked up
+                    if (obj.Values(LongValueKey.Container) != 0)
+                        continue;
+
+                    objects.Add(obj);
+                }
+
+
+                // any objects to scan?
+                if (objects.Count == 0)
+                    return;
+
+                Config.SoundSourceDynamic[] dynamicSources = Config.FindSoundSourcesDynamic();
+
+                foreach (Config.SoundSourceDynamic src in dynamicSources)
+                {
+                    List<WorldObject> finalObjects = new List<WorldObject>();
+
+                    foreach (ShadowObject obj in objects)
+                    {
+                        double dist = (cameraPos.Global - obj.Position.Global).Magnitude;
+                        if (dist > src.Sound.maxdist)
+                            continue;
+
+                        if (!src.CheckObject(obj))
+                            continue;
+
+                        finalObjects.Add(obj.Object);
+                    }
+
+                    // if we have a cluster, reduce vol/dist
+                    double volAdjust = 1.0;
+                    double minDistAdjust = 1.0;
+                    double maxDistAdjust = 1.0;
+
+                    if (finalObjects.Count > 3)
+                    {
+                        volAdjust = 0.4;
+                        minDistAdjust = 0.9;
+                        maxDistAdjust = 0.5;
+                    }
+
+                    foreach (WorldObject obj in finalObjects)
+                    {
+                        PlayForObject(obj, src, volAdjust, minDistAdjust, maxDistAdjust);
+                    }
+                }
             }
         }
 
