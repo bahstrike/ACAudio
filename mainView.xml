@@ -3,24 +3,16 @@
   <control progid="DecalControls.Notebook" name="nbMain">
     <page label="Main">
       <control progid="DecalControls.FixedLayout" clipped="">
-
         <control progid="DecalControls.CheckBox" name="PluginEnable" left="10" top="10" width="140" height="20" text="Enable Plugin" checked="True"/>
-        <control progid="DecalControls.StaticText" name="Info" left="10" top="40" width="400" height="130" text=""/>
+        <control progid="DecalControls.PushButton" name="Defaults" left="160" top="10" width="70" height="20" text="Defaults"/>
 
-        <control progid="DecalControls.PushButton" name="Dump" left="10" top="150" width="70" height="20" text="Dump"/>
-        <control progid="DecalControls.PushButton" name="Coords" left="80" top="150" width="70" height="20" text="Coords"/>
-        <control progid="DecalControls.CheckBox" name="Enable" left="160" top="150" width="70" height="20" text="Enable" checked="True"/>
-        <control progid="DecalControls.Slider" name="Volume" left="240" top="150" width="170" height="20" minimum="0" maximum="100" position="75" />
+        <control progid="DecalControls.CheckBox" name="Enable" left="10" top="40" width="70" height="20" text="Enable" checked="True"/>
+        <control progid="DecalControls.Slider" name="Volume" left="90" top="40" width="170" height="20" minimum="0" maximum="100" position="75" />
 
-        <control progid="DecalControls.PushButton" name="Reload" left="10" top="180" width="70" height="20" text="Reload"/>
-        <control progid="DecalControls.PushButton" name="Defaults" left="80" top="180" width="70" height="20" text="Defaults"/>
-        <control progid="DecalControls.CheckBox" name="MusicEnable" left="160" top="180" width="70" height="20" text="Music" checked="True"/>
-        <control progid="DecalControls.Slider" name="MusicVolume" left="240" top="180" width="170" height="20" minimum="0" maximum="100" position="35" />
+        <control progid="DecalControls.CheckBox" name="MusicEnable" left="10" top="70" width="70" height="20" text="Music" checked="True"/>
+        <control progid="DecalControls.Slider" name="MusicVolume" left="90" top="70" width="170" height="20" minimum="0" maximum="100" position="35" />
 
-        <control progid="DecalControls.PushButton" name="NearestDID" left="10" top="210" width="70" height="20" text="Near DID"/>
-        <control progid="DecalControls.PushButton" name="PerfDump" left="80" top="210" width="70" height="20" text="Perf Dump"/>
-
-        <control progid="DecalControls.CheckBox" name="PortalMusicEnable" left="160" top="210" width="120" height="20" text="Portal Music" checked="True"/>
+        <control progid="DecalControls.CheckBox" name="PortalMusicEnable" left="10" top="100" width="120" height="20" text="Portal Music" checked="True"/>
 
         <control progid="DecalControls.PushButton" name="FMOD" left="10" top="228" width="50" height="14"/>
         <control progid="DecalControls.StaticText" name="FMOD_Credit" left="70" top="231" width="400" height="18" text="Made with FMOD Studio by Firelight Technologies Pty Ltd."/>
@@ -29,7 +21,23 @@
       </control>
     </page>
 
-    <page label="Debug">
+    <page label="Tools">
+      <control progid="DecalControls.FixedLayout" clipped="">
+        <control progid="DecalControls.StaticText" name="Info" left="10" top="10" width="400" height="130" text=""/>
+
+        <control progid="DecalControls.PushButton" name="Dump" left="10" top="150" width="70" height="20" text="Dump"/>
+        <control progid="DecalControls.PushButton" name="Coords" left="80" top="150" width="70" height="20" text="Coords"/>
+
+        <control progid="DecalControls.PushButton" name="Reload" left="10" top="180" width="70" height="20" text="Reload"/>
+
+        <control progid="DecalControls.PushButton" name="NearestDID" left="10" top="210" width="70" height="20" text="Near DID"/>
+        <control progid="DecalControls.PushButton" name="PerfDump" left="80" top="210" width="70" height="20" text="Perf Dump"/>
+
+
+      </control>
+    </page>
+
+    <page label="ProxyMap">
       <control progid="DecalControls.FixedLayout" name="DebugContent" clipped="">
 
       </control>
