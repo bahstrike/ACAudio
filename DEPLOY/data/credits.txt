@@ -8,6 +8,7 @@ whatchoocall			Strike
 the_bards_tale			https://www.newgrounds.com/audio/listen/784979
 lament_for_a_warriors_soul	https://www.newgrounds.com/audio/listen/787953
 Glorious-Return			https://www.newgrounds.com/audio/listen/1011540
+old_merchant			https://www.newgrounds.com/audio/listen/741030
 
 
 SOUND EFFECTS

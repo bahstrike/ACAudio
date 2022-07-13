@@ -131,36 +131,50 @@ chance 1
 mode song
 
 
-file ac_dnbpor.mp3
-portal
-dungeon 0007 // keep portal music going while in town network?
+// portal music
+push
+	vol 0.4
+
+	file ac_dnbpor.mp3
+	portal
+
+	vol 0.15
+	dungeon 0007 // keep portal music going while in town network?
+pop
 
 
 //dungeon 002E // i donno what this was
 
-// testing a town song i guess.. cragstone
+// town songs
 push
-vol 0.6//good town music volume?
-looping off
-interval 120
-chance 0.3
-maxdist 300
+	vol 0.6//good town music volume?
+	looping off
 
-file whatchoocall.ogg
-pos 0xBC9F003D,168.8398,103.7323,32.0050//cragstone
+	interval 0
+	chance 1
+//	interval 120
+//	chance 0.625 //0.3
 
-file lament_for_a_warriors_soul.mp3
-pos 0xA9B40023,112.4685,54.0517,90.4749//holtburg
+	maxdist 300
 
-file Glorious-Return.mp3
-pos 0xC6A9001B,77.4857,68.6264,42.0050//arwic
+	file whatchoocall.ogg
+	pos 0xBC9F003D,168.8398,103.7323,32.0050//cragstone
 
-file the_bards_tale.mp3
-pos 0xDA55001D,84.8000,101.0881,20.0050//shoushi
+	file lament_for_a_warriors_soul.mp3
+	pos 0xA9B40023,112.4685,54.0517,90.4749//holtburg
+
+	file Glorious-Return.mp3
+	pos 0xC6A9001B,77.4857,68.6264,42.0050//arwic
+
+	file the_bards_tale.mp3
+	pos 0xDA55001D,84.8000,101.0881,20.0050//shoushi
+
+	file old_merchant.mp3
+	pos 0x8090000D,38.3192,117.7697,124.0050//zaikhal
 pop
 
 
-file aLPHA-oMEGa-1.mp3
+file tax2020_3.mp3
 include olthoidungeons.aca
 
 
