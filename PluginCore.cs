@@ -1063,54 +1063,94 @@ namespace ACAudio
             }
 
 
+
+            // lets handle our "cluster" and "sync" logic here.  new sound ambients should not be playing until Process is called, so we
+            // can affect volumes here without popping artifacts
+            {
+                PerfTrack.Start("Cluster ambients");
+                List<string> alreadyDone = new List<string>();
+                for (int x = 0; x < ActiveAmbients.Count - 1; x++)
+                {
+                    Ambient aa = ActiveAmbients[x];
+
+                    // only do for sync??
+                    if (!aa.Source.Sound.sync)
+                        continue;
+
+                    if (alreadyDone.Contains(aa.Source.Sound.file))
+                        continue;
+
+                    alreadyDone.Add(aa.Source.Sound.file);
+
+
+                    List<Ambient> clusterAmbients = new List<Ambient>();
+                    clusterAmbients.Add(aa);
+
+                    for (int y = 1; y < ActiveAmbients.Count; y++)
+                    {
+                        Ambient ab = ActiveAmbients[y];
+
+                        // if not playing same sound, skip
+                        if (!aa.Source.Sound.file.Equals(ab.Source.Sound.file, StringComparison.InvariantCultureIgnoreCase))
+                            continue;
+
+                        clusterAmbients.Add(ab);
+                    }
+
+
+
+                    // if we have a cluster, reduce vol/dist
+                    double volAdjust = 1.0;
+                    double minDistAdjust = 1.0;
+                    double maxDistAdjust = 1.0;
+
+                    if (clusterAmbients.Count > 3)
+                    {
+                        volAdjust = 0.4;
+                        minDistAdjust = 0.9;
+                        maxDistAdjust = 0.5;
+                    }
+
+                    foreach(Ambient a in clusterAmbients)
+                    {
+                        a.VolScale = volAdjust;
+                        a.MinDistScale = minDistAdjust;
+                        a.MaxDistScale = maxDistAdjust;
+                    }
+
+                    // should not need to manually SetTargetVolume here since that is currently happening within Ambient.Process()  anyway
+
+
+
+
+                    // lets also sync timestamps
+                    uint timestamp = uint.MaxValue;
+                    foreach(Ambient a in clusterAmbients)
+                    {
+                        if (!a.IsPlaying)
+                            continue;
+
+                        // take first one as the timestamp source but dont touch it
+                        if (timestamp == uint.MaxValue)
+                        {
+                            timestamp = a.SamplePosition;
+                            continue;
+                        }
+
+                        // sync everything else
+                        a.SamplePosition = timestamp;
+                    }
+                }
+            }
+
+
+
             // process ambients
             PerfTrack.Start("Process ambients");
             PerfTrack.Push();
             foreach (Ambient a in ActiveAmbients)
                 a.Process(dt);
             PerfTrack.Pop();
-
-
-            // lets sync time positions for active ambient loopables that want to
-            PerfTrack.Start("Sync ambients");
-            List<string> alreadyDone = new List<string>();
-            for (int x = 0; x < ActiveAmbients.Count - 1; x++)
-            {
-                Ambient aa = ActiveAmbients[x];
-                if (!aa.IsPlaying)
-                    continue;
-
-                if (!aa.Source.Sound.sync)
-                    continue;
-
-                if (alreadyDone.Contains(aa.Source.Sound.file))
-                    continue;
-
-                alreadyDone.Add(aa.Source.Sound.file);
-
-
-                for (int y = 1; y < ActiveAmbients.Count; y++)
-                {
-                    Ambient ab = ActiveAmbients[y];
-                    if (!ab.IsPlaying)
-                        continue;
-
-                    // if not playing same sound, skip
-                    if (!aa.Source.Sound.file.Equals(ab.Source.Sound.file, StringComparison.InvariantCultureIgnoreCase))
-                        continue;
-
-                    // do we want to sync sound timestamps? skip now if not
-                    //if (no)
-                    //continue;
-
-
-                    // copy A timestamp to B
-                    /*uint posFmod;
-                    aa.Channel.channel.getPosition(out posFmod, FMOD.TIMEUNIT.PCM);
-                    ab.Channel.channel.setPosition(posFmod, FMOD.TIMEUNIT.PCM);*/
-                    ab.SamplePosition = aa.SamplePosition;
-                }
-            }
 
 
 
@@ -1290,22 +1330,8 @@ namespace ACAudio
                         finalObjects.Add(obj.Object);
                     }
 
-                    // if we have a cluster, reduce vol/dist
-                    double volAdjust = 1.0;
-                    double minDistAdjust = 1.0;
-                    double maxDistAdjust = 1.0;
-
-                    if (finalObjects.Count > 3)
-                    {
-                        volAdjust = 0.4;
-                        minDistAdjust = 0.9;
-                        maxDistAdjust = 0.5;
-                    }
-
                     foreach (WorldObject obj in finalObjects)
-                    {
-                        PlayForObject(obj, src, volAdjust, minDistAdjust, maxDistAdjust);
-                    }
+                        PlayForObject(obj, src);
                 }
             }
         }
@@ -1748,7 +1774,7 @@ namespace ACAudio
             Log($"added static ambient {src.Sound.file} at {pos}");
         }
 
-        public void PlayForObject(WorldObject obj, Config.SoundSource src, double volScale, double mindistScale, double maxdistScale)
+        public void PlayForObject(WorldObject obj, Config.SoundSource src)
         {
             // check if playing already
             foreach (Ambient a in ActiveAmbients)
@@ -1765,14 +1791,7 @@ namespace ACAudio
 
                     // if same name, bail
                     if (oa.Source.Sound.file.Equals(src.Sound.file, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        // do we want to update properties?
-                        oa.VolScale = volScale;
-                        oa.MinDistScale = mindistScale;
-                        oa.MaxDistScale = maxdistScale;
-
                         return;
-                    }
 
                     // changing sounds? kill existing
                     //oa.Stop();
@@ -1786,10 +1805,6 @@ namespace ACAudio
 
             // start new sound
             ObjectAmbient newoa = new ObjectAmbient(src, obj.Id);
-
-            newoa.VolScale = volScale;
-            newoa.MinDistScale = mindistScale;
-            newoa.MaxDistScale = maxdistScale;
 
             ActiveAmbients.Add(newoa);
 
