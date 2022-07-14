@@ -1,10 +1,7 @@
 MUSIC
 --------------------------------------------------------------------------------------------
 ac_dnbpor			Strike
-ac_someoffbeat			Strike
-ac_anotherorch			Strike
 tax2020_3			Strike
-whatchoocall			Strike
 the_bards_tale			https://www.newgrounds.com/audio/listen/784979
 lament_for_a_warriors_soul	https://www.newgrounds.com/audio/listen/787953
 Glorious-Return			https://www.newgrounds.com/audio/listen/1011540

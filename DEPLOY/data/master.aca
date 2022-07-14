@@ -133,12 +133,12 @@ mode song
 
 // portal music
 push
-	vol 0.4
-
 	file ac_dnbpor.mp3
-	portal
 
-	vol 0.15
+	vol 0.5
+	portal // assign portaling music
+
+	vol 0.35
 	dungeon 0007 // keep portal music going while in town network?
 pop
 
@@ -156,9 +156,6 @@ push
 //	chance 0.625 //0.3
 
 	maxdist 300
-
-	file whatchoocall.ogg
-	pos 0xBC9F003D,168.8398,103.7323,32.0050//cragstone
 
 	file lament_for_a_warriors_soul.mp3
 	pos 0xA9B40023,112.4685,54.0517,90.4749//holtburg
@@ -179,8 +176,8 @@ include olthoidungeons.aca
 
 
 // HAHA lets test tying a song to an enemy
-file feel clip_2.mp3
-dynamic class=monster string(name)="Mite Scion"
+//file feel clip_2.mp3
+//dynamic class=monster string(name)="Mite Scion"
 
 
 
@@ -304,9 +301,9 @@ maxdist 18
 mode 3d
 
 push
-vol 0.3
-file anvil.mp3
-static 020000A7// blacksmith anvil
+	vol 0.3
+	file anvil.mp3
+	static 020000A7// blacksmith anvil
 pop
 
 
