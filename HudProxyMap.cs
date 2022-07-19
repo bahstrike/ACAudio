@@ -16,6 +16,16 @@ namespace ACAudio
 
         Bitmap backbuffer = null;
 
+        private void DrawSource(Graphics gfx, double drawScale, Box2 drawRC, Vec2 pt, double maxdist, Config.SoundSource src, bool isAmbient)
+        {
+            // provide a fill for "2d" sounds like songs or ambience to really show their triggers
+            if (PlayerPos.DetermineMode(src.Sound.mode) == PlayerPos.Mode.Object)
+                gfx.FillEllipse(new SolidBrush(Color.FromArgb(15, isAmbient ? Color.Blue: Color.FromArgb(60, 60, 60))), (Rectangle)Box2.Around(drawRC.Center + pt, Vec2.One * maxdist * 2.0 * drawScale));
+
+            gfx.FillRectangle(new SolidBrush(isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), (Rectangle)Box2.Around(drawRC.Center + pt, Vec2.One * 3.0));
+            gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(drawRC.Center + pt, Vec2.One * maxdist * 2.0 * drawScale));
+        }
+
         public override void DrawNow(DxTexture iSavedTarget)
         {
             long curDrawTimestamp = PerfTimer.Timestamp;
@@ -40,11 +50,11 @@ namespace ACAudio
                 backbuffer = new Bitmap(rcWidth, rcHeight);
             }
 
-            Box2 rc = Box2.At(Vec2.Zero, controlRC.Size);
+            Box2 drawRC = Box2.At(Vec2.Zero, controlRC.Size);
             using (Graphics gfx = Graphics.FromImage(backbuffer))
             {
                 // clear
-                gfx.FillRectangle(new SolidBrush(Color.FromArgb(16, 16, 16)), (Rectangle)rc);
+                gfx.FillRectangle(new SolidBrush(Color.FromArgb(16, 16, 16)), (Rectangle)drawRC);
 
 
                 PluginCore pc = PluginCore.Instance;
@@ -76,13 +86,13 @@ namespace ACAudio
 
 
 #if true
-                gfx.Transform = Mat3.RotationAround(rc.Center, camMat.Forward.XY.Angle + MathLib.ToRad(-90.0));
+                gfx.Transform = Mat3.RotationAround(drawRC.Center, camMat.Forward.XY.Angle + MathLib.ToRad(-90.0));
 #else
                 // lol lets set up an inverse rotation matrix from player (not camera) heading
                 gfx.Transform = Mat3.RotationAround(rc.Center, MathLib.ToRad(pc.Player.Values(DoubleValueKey.Heading) - 90.0)).Inverse;
 #endif
 
-                double drawScale = 13.0 / ((_playerPos.Value.Global - camPos.Global).XY.Magnitude);
+                double drawScale = 13.0 / ((_playerPos.Value.Global - camPos.Global).Magnitude);
 
 
                 double searchDist = 200.0;// make artifically high since proxymap should show sounds even out of range (should really calculate this based on zoom level and control size)
@@ -92,14 +102,14 @@ namespace ACAudio
 
                 // draw "player" in center UI
                 //iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center, Vec2.One * 8.0), Color.Orange);
-                gfx.FillEllipse(new SolidBrush(Color.Orange), (Rectangle)Box2.Around(rc.Center, Vec2.One * 8.0));
+                gfx.FillEllipse(new SolidBrush(Color.Orange), (Rectangle)Box2.Around(drawRC.Center, Vec2.One * 8.0));
 
                 //gfx.FillEllipse(new SolidBrush(Color.Yellow), (Rectangle)Box2.Around((playerPos - camPos.Global).XY.MultComps(1.0, -1.0) * drawScale, Vec2.One * 4.0));
 
                 //iSavedTarget.DrawLine(rc.Center, rc.Center + playerLookVec * 12.0, Color.Orange, 2.0f);
 #if true
-                gfx.FillEllipse(new SolidBrush(Color.Yellow), (Rectangle)Box2.Around(rc.Center + (_playerPos.Value.Global - viewPos).XY.MultComps(1.0, -1.0) * drawScale, Vec2.One * 4.0));
-                gfx.DrawLine(new Pen(Color.Orange, 2.0f), rc.Center, rc.Center + (_playerPos.Value.Global - viewPos).XY.MultComps(1.0, -1.0) * drawScale);
+                gfx.FillEllipse(new SolidBrush(Color.Yellow), (Rectangle)Box2.Around(drawRC.Center + (_playerPos.Value.Global - viewPos).XY.MultComps(1.0, -1.0) * drawScale, Vec2.One * 4.0));
+                gfx.DrawLine(new Pen(Color.Orange, 2.0f), drawRC.Center, drawRC.Center + (_playerPos.Value.Global - viewPos).XY.MultComps(1.0, -1.0) * drawScale);
 #else
                 gfx.DrawLine(new Pen(Color.Orange, 2.0f), rc.Center, rc.Center + viewVec * 12.0);
 #endif
@@ -152,9 +162,7 @@ namespace ACAudio
 
                         }
 
-                        //iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
-                        gfx.FillRectangle(new SolidBrush(isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0));
-                        gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * maxdist * 2.0 * drawScale));
+                        DrawSource(gfx, drawScale, drawRC, pt, maxdist, src, isAmbient);
                     }
 
 
@@ -195,9 +203,7 @@ namespace ACAudio
 
                         }
 
-                        //iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
-                        gfx.FillRectangle(new SolidBrush(isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0));
-                        gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * maxdist * 2.0 * drawScale));
+                        DrawSource(gfx, drawScale, drawRC, pt, maxdist, src, isAmbient);
                     }
 
 
@@ -256,9 +262,7 @@ namespace ACAudio
 
                         }
 
-                        //iSavedTarget.Fill((Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0), isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60));
-                        gfx.FillRectangle(new SolidBrush(isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * 3.0));
-                        gfx.DrawEllipse(new Pen(Color.FromArgb(25, isAmbient ? Color.SpringGreen : Color.FromArgb(60, 60, 60)), 1.0f), (Rectangle)Box2.Around(rc.Center + pt, Vec2.One * maxdist * 2.0 * drawScale));
+                        DrawSource(gfx, drawScale, drawRC, pt, maxdist, src, isAmbient);
                     }
 
 

@@ -29,15 +29,20 @@ namespace ACAudio
 
         public Position Position(Config.SoundMode mode)
         {
-            switch(mode)
+            return Position(DetermineMode(mode));
+        }
+
+        public static Mode DetermineMode(Config.SoundMode mode)
+        {
+            switch (mode)
             {
                 case Config.SoundMode.Song:
                 case Config.SoundMode._2D:
                 case Config.SoundMode.Hybrid:// should be some special logic for hybrid?  or just consider based off player anyway (cheap hack)
-                    return Position(Mode.Object);
+                    return Mode.Object;
 
                 default:
-                    return Position(Mode.Camera);
+                    return Mode.Camera;
             }
         }
 
