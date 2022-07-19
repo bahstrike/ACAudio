@@ -160,19 +160,30 @@ push
 	file lament_for_a_warriors_soul.mp3
 	pos 0xA9B40023,112.4685,54.0517,90.4749//holtburg
 	pos 0xA25F0034,144.7270,93.2293,20.0050//uziz
+	pos 0xBC9F001C,74.4124,88.2949,52.9608//cragstone
+	dungeon BB9F//cragstone buildings
 
 	file Glorious-Return.mp3
 	pos 0xC6A9001B,77.4857,68.6264,42.0050//arwic
 	pos 0xC6A80014,49.1583,77.0868,42.0050//arwic on way to matron collector
 	pos 0xC5A6003E,186.3253,130.3820,38.0050//arwic near matron collector
+	pos 0x2581002C,134.2307,74.4184,220.0050//fort teth
+	pos 0x2381003B,191.4606,60.4572,220.0050//fort teth outcropping
 
 
 	file the_bards_tale.mp3
 	pos 0xDA55001D,84.8000,101.0881,20.0050//shoushi
+
+	push
+		maxdist 150
+		pos 0xDB54000F,34.0822,161.7581,20.0050//shoushi near casino
+	pop
+
 	pos 0xCD410025,115.3264,109.3928,54.0050//baishi
 
 	file old_merchant.mp3
 	pos 0x8090000D,38.3192,117.7697,124.0050//zaikhal
+	pos 0x8588001E,73.5539,139.9878,86.0050//al-jalima
 pop
 
 
