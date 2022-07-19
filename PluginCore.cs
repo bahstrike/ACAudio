@@ -693,9 +693,7 @@ namespace ACAudio
 
             PortalSongHeat = Math.Max(0.0, PortalSongHeat - PortalSongHeatCooldown * dt);
 
-            Position cameraPos;
-            Mat4 cameraMat;
-            SmithInterop.GetCameraInfo(out cameraPos, out cameraMat);
+            PlayerPos playerPos = PlayerPos.Create();
 
             
             {
@@ -729,7 +727,7 @@ namespace ACAudio
 
 
 #if true
-                        DynamicObjectsTick(dt, cameraPos);
+                        DynamicObjectsTick(dt, playerPos);
 #else
                         // lets pre-filter objects list to compatible landblock and container
                         PerfTrack.Start("prefilter objects");
@@ -871,7 +869,14 @@ namespace ACAudio
 
                         // dispatch
                         PerfTrack.Start("Dispatch");
-                        foreach (BVH.BVHEntry_StaticPosition pos in BVH.QueryStaticPositions(cameraPos))
+                        List<BVH.BVHEntry_StaticPosition> posList = new List<BVH.BVHEntry_StaticPosition>(BVH.QueryStaticPositions(playerPos.CameraPos));
+
+                        // try to add ones recognized by player object position too
+                        foreach (BVH.BVHEntry_StaticPosition pos in BVH.QueryStaticPositions(playerPos.ObjectPos))
+                            if (!posList.Contains(pos))
+                                posList.Add(pos);
+
+                        foreach (BVH.BVHEntry_StaticPosition pos in posList)
                             PlayForPosition(pos.StaticPosition.Position, pos.Source);
 #else
                         // OLD BRUTE FORCE METHOD
@@ -930,9 +935,9 @@ namespace ACAudio
                         // dispatch static positions
                         PerfTrack.Start("Static positions");
 
-                        foreach (Config.SoundSourcePosition src in Config.FindSoundSourcesPosition(cameraPos))
+                        foreach (Config.SoundSourcePosition src in Config.FindSoundSourcesPosition(playerPos))
                         {
-                            double dist = (cameraPos.Global - src.Position.Global).Magnitude;
+                            double dist = (playerPos.Position(src).Global - src.Position.Global).Magnitude;
                             if (dist >= src.Sound.maxdist)
                                 continue;
 
@@ -954,7 +959,7 @@ namespace ACAudio
                 (View["Info"] as HudStaticText).Text =
                     $"fps:{(int)(1.0 / dt)}  cpu:{(int)(lastProcessTime / dt * 100.0)}%  process:{(int)(lastProcessTime * 1000.0)}msec  mem:{((double)Audio.MemoryUsageBytes / 1024.0 / 1024.0).ToString("#0.0")}mb   worldtime:{WorldTime.ToString(MathLib.ScalarFormattingString)}\n" +
                     $"ambs:{ActiveAmbients.Count}  channels:{Audio.ChannelCount}  sounds(RAM):{Audio.SoundCount_RAM}  sounds(stream):{Audio.SoundCount_Stream}\n" +
-                    $"cam:{cameraPos.Global}  lb:{cameraPos.Landblock.ToString("X8")}\n" +
+                    $"cam:{playerPos.CameraPos.Global}  lb:{playerPos.CameraPos.Landblock.ToString("X8")}\n" +
                     $"portalsongheat:{(MathLib.Clamp(PortalSongHeat / PortalSongHeatMax) * 100.0).ToString("0")}%  {PortalSongHeat.ToString(MathLib.ScalarFormattingString)}";
             }
 
@@ -997,13 +1002,13 @@ namespace ACAudio
                 if(discardReason == null)
                 {
                     // cull incompatible dungeon id
-                    if (!cameraPos.IsCompatibleWith(a.Position))
-                        discardReason = $"wrong dungeon  camera:{cameraPos.DungeonID}  vs  amb:{a.Position.DungeonID}";
+                    if (!playerPos.Position(a.Source).IsCompatibleWith(a.Position))
+                        discardReason = $"wrong dungeon  player:{playerPos.Position(a.Source).DungeonID}  vs  amb:{a.Position.DungeonID}";
                 }
 
                 if (discardReason == null)
                 {
-                    double dist = (cameraPos.Global - a.Position.Global).Magnitude;
+                    double dist = (playerPos.Position(a.Source).Global - a.Position.Global).Magnitude;
 #if true
                     // if FinalMaxDist is adjusted to be lower than what's in Source, then engine will keep recreating ambients every frame
                     double maxDist = Math.Max(a.FinalMaxDist, a.Source.Sound.maxdist);
@@ -1227,7 +1232,10 @@ namespace ACAudio
             // Z is up
 
             PerfTrack.Start("Audio.Process");
-            Audio.Process(dt, truedt, cameraPos.Global, Vec3.Zero, cameraMat.Up, cameraMat.Forward);
+            {
+                // do all this based on camera (listener MUST be camera for proper 3d audio without sounding weird)
+                Audio.Process(dt, truedt, playerPos.CameraPos.Global, Vec3.Zero, playerPos.CameraMat.Up, playerPos.CameraMat.Forward);
+            }
 
 
             pt_process.Stop();
@@ -1278,7 +1286,7 @@ namespace ACAudio
 
 
         private uint _dynamicObjectIndex = 0;
-        private void DynamicObjectsTick(double dt, Position cameraPos)
+        private void DynamicObjectsTick(double dt, PlayerPos playerPos)
         {
             int objectCount = WorldObjects.Count;
             if (objectCount == 0)
@@ -1297,7 +1305,7 @@ namespace ACAudio
                 {
                     ShadowObject obj = WorldObjects[(int)unchecked(_dynamicObjectIndex++) % objectCount];
 
-                    if (!obj.Position.IsCompatibleWith(cameraPos))
+                    if (!obj.Position.IsCompatibleWith(playerPos.ObjectPos) && !obj.Position.IsCompatibleWith(playerPos.CameraPos))
                         continue;
 
                     // ignore items that were previously on ground but now picked up
@@ -1320,7 +1328,7 @@ namespace ACAudio
 
                     foreach (ShadowObject obj in objects)
                     {
-                        double dist = (cameraPos.Global - obj.Position.Global).Magnitude;
+                        double dist = (playerPos.Position(src).Global - obj.Position.Global).Magnitude;
                         if (dist > src.Sound.maxdist)
                             continue;
 

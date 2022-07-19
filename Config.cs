@@ -276,7 +276,7 @@ namespace ACAudio
         }
 
         // does not search distance; just compatible landblock
-        public static SoundSourcePosition[] FindSoundSourcesPosition(Position compatiblePos)
+        public static SoundSourcePosition[] FindSoundSourcesPosition(PlayerPos compatiblePos)
         {
             List<SoundSourcePosition> ret = new List<SoundSourcePosition>();
 
@@ -286,7 +286,7 @@ namespace ACAudio
                 if (posSrc == null)
                     continue;
 
-                if (!posSrc.Position.IsCompatibleWith(compatiblePos))
+                if (!posSrc.Position.IsCompatibleWith(compatiblePos.Position(src)))
                     continue;
 
                 ret.Add(posSrc);

@@ -159,12 +159,17 @@ push
 
 	file lament_for_a_warriors_soul.mp3
 	pos 0xA9B40023,112.4685,54.0517,90.4749//holtburg
+	pos 0xA25F0034,144.7270,93.2293,20.0050//uziz
 
 	file Glorious-Return.mp3
 	pos 0xC6A9001B,77.4857,68.6264,42.0050//arwic
+	pos 0xC6A80014,49.1583,77.0868,42.0050//arwic on way to matron collector
+	pos 0xC5A6003E,186.3253,130.3820,38.0050//arwic near matron collector
+
 
 	file the_bards_tale.mp3
 	pos 0xDA55001D,84.8000,101.0881,20.0050//shoushi
+	pos 0xCD410025,115.3264,109.3928,54.0050//baishi
 
 	file old_merchant.mp3
 	pos 0x8090000D,38.3192,117.7697,124.0050//zaikhal

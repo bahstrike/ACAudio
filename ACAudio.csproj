@@ -54,6 +54,7 @@
     <Compile Include="Config.cs" />
     <Compile Include="HudProxyMap.cs" />
     <Compile Include="Music.cs" />
+    <Compile Include="PlayerPos.cs" />
     <Compile Include="PluginCore.cs" />
     <Compile Include="Position.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

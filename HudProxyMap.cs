@@ -161,7 +161,7 @@ namespace ACAudio
 
                 // static positions
                 if (true)
-                    foreach (Config.SoundSourcePosition src in Config.FindSoundSourcesPosition(camPos))
+                    foreach (Config.SoundSourcePosition src in Config.FindSoundSourcesPosition(PlayerPos.Create()))
                     {
                         Vec3 offset = (src.Position.Global - viewPos);
 
