@@ -13,6 +13,7 @@
         <control progid="DecalControls.Slider" name="MusicVolume" left="90" top="70" width="170" height="20" minimum="0" maximum="100" position="35" />
 
         <control progid="DecalControls.CheckBox" name="PortalMusicEnable" left="10" top="100" width="120" height="20" text="Portal Music" checked="True"/>
+        <control progid="DecalControls.CheckBox" name="UsePlayerAs3DListener" left="160" top="40" width="70" height="20" text="3D from Player" checked="False"/>
 
         <control progid="DecalControls.PushButton" name="FMOD" left="10" top="228" width="50" height="14"/>
         <control progid="DecalControls.StaticText" name="FMOD_Credit" left="70" top="231" width="400" height="18" text="Made with FMOD Studio by Firelight Technologies Pty Ltd."/>

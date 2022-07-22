@@ -236,6 +236,7 @@ namespace ACAudio
                     (View["MusicVolume"] as HudHSlider).Position = 35;
 
                     (View["PortalMusicEnable"] as HudCheckBox).Checked = true;
+                    (View["UsePlayerAs3DListener"] as HudCheckBox).Checked = false;
                 };
 
                 View["NearestDID"].Hit += delegate (object sender, EventArgs e)
@@ -318,6 +319,7 @@ namespace ACAudio
                     (View["MusicVolume"] as HudHSlider).Position = int.Parse(ini.GetKeyString(Core.CharacterFilter.AccountName, "MusicVolume", "35"));
 
                     (View["PortalMusicEnable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "PortalMusicEnable", "1") != "0";
+                    (View["UsePlayerAs3DListener"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "UsePlayerAs3DListener", "0") != "0";
                 }
 
 
@@ -522,6 +524,7 @@ namespace ACAudio
                 ini.WriteKey(Core.CharacterFilter.AccountName, "MusicVolume", (View["MusicVolume"] as HudHSlider).Position.ToString());
 
                 ini.WriteKey(Core.CharacterFilter.AccountName, "PortalMusicEnable", (View["PortalMusicEnable"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey(Core.CharacterFilter.AccountName, "UsePlayerAs3DListener", (View["UsePlayerAs3DListener"] as HudCheckBox).Checked ? "1" : "0");
             }
         }
 
@@ -672,6 +675,7 @@ namespace ACAudio
 
             PerfTrack.Reset();
 
+            PlayerPos.UsePlayerAs3DListener = (View["UsePlayerAs3DListener"] as HudCheckBox).Checked;
 
             Audio.AllowSound = GetUserEnableAudio();
 
@@ -1234,7 +1238,25 @@ namespace ACAudio
             PerfTrack.Start("Audio.Process");
             {
                 // do all this based on camera (listener MUST be camera for proper 3d audio without sounding weird)
-                Audio.Process(dt, truedt, playerPos.CameraPos.Global, Vec3.Zero, playerPos.CameraMat.Up, playerPos.CameraMat.Forward);
+
+                Vec3 listenPos;
+                Vec3 listenVel = Vec3.Zero;
+                Vec3 listenUp;
+                Vec3 listenForward;
+
+                if(PlayerPos.UsePlayerAs3DListener)
+                {
+                    // object mode
+
+                } else
+                {
+                    // camera mode (default)
+                    listenPos = playerPos.CameraPos.Global;
+                    listenUp = playerPos.CameraMat.Up;
+                    listenForward = playerPos.CameraMat.Forward;
+                }
+
+                Audio.Process(dt, truedt, listenPos, Vec3.Zero, listenUp, listenForward);
             }
 
 
