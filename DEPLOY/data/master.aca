@@ -189,6 +189,7 @@ pop
 
 file tax2020_3.mp3
 include olthoidungeons.aca
+dungeon 0096//eater jaw
 
 
 // HAHA lets test tying a song to an enemy
@@ -482,7 +483,7 @@ mode hybrid
 
 // ------ CASINO CROWD --------
 file casino.ogg
-vol 0.35
+vol 0.15
 mindist 18.0
 maxdist 75.0
 
@@ -498,7 +499,7 @@ pos 0x8090015E,12.1244,20.4491,117.6600 // manaforge in zaikhal
 
 // ------ PUB CROWD --------
 file pub.ogg
-vol 0.35
+vol 0.15
 mindist 18.0
 maxdist 75.0
 
