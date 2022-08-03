@@ -32,8 +32,6 @@ namespace ACAudio
             return Position(DetermineMode(mode));
         }
 
-        public static bool UsePlayerAs3DListener = false;
-
         public static Mode DetermineMode(Config.SoundMode mode)
         {
             switch (mode)
@@ -44,9 +42,6 @@ namespace ACAudio
                     return Mode.Object;
 
                 default:
-                    if (UsePlayerAs3DListener)
-                        return Mode.Object;
-
                     return Mode.Camera;
             }
         }
