@@ -49,7 +49,7 @@ Section "" CoreSection
 	SetOutPath "$INSTDIR\"
 
 	File "${BUILDPATH}\${ASSEMBLY}"
-	File "${BUILDPATH}\credits.txt"
+	File "${BUILDPATH}\data\credits.txt"
 	File "${BUILDPATH}\fmod.dll"
 	File "${BUILDPATH}\SmithLib.dll"
 	File "${BUILDPATH}\static.dat"
