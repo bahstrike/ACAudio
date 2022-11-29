@@ -73,6 +73,13 @@ namespace VCClientTest
         uint lastRecordPosition = 0;
 
 
+
+        class AudioBuffer
+        {
+            public DateTime Timestamp;
+            public short[] Buffer;
+        }
+
         // need a real "jitter buffer"  (and probably just store the compressed buffers too)
         List<short[]> buffers = new List<short[]>();
 
@@ -142,12 +149,15 @@ namespace VCClientTest
 
                 buffers.Add(buf);
                 int totalLen = 0;
+                int maxLen = 0;
                 foreach (short[] b in buffers)
+                {
                     totalLen += b.Length;
+                    maxLen = Math.Max(maxLen, b.Length);
+                }
 
 
-
-                label1.Text = $"record position: {recordPosition}    buf:{buf.Length}   total:{((double)totalLen/44100.0).ToString("#0.00")}sec";
+                label1.Text = $"record position: {recordPosition}    buf:{buf.Length}   maxBuf:{maxLen}  total:{((double)totalLen/44100.0).ToString("#0.00")}sec";
 
 
                 int width = pictureBox1.Width;
@@ -260,6 +270,8 @@ namespace VCClientTest
                 recordBuffer.release();
                 recordBuffer = null;
             }
+
+            lastRecordPosition = 0;
         }
 
         public bool Loopback = true;
