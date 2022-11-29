@@ -28,7 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.logLB = new System.Windows.Forms.ListBox();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // logLB
@@ -41,6 +43,11 @@
             this.logLB.Name = "logLB";
             this.logLB.Size = new System.Drawing.Size(651, 498);
             this.logLB.TabIndex = 0;
+            // 
+            // timer1
+            // 
+            this.timer1.Enabled = true;
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
             // MainForm
             // 
@@ -58,6 +65,7 @@
         #endregion
 
         private System.Windows.Forms.ListBox logLB;
+        private System.Windows.Forms.Timer timer1;
     }
 }
 
