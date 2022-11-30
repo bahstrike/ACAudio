@@ -98,8 +98,11 @@ namespace ACAudioVCServer
                     continue;
 
 
-                // for now, just send the packet straight back  (haxx loopback)
-                playerPacket.Send(player.Client);
+                // for now, just send the packet straight back to everyone  (haxx loopback)
+                foreach (Player player2 in Players)
+                {
+                    playerPacket.Send(player2.Client);
+                }
 
                 //Server.Log("Relayed packet");
             }
