@@ -12,6 +12,15 @@ namespace ACAudioVCServer
         private static ListenServer listener = null;
         private static ClientProcessor clientProcessor = null;
 
+        public delegate void LogDelegate(string s);
+        public static LogDelegate LogCallback = null;
+
+        public static void Log(string s)
+        {
+            if (LogCallback != null)
+                LogCallback(s);
+        }
+
         public static void Init()
         {
             Shutdown();

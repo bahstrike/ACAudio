@@ -36,6 +36,8 @@
             this.serverLocal = new System.Windows.Forms.RadioButton();
             this.serverRemote = new System.Windows.Forms.RadioButton();
             this.remoteIP = new System.Windows.Forms.TextBox();
+            this.listBox2 = new System.Windows.Forms.ListBox();
+            this.label2 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -50,7 +52,7 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.Location = new System.Drawing.Point(12, 60);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(846, 160);
+            this.listBox1.Size = new System.Drawing.Size(372, 160);
             this.listBox1.TabIndex = 0;
             this.listBox1.SelectedIndexChanged += new System.EventHandler(this.listBox1_SelectedIndexChanged);
             // 
@@ -104,11 +106,30 @@
             this.remoteIP.TabIndex = 5;
             this.remoteIP.Text = "127.0.0.1";
             // 
+            // listBox2
+            // 
+            this.listBox2.FormattingEnabled = true;
+            this.listBox2.Location = new System.Drawing.Point(390, 60);
+            this.listBox2.Name = "listBox2";
+            this.listBox2.Size = new System.Drawing.Size(468, 160);
+            this.listBox2.TabIndex = 6;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(440, 223);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(35, 13);
+            this.label2.TabIndex = 7;
+            this.label2.Text = "label2";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(870, 456);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.listBox2);
             this.Controls.Add(this.remoteIP);
             this.Controls.Add(this.serverRemote);
             this.Controls.Add(this.serverLocal);
@@ -134,6 +155,8 @@
         private System.Windows.Forms.RadioButton serverLocal;
         private System.Windows.Forms.RadioButton serverRemote;
         private System.Windows.Forms.TextBox remoteIP;
+        private System.Windows.Forms.ListBox listBox2;
+        private System.Windows.Forms.Label label2;
     }
 }
 

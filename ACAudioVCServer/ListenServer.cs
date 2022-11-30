@@ -63,6 +63,8 @@ namespace ACAudioVCServer
                 {
                     listener = new TcpListener(IPAddress, Port);
                     listener.Start();
+
+                    Server.Log($"Listening on {IPAddress}:{Port}");
                 }
 
                     
