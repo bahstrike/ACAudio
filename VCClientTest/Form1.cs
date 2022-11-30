@@ -119,6 +119,25 @@ namespace VCClientTest
         List<AudioBuffer> buffers = new List<AudioBuffer>();
 
 
+        FMOD.Sound receiveStream = null;
+        private byte[] DumbReceiveSamples(int len)
+        {
+            int bytes = Math.Min(len, receiveBuffer.Count);
+            if (bytes <= 0)
+                return null;
+
+            byte[] rBuf = new byte[bytes];
+
+            receiveBuffer.CopyTo(0, rBuf, 0, bytes);
+            receiveBuffer.RemoveRange(0, bytes);
+
+            return rBuf;
+        }
+
+
+        List<byte> receiveBuffer = new List<byte>();
+
+
         int receiveBuffers = 0;
 
         DateTime recordTimestamp = new DateTime();
@@ -132,6 +151,24 @@ namespace VCClientTest
                 if(packet != null)
                 {
                     receiveBuffers++;
+
+                    int numSamples = packet.ReadInt();
+                    for (int x = 0; x < numSamples; x++)
+                    {
+                        //16-bit samples
+                        receiveBuffer.Add(packet.ReadByte());
+                        receiveBuffer.Add(packet.ReadByte());
+                    }
+
+                    if (receiveStream == null)
+                    {
+                        receiveStream = CreatePlaybackStream(DumbReceiveSamples);
+
+
+                        // HAXXX  this needs to be "jitter buffer"'d
+                        FMOD.Channel receiveChannel;
+                        Audio.fmod.playSound(receiveStream, null, false, out receiveChannel);
+                    }
                 }
             }
 
@@ -221,6 +258,7 @@ namespace VCClientTest
                 {
                     ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet();
 
+                    packet.WriteInt(buf.Length);
                     foreach (short s in buf)
                         packet.WriteShort((ushort)s);
 
@@ -315,6 +353,95 @@ namespace VCClientTest
             return sound;
         }
 
+        public delegate byte[] GetStreamSamples(int maxlen);
+        private static GetStreamSamples gss = null;
+
+        public static FMOD.SOUND_PCMREADCALLBACK PCMReadCallbackDelegate = new FMOD.SOUND_PCMREADCALLBACK(PCMReadCallback);
+        public static FMOD.RESULT PCMReadCallback(IntPtr soundraw, IntPtr data, uint datalen)
+        {
+            FMOD.Sound sound = new FMOD.Sound(soundraw);
+
+            //IntPtr userdata;
+            //sound.getUserData(out userdata);
+
+            byte[] buf = gss((int)datalen);
+            if(buf != null)
+                Marshal.Copy(buf, 0, data, buf.Length);
+
+            return FMOD.RESULT.OK;
+        }
+
+        public static FMOD.Sound CreatePlaybackStream(GetStreamSamples callback)
+        {
+            gss = callback;
+
+            int channels = 1;
+            int rate = 44100;
+            int bitDepth = 16;
+
+            FMOD.Sound sound;
+            FMOD.CREATESOUNDEXINFO cs = new FMOD.CREATESOUNDEXINFO();
+            cs.cbsize = Marshal.SizeOf(typeof(FMOD.CREATESOUNDEXINFO));
+            cs.length = (uint)(rate * sizeof(short) * channels * 2);//(uint)buf.Length;
+            cs.fileoffset = 0;
+            cs.numchannels = channels;
+            cs.defaultfrequency = rate;
+            switch (bitDepth)
+            {
+                case 8:
+                    cs.format = FMOD.SOUND_FORMAT.PCM8;
+                    break;
+
+                case 16:
+                    cs.format = FMOD.SOUND_FORMAT.PCM16;
+                    break;
+
+                default:
+                    cs.format = FMOD.SOUND_FORMAT.NONE;
+                    break;
+            }
+            cs.decodebuffersize = cs.length;// (uint)buflen;
+            cs.initialsubsound = 0;
+            cs.numsubsounds = 0;
+            cs.inclusionlist = IntPtr.Zero;
+            cs.inclusionlistnum = 0;
+            cs.pcmreadcallback = PCMReadCallbackDelegate;
+            cs.pcmsetposcallback = null;
+            cs.nonblockcallback = null;
+            cs.dlsname = IntPtr.Zero;
+            cs.encryptionkey = IntPtr.Zero;
+            cs.maxpolyphony = 0;
+            cs.userdata = IntPtr.Zero;// Marshal.GetFunctionPointerForDelegate(callback);
+            cs.fileuseropen = null;
+            cs.fileuserclose = null;
+            cs.fileuserread = null;
+            cs.fileuserseek = null;
+            cs.fileuserasyncread = null;
+            cs.fileuserasynccancel = null;
+            cs.fileuserdata = IntPtr.Zero;
+            cs.filebuffersize = 0;
+            cs.channelorder = FMOD.CHANNELORDER.DEFAULT;
+            cs.channelmask = 0;
+            cs.initialsoundgroup = IntPtr.Zero;
+            cs.initialseekposition = 0;
+            cs.initialseekpostype = 0;
+            cs.ignoresetfilesystem = 0;
+            cs.audioqueuepolicy = 0;
+            cs.minmidigranularity = 0;
+            cs.nonblockthreadid = 0;
+            cs.fsbguid = IntPtr.Zero;
+
+            FMOD.RESULT result = Audio.fmod.createStream((string)null, FMOD.MODE.CREATESTREAM | FMOD.MODE._2D | FMOD.MODE.OPENUSER | FMOD.MODE.LOOP_NORMAL, ref cs, out sound);
+            if (result != FMOD.RESULT.OK || sound == null)
+            {
+                Log.Error("Failed to create sound: " + result.ToString());
+                return null;
+            }
+
+            return sound;
+        }
+
+
         RecordDeviceEntry CurrentRecordDevice
         {
             get
@@ -343,7 +470,7 @@ namespace VCClientTest
             lastRecordPosition = 0;
         }
 
-        public bool Loopback = true;
+        public bool Loopback = false;
         FMOD.Channel loopbackChannel = null;
 
         void OpenRecordDevice()

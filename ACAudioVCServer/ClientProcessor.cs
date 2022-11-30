@@ -20,7 +20,7 @@ namespace ACAudioVCServer
 
             public void Disconnect()
             {
-                // send "screw you" packet?
+                // send "screw you" packet?  and wait?
 
                 Client.Close();
             }
@@ -28,9 +28,9 @@ namespace ACAudioVCServer
 
         private List<Player> Players = new List<Player>();
 
-        protected override void _Stop_Pre()
+        protected override void _Stop_Post()
         {
-            base._Stop_Pre();
+            base._Stop_Post();
 
             foreach (Player player in Players)
                 player.Disconnect();
