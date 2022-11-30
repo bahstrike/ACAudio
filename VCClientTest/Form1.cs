@@ -6,6 +6,8 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using System.Net;
+using System.Net.Sockets;
 using Smith;
 
 namespace VCClientTest
@@ -33,10 +35,39 @@ namespace VCClientTest
             }
         }
 
+
+        TcpClient server = null;
+        
+
         private void Form1_Load(object sender, EventArgs e)
         {
-            Audio.Init(32);
+            ACAudioVCServer.Server.Init();
 
+
+            // connect to server
+            {
+                server = new TcpClient();
+
+                server.Connect("127.0.0.1", 42420);
+
+                ACAudioVCServer.Packet serverInfo = ACAudioVCServer.Packet.Receive(server);
+
+                int sampleRate = serverInfo.ReadInt();
+
+
+
+                ACAudioVCServer.Packet clientInfo = new ACAudioVCServer.Packet();
+
+                clientInfo.WriteString("account lol");
+                clientInfo.WriteString("toon name");
+                clientInfo.WriteInt(1337);//weenie ID
+
+                clientInfo.Send(server);
+            }
+
+
+
+            Audio.Init(32);
 
             int numDrivers, numConnected;
             Audio.fmod.getRecordNumDrivers(out numDrivers, out numConnected);
@@ -64,6 +95,10 @@ namespace VCClientTest
         {
             CloseRecordDevice();
             Audio.Shutdown();
+
+            server.Close();
+
+            ACAudioVCServer.Server.Shutdown();
         }
 
 
@@ -81,12 +116,29 @@ namespace VCClientTest
         }
 
         // need a real "jitter buffer"  (and probably just store the compressed buffers too)
-        List<short[]> buffers = new List<short[]>();
+        List<AudioBuffer> buffers = new List<AudioBuffer>();
 
+
+        int receiveBuffers = 0;
 
         DateTime recordTimestamp = new DateTime();
         private void timer1_Tick(object sender, EventArgs e)
         {
+            // anything to receieve?
+            if(server != null)
+            {
+                ACAudioVCServer.Packet packet = ACAudioVCServer.Packet.Receive(server, 0);
+
+                if(packet != null)
+                {
+                    receiveBuffers++;
+                }
+            }
+
+
+
+
+
             if ((GetAsyncKeyState((int)' ') & 0x8000) != 0)
             {
                 if (recordTimestamp == new DateTime())
@@ -146,18 +198,35 @@ namespace VCClientTest
                 lastRecordPosition = recordPosition;
 
 
+                AudioBuffer abuf = new AudioBuffer();
+                abuf.Timestamp = DateTime.Now;
+                abuf.Buffer = buf;
 
-                buffers.Add(buf);
+                buffers.Add(abuf);
                 int totalLen = 0;
                 int maxLen = 0;
-                foreach (short[] b in buffers)
+                foreach (AudioBuffer b in buffers)
                 {
-                    totalLen += b.Length;
-                    maxLen = Math.Max(maxLen, b.Length);
+                    totalLen += b.Buffer.Length;
+                    maxLen = Math.Max(maxLen, b.Buffer.Length);
                 }
 
 
-                label1.Text = $"record position: {recordPosition}    buf:{buf.Length}   maxBuf:{maxLen}  total:{((double)totalLen/44100.0).ToString("#0.00")}sec";
+                label1.Text = $"record position: {recordPosition}    buf:{buf.Length}   maxBuf:{maxLen}  total:{((double)totalLen/44100.0).ToString("#0.00")}sec    receivePackets:{receiveBuffers}";
+
+
+
+                // uhh whatever just send the audio packet
+                if (server != null)
+                {
+                    ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet();
+
+                    foreach (short s in buf)
+                        packet.WriteShort((ushort)s);
+
+                    packet.Send(server);
+                }
+
 
 
                 int width = pictureBox1.Width;

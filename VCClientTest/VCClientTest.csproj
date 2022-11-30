@@ -73,5 +73,11 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ACAudioVCServer\ACAudioVCServer.csproj">
+      <Project>{8ca2f1d2-7403-47ab-a555-75969eb8aaca}</Project>
+      <Name>ACAudioVCServer</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

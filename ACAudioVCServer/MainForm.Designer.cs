@@ -57,6 +57,7 @@
             this.Controls.Add(this.logLB);
             this.Name = "MainForm";
             this.Text = "ACAudio VoiceChat Server";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
 
