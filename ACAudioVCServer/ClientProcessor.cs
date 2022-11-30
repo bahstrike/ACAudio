@@ -101,7 +101,7 @@ namespace ACAudioVCServer
                 // for now, just send the packet straight back  (haxx loopback)
                 playerPacket.Send(player.Client);
 
-                Server.Log("Relayed packet");
+                //Server.Log("Relayed packet");
             }
         }
     }

@@ -8,7 +8,10 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Net;
 using System.Net.Sockets;
+using System.IO;
+using System.Xml;
 using Smith;
+using System.Net.NetworkInformation;
 
 namespace VCClientTest
 {
@@ -54,14 +57,136 @@ namespace VCClientTest
                 PendingLogMessages.Add("[Server] " + s);
         }
 
+
+        private class SortNewest : IComparer<DateTime>
+        {
+            public int Compare(DateTime x, DateTime y)
+            {
+                return y.CompareTo(x);
+            }
+        }
+        string DetectServerAddressViaThwargle(string accountName)
+        {
+            try
+            {
+                string thwargPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ThwargLauncher");
+                if (!Directory.Exists(thwargPath))
+                    return null;
+
+                // check "Running" logs for most recent that matches provided account name
+                SortedList<DateTime, string> newestGames = new SortedList<DateTime, string>(new SortNewest());
+                foreach (string gameFile in Directory.GetFiles(Path.Combine(thwargPath, "Running"), "*.txt"))
+                {
+                    DateTime fileTime = new FileInfo(gameFile).LastWriteTime;
+
+                    // skip if not today
+                    if (DateTime.Now.Subtract(fileTime).TotalDays > 1)
+                        continue;
+
+                    newestGames.Add(fileTime, gameFile);
+                }
+
+                // scan most recent files for matching account name and try to scrape server name
+                string serverName = null;
+                foreach (DateTime fileTime in newestGames.Keys)
+                {
+                    string gameFile = newestGames[fileTime];
+
+                    using (StreamReader sr = File.OpenText(gameFile))
+                    {
+                        string fileAccountName = null;
+                        string fileServerName = null;
+                        while (!sr.EndOfStream && (fileAccountName == null || fileServerName == null))
+                        {
+                            string ln = sr.ReadLine();
+                            if (ln.StartsWith("AccountName:"))
+                                fileAccountName = ln.Substring(ln.IndexOf(':') + 1);
+                            else if (ln.StartsWith("ServerName:"))
+                                fileServerName = ln.Substring(ln.IndexOf(':') + 1);
+                        }
+
+                        if (fileAccountName == null || fileAccountName != accountName)
+                            continue;
+
+                        serverName = fileServerName;
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(serverName))
+                    return null;
+
+                // now we need to load all the server XMLs and try to find a match that includes a host address
+                foreach (string xmlFile in Directory.GetFiles(Path.Combine(thwargPath, "Servers"), "*.xml"))
+                {
+                    XmlDocument xmlDoc = new XmlDocument();
+                    xmlDoc.Load(xmlFile);
+
+                    foreach (XmlNode serverNode in xmlDoc.DocumentElement.SelectNodes("ServerItem"))
+                    {
+                        XmlNode node;
+
+                        node = serverNode.SelectSingleNode("name");
+                        if (node == null || node.InnerText != serverName)
+                            continue;
+
+                        node = serverNode.SelectSingleNode("connect_string");
+                        if (node == null)
+                            continue;
+
+                        // strip port out
+                        string connectString = node.InnerText;
+                        int i = connectString.IndexOf(':');
+                        if (i != -1)
+                            connectString = connectString.Substring(0, i);
+
+                        // we found it
+                        return connectString;
+                    }
+                }
+            }
+            catch
+            {
+                // it failed for some dumb reason. oh well.
+            }
+
+            return null;
+        }
+
+
         bool ServerULaw;
         int ServerBitDepth;
         int ServerSampleRate;
+
+        // average length of how long our audio sample packets will consist of
+        int ClientPacketMsec
+        {
+            get
+            {
+                // we're trying to scrape mic samples and generate a packet every Timer tick so i guess use whatever that timer frequency is
+                return timer1.Interval;
+            }
+        }
+
+        // whatever size playback stream buffer we want.  this also decides the delay before playback.
+        int ClientBufferMsec
+        {
+            get
+            {
+                return ClientPacketMsec * 10;  // 50msec * 10 = 500msec
+            }
+        }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             ACAudioVCServer.Server.LogCallback = ServerLogCallback;
             ACAudioVCServer.Server.Init();
+
+
+            // ------------------------------------------------------------------------------------------------------------
+            // USE THIS IN FINAL PLUGIN TO AUTODETECT VOICE HOST (assuming the server admin is running ACAudioVCServer)
+            string serverAddress = DetectServerAddressViaThwargle("blahblahblah");
+            // ------------------------------------------------------------------------------------------------------------
 
 
             // connect to server
@@ -135,8 +260,6 @@ namespace VCClientTest
 
         FMOD.Sound receiveStream = null;
         FMOD.Channel receiveChannel = null;
-        DateTime receiveStreamStart = new DateTime();
-        int receiveStreamTotalBytes = 0;
         private byte[] DumbReceiveSamples(int len)
         {
 #if true
@@ -157,7 +280,7 @@ namespace VCClientTest
             for (int x = bytesToCopy; x < len; x++)
                 rBuf[x] = 0;// should this be a 16-bit mid-range value like 32768 instead?
 
-            LogMsg("SAMPLE CALLBACK" + (bytesToCopy < len ? " (STARVED)" : string.Empty));
+            //LogMsg("SAMPLE CALLBACK" + (bytesToCopy < len ? " (STARVED)" : string.Empty));
 
             return rBuf;
 #else
@@ -209,7 +332,7 @@ namespace VCClientTest
 
                 if (packet != null)
                 {
-                    LogMsg("Received packet");
+                    //LogMsg("Received packet");
 
                     lastReceivedPacketTime = DateTime.Now;
 
@@ -217,8 +340,6 @@ namespace VCClientTest
 
                     if (numBytes > 0)
                     {
-                        receiveStreamTotalBytes += numBytes;
-
                         byte[] buf = packet.ReadBytes(numBytes);
 
                         int receiveBufferSize;
@@ -240,7 +361,7 @@ namespace VCClientTest
 
                         if (receiveStream == null)
                         {
-                            int desiredMsec = 500;  // wait until we have this much audio before initializing stream
+                            int desiredMsec = ClientBufferMsec;  // wait until we have this much audio before initializing stream
                             int desiredBytes = ServerSampleRate * (ServerBitDepth/8) * desiredMsec / 1000;
 
                             if (receiveBufferSize >= desiredBytes)
@@ -252,8 +373,7 @@ namespace VCClientTest
 
                                 LogMsg("Create/play receive stream");
 
-                                receiveStream = CreatePlaybackStream(ServerBitDepth, ServerSampleRate, desiredMsec/*playback delay*/, 50/*match client's mic sampling frequency / expected packet size?*/, DumbReceiveSamples);
-                                receiveStreamStart = DateTime.Now;
+                                receiveStream = CreatePlaybackStream(ServerBitDepth, ServerSampleRate, desiredMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, DumbReceiveSamples);
 
                                 // HAXXX  this needs to be "jitter buffer"'d
                                 Audio.fmod.playSound(receiveStream, null, false, out receiveChannel);
@@ -270,8 +390,10 @@ namespace VCClientTest
                         using (receiveBufferCrit.Lock)
                             receiveBufferSize = receiveBuffer.Count;
 
-                        if (receiveBufferSize == 0 && DateTime.Now.Subtract(lastReceivedPacketTime).TotalMilliseconds > 500)
+                        if (receiveBufferSize == 0 && DateTime.Now.Subtract(lastReceivedPacketTime).TotalMilliseconds > ClientBufferMsec)
                         {
+                            LogMsg("Destroy receive stream");
+
                             receiveChannel.stop();
                             receiveChannel = null;
 
@@ -279,27 +401,13 @@ namespace VCClientTest
                             receiveStream = null;
 
                             lastReceivedPacketTime = new DateTime();
-
-                            receiveStreamStart = new DateTime();
-                            receiveStreamTotalBytes = 0;
                         }
                     }
                 }
             }
 
 
-            string receiveRate = string.Empty;
-            if(receiveStream != null)
-            {
-                double time = DateTime.Now.Subtract(receiveStreamStart).TotalSeconds;
-                if (time > 0.0)
-                {
-                    int bytesPerSec = (int)((double)receiveStreamTotalBytes / time);
-                    receiveRate = $"receive:{bytesPerSec}bytes/sec";
-                }
-            }
-
-            label2.Text = $"recieveStream:{(receiveStream != null ? "valid" : "null")}   receiveBuffer:{receiveBuffer.Count}   {receiveRate}";
+            label2.Text = $"recieveStream:{(receiveStream != null ? "valid" : "null")}   receiveBuffer:{receiveBuffer.Count}";
 
 
 
@@ -387,7 +495,7 @@ namespace VCClientTest
 
                     packet.Send(server);
 
-                    LogMsg("Sent packet");
+                    //LogMsg("Sent packet");
                 }
 
 
