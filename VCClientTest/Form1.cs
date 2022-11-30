@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define ULAW
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -127,16 +129,6 @@ namespace VCClientTest
 
 
 
-        class AudioBuffer
-        {
-            public DateTime Timestamp;
-            public short[] Buffer;
-        }
-
-        // need a real "jitter buffer"  (and probably just store the compressed buffers too)
-        List<AudioBuffer> buffers = new List<AudioBuffer>();
-
-
         FMOD.Sound receiveStream = null;
         FMOD.Channel receiveChannel = null;
         private byte[] DumbReceiveSamples(int len)
@@ -223,12 +215,50 @@ namespace VCClientTest
                     int receiveBufferSize;
                     using (receiveBufferCrit.Lock)
                     {
+#if ULAW
+                        if (numSamples > 0)
+                        {
+                            byte[] ulaw = packet.ReadBytes(numSamples);
+
+                            byte[] linear = WinSound.Utils.MuLawToLinear(ulaw, 16, 1);
+
+                            receiveBuffer.AddRange(linear);
+
+
+
+
+                            /*short[] sbuf = new short[linear.Length / 2];
+                            for(int x=0; x<sbuf.Length; x++)
+                            {
+                                sbuf[x] = (short)(linear[x * 2 + 0] | (linear[x * 2 + 1] << 8));
+                            }
+
+
+                            int bufMin = int.MaxValue;
+                            int bufMax = int.MinValue;
+                            long bufAvg = 0;
+                            if (sbuf.Length > 0)
+                            {
+                                foreach (short s in sbuf)
+                                {
+                                    bufMin = Math.Min(bufMin, s);
+                                    bufMax = Math.Max(bufMax, s);
+                                    bufAvg += s;
+                                }
+                                bufAvg /= sbuf.Length;
+
+                                LogMsg($"min:{bufMin}  max:{bufMax}   avg:{bufAvg}");
+                            }*/
+                        }
+#else
+
                         for (int x = 0; x < numSamples; x++)
                         {
                             //16-bit samples
                             receiveBuffer.Add(packet.ReadByte());
                             receiveBuffer.Add(packet.ReadByte());
                         }
+#endif
 
                         receiveBufferSize = receiveBuffer.Count;
                     }
@@ -299,8 +329,6 @@ namespace VCClientTest
                     {
                         CloseRecordDevice();
                         recordTimestamp = new DateTime();
-
-                        buffers.Clear();
                     }
                 }
             }
@@ -342,22 +370,22 @@ namespace VCClientTest
                 lastRecordPosition = recordPosition;
 
 
-                AudioBuffer abuf = new AudioBuffer();
-                abuf.Timestamp = DateTime.Now;
-                abuf.Buffer = buf;
-
-                buffers.Add(abuf);
-                int totalLen = 0;
-                int maxLen = 0;
-                foreach (AudioBuffer b in buffers)
+                int bufMin = int.MaxValue;
+                int bufMax = int.MinValue;
+                long bufAvg = 0;
+                if (buf.Length > 0)
                 {
-                    totalLen += b.Buffer.Length;
-                    maxLen = Math.Max(maxLen, b.Buffer.Length);
+                    foreach (short s in buf)
+                    {
+                        bufMin = Math.Min(bufMin, s);
+                        bufMax = Math.Max(bufMax, s);
+                        bufAvg += s;
+                    }
+                    bufAvg /= buf.Length;
                 }
 
 
-                label1.Text = $"record position: {recordPosition}    buf:{buf.Length}   maxBuf:{maxLen}  total:{((double)totalLen/44100.0).ToString("#0.00")}sec    receivePackets:{receiveBuffers}";
-
+                label1.Text = $"record position: {recordPosition}    buf:{buf.Length}    receivePackets:{receiveBuffers}    min:{bufMin}   max:{bufMax}    avg:{bufAvg}";
 
 
                 // uhh whatever just send the audio packet
@@ -365,9 +393,54 @@ namespace VCClientTest
                 {
                     ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet();
 
+#if ULAW
+                    byte[] linear = new byte[buf.Length * 2];
+                    for(int x=0; x<buf.Length; x++)
+                    {
+                        linear[x * 2 + 0] = (byte)(buf[x]&0xFF);
+                        linear[x * 2 + 1] = (byte)((buf[x] >> 8)&0xFF);
+                    }
+
+                    byte[] ulaw = WinSound.Utils.LinearToMulaw(linear, 16, 1);
+
+                    packet.WriteInt(ulaw.Length);
+                    for (int x = 0; x < ulaw.Length; x++)
+                        packet.WriteByte(ulaw[x]);
+
+
+
+                    // check decompressed results against original
+                    {
+                        byte[] newlinear = WinSound.Utils.MuLawToLinear(ulaw, 16, 1);
+
+                        short[] sbuf = new short[newlinear.Length / 2];
+                        for (int x = 0; x < sbuf.Length; x++)
+                        {
+                            sbuf[x] = (short)(newlinear[x * 2 + 0] | (newlinear[x * 2 + 1] << 8));
+                        }
+
+
+                        int tbufMin = int.MaxValue;
+                        int tbufMax = int.MinValue;
+                        long tbufAvg = 0;
+                        if (sbuf.Length > 0)
+                        {
+                            foreach (short s in sbuf)
+                            {
+                                tbufMin = Math.Min(tbufMin, s);
+                                tbufMax = Math.Max(tbufMax, s);
+                                tbufAvg += s;
+                            }
+                            tbufAvg /= sbuf.Length;
+
+                            LogMsg($"min:{bufMin}/{tbufMin}  max:{bufMax}/{tbufMax}   avg:{bufAvg}/{tbufAvg}");
+                        }
+                    }
+#else
                     packet.WriteInt(buf.Length);
                     foreach (short s in buf)
                         packet.WriteShort((ushort)s);
+#endif
 
                     packet.Send(server);
 

@@ -11,6 +11,7 @@ Code				Strike
 Additional Code			trevis
 Static Positions Data		OptimShi
 Audio Engine			FMOD (Firelight Technologies Pty Ltd.)
+μ-law Voice Compression		https://www.codeproject.com/Articles/482735/TCP-Audio-Streamer-and-Player-Voice-Chat-over-IP
 Dynamic Music Concept		Maethor
 
 
