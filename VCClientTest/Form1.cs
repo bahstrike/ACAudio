@@ -56,6 +56,8 @@ namespace VCClientTest
                 PendingLogMessages.Add("[Server] " + s);
         }
 
+        int ServerSampleRate;
+
         private void Form1_Load(object sender, EventArgs e)
         {
             ACAudioVCServer.Server.LogCallback = ServerLogCallback;
@@ -70,10 +72,10 @@ namespace VCClientTest
 
                 ACAudioVCServer.Packet serverInfo = ACAudioVCServer.Packet.Receive(server);
 
-                int sampleRate = serverInfo.ReadInt();
+                ServerSampleRate = serverInfo.ReadInt();
 
 
-                LogMsg($"Received server info: sampleRate={sampleRate}");
+                LogMsg($"Received server info: sampleRate={ServerSampleRate}");
 
 
                 ACAudioVCServer.Packet clientInfo = new ACAudioVCServer.Packet();
@@ -223,32 +225,6 @@ namespace VCClientTest
                             byte[] linear = WinSound.Utils.MuLawToLinear(ulaw, 16, 1);
 
                             receiveBuffer.AddRange(linear);
-
-
-
-
-                            /*short[] sbuf = new short[linear.Length / 2];
-                            for(int x=0; x<sbuf.Length; x++)
-                            {
-                                sbuf[x] = (short)(linear[x * 2 + 0] | (linear[x * 2 + 1] << 8));
-                            }
-
-
-                            int bufMin = int.MaxValue;
-                            int bufMax = int.MinValue;
-                            long bufAvg = 0;
-                            if (sbuf.Length > 0)
-                            {
-                                foreach (short s in sbuf)
-                                {
-                                    bufMin = Math.Min(bufMin, s);
-                                    bufMax = Math.Max(bufMax, s);
-                                    bufAvg += s;
-                                }
-                                bufAvg /= sbuf.Length;
-
-                                LogMsg($"min:{bufMin}  max:{bufMax}   avg:{bufAvg}");
-                            }*/
                         }
 #else
 
@@ -266,7 +242,7 @@ namespace VCClientTest
                         if (receiveStream == null)
                         {
                         int desiredMsec = 500;  // wait until we have this much audio before initializing stream
-                        int desiredBytes = 44100 * 2 * desiredMsec / 1000;
+                        int desiredBytes = ServerSampleRate * 2 * desiredMsec / 1000;
 
                         if (receiveBufferSize >= desiredBytes)
                         {
@@ -277,7 +253,7 @@ namespace VCClientTest
 
                             LogMsg("Create/play receive stream");
 
-                            receiveStream = CreatePlaybackStream(desiredMsec/*playback delay*/, 50/*match client's mic sampling frequency / expected packet size?*/, DumbReceiveSamples);
+                            receiveStream = CreatePlaybackStream(ServerSampleRate, desiredMsec/*playback delay*/, 50/*match client's mic sampling frequency / expected packet size?*/, DumbReceiveSamples);
 
 
                             // HAXXX  this needs to be "jitter buffer"'d
@@ -370,22 +346,8 @@ namespace VCClientTest
                 lastRecordPosition = recordPosition;
 
 
-                int bufMin = int.MaxValue;
-                int bufMax = int.MinValue;
-                long bufAvg = 0;
-                if (buf.Length > 0)
-                {
-                    foreach (short s in buf)
-                    {
-                        bufMin = Math.Min(bufMin, s);
-                        bufMax = Math.Max(bufMax, s);
-                        bufAvg += s;
-                    }
-                    bufAvg /= buf.Length;
-                }
 
-
-                label1.Text = $"record position: {recordPosition}    buf:{buf.Length}    receivePackets:{receiveBuffers}    min:{bufMin}   max:{bufMax}    avg:{bufAvg}";
+                label1.Text = $"record position: {recordPosition}    buf:{buf.Length}    receivePackets:{receiveBuffers}";
 
 
                 // uhh whatever just send the audio packet
@@ -407,35 +369,6 @@ namespace VCClientTest
                     for (int x = 0; x < ulaw.Length; x++)
                         packet.WriteByte(ulaw[x]);
 
-
-
-                    // check decompressed results against original
-                    {
-                        byte[] newlinear = WinSound.Utils.MuLawToLinear(ulaw, 16, 1);
-
-                        short[] sbuf = new short[newlinear.Length / 2];
-                        for (int x = 0; x < sbuf.Length; x++)
-                        {
-                            sbuf[x] = (short)(newlinear[x * 2 + 0] | (newlinear[x * 2 + 1] << 8));
-                        }
-
-
-                        int tbufMin = int.MaxValue;
-                        int tbufMax = int.MinValue;
-                        long tbufAvg = 0;
-                        if (sbuf.Length > 0)
-                        {
-                            foreach (short s in sbuf)
-                            {
-                                tbufMin = Math.Min(tbufMin, s);
-                                tbufMax = Math.Max(tbufMax, s);
-                                tbufAvg += s;
-                            }
-                            tbufAvg /= sbuf.Length;
-
-                            LogMsg($"min:{bufMin}/{tbufMin}  max:{bufMax}/{tbufMax}   avg:{bufAvg}/{tbufAvg}");
-                        }
-                    }
 #else
                     packet.WriteInt(buf.Length);
                     foreach (short s in buf)
@@ -467,11 +400,10 @@ namespace VCClientTest
 
 
 
-        FMOD.Sound CreateRecordBuffer()
+        FMOD.Sound CreateRecordBuffer(int rate)
         {
             int channels = 1;
             int bitDepth = 16;
-            int rate = 44100;
 
             FMOD.Sound sound;
             FMOD.CREATESOUNDEXINFO cs = new FMOD.CREATESOUNDEXINFO();
@@ -553,12 +485,11 @@ namespace VCClientTest
             return FMOD.RESULT.OK;
         }
 
-        public static FMOD.Sound CreatePlaybackStream(int bufferMsec, int samplingMsec, GetStreamSamples callback)
+        public static FMOD.Sound CreatePlaybackStream(int rate, int bufferMsec, int samplingMsec, GetStreamSamples callback)
         {
             gss = callback;
 
             int channels = 1;
-            int rate = 44100;
             int bitDepth = 16;
 
             FMOD.Sound sound;
@@ -662,7 +593,7 @@ namespace VCClientTest
             if (CurrentRecordDevice == null)
                 return;
 
-            recordBuffer = CreateRecordBuffer();
+            recordBuffer = CreateRecordBuffer(ServerSampleRate);
             Audio.fmod.recordStart(CurrentRecordDevice.ID, recordBuffer, true);
 
 

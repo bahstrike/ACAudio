@@ -50,7 +50,7 @@ namespace ACAudioVCServer
                 // send server config
                 Packet serverInfo = new Packet();
 
-                serverInfo.WriteInt(44100);//sampling frequency
+                serverInfo.WriteInt(11025);//22050);//44100);//sampling frequency
 
                 serverInfo.Send(client);
 
