@@ -13,10 +13,20 @@ namespace ACAudioVCServer
         
         class Player
         {
-            public TcpClient Client;
-            public string AccountName;
-            public string CharacterName;
-            public int WeenieID;
+            private readonly TcpClient Client;
+            public readonly string AccountName;
+            public readonly string CharacterName;
+            public readonly int WeenieID;
+
+            public Player(TcpClient _Client, string _AccountName, string _CharacterName, int _WeenieID)
+            {
+                Client = _Client;
+                AccountName = _AccountName;
+                CharacterName = _CharacterName;
+                WeenieID = _WeenieID;
+            }
+
+            private DateTime LastHeartbeat = new DateTime();
 
             public override string ToString()
             {
@@ -31,11 +41,41 @@ namespace ACAudioVCServer
                 }
             }
 
+            public bool Connected
+            {
+                get
+                {
+                    return Client.Connected;
+                }
+            }
+
+            public void Process()
+            {
+                // send periodic heartbeat if necessary
+                if (DateTime.Now.Subtract(LastHeartbeat).TotalMilliseconds >= Packet.HeartbeatMsec)
+                    Send(new Packet(Packet.MessageType.Heartbeat));
+            }
+
+            public void Send(Packet p)
+            {
+                LastHeartbeat = DateTime.Now;
+                p.InternalSend(Client);
+            }
+
+            public Packet Receive(int headerTimeoutMsec = Packet.DefaultTimeoutMsec, int dataTimeoutMsec = Packet.DefaultTimeoutMsec)
+            {
+                return Packet.InternalReceive(Client, headerTimeoutMsec, dataTimeoutMsec);
+            }
+
+            // specify reason:null to skip sending a disconnect packet and just close the socket
             public void Disconnect(string reason)
             {
-                Packet packet = new Packet(Packet.MessageType.Disconnect);
-                packet.WriteString(reason);
-                packet.Send(Client);
+                if (reason != null)
+                {
+                    Packet packet = new Packet(Packet.MessageType.Disconnect);
+                    packet.WriteString(reason);
+                    Send(packet);
+                }
 
                 Client.Close();
             }
@@ -63,8 +103,8 @@ namespace ACAudioVCServer
             foreach (TcpClient client in clients)
             {
                 // wait for client config
-                Packet clientInfo = Packet.Receive(client);
-                if (clientInfo == null)
+                Packet clientInfo = Packet.InternalReceive(client);//raw packet receive since we have no player entry yet
+                if (clientInfo == null || clientInfo.Message != Packet.MessageType.PlayerConnect)
                 {
                     // didnt reply in proper fashion?  goodbye
                     client.Close();
@@ -73,11 +113,11 @@ namespace ACAudioVCServer
 
 
                 // try to accept client into system
-                Player player = new Player();
-                player.Client = client;
-                player.AccountName = clientInfo.ReadString();
-                player.CharacterName = clientInfo.ReadString();
-                player.WeenieID = clientInfo.ReadInt();
+                string accountName = clientInfo.ReadString();
+                string characterName = clientInfo.ReadString();
+                int weenieID = clientInfo.ReadInt();
+
+                Player player = new Player(client, accountName, characterName, weenieID);
 
 
                 // check for ban / already connected / etc?
@@ -105,7 +145,7 @@ namespace ACAudioVCServer
                         existing.Disconnect("You were reconnecting from a new IP Address");
                     else
                         // if same ip address, i guess just close our socket and let the existing "connection" become stale
-                        existing.Client.Close();
+                        existing.Disconnect(null);
 
                     Players.Remove(existing);
 
@@ -128,7 +168,7 @@ namespace ACAudioVCServer
                 serverInfo.WriteInt(16);//bitdepth
                 serverInfo.WriteInt(8000);//8000);//11025);//22050);//44100);//sampling frequency
 
-                serverInfo.Send(client);
+                player.Send(serverInfo);
             }
 
 
@@ -137,11 +177,13 @@ namespace ACAudioVCServer
             {
                 Player player = Players[playerIndex];
 
+                player.Process();
+
                 // lost connection?
-                if(!player.Client.Connected)
+                if(!player.Connected)
                 {
                     Server.Log($"Lost connection to {player}");
-                    player.Client.Close();// no need to send disconnected message since connection was lost
+                    player.Disconnect(null);// no need to send disconnected message since connection was lost
                     Players.RemoveAt(playerIndex--);
                     continue;
                 }
@@ -149,7 +191,7 @@ namespace ACAudioVCServer
                 for (; ; )
                 {
                     // dont wait for client unless we at least have a header
-                    Packet playerPacket = Packet.Receive(player.Client, 0);
+                    Packet playerPacket = player.Receive(0);
                     if (playerPacket == null)
                         break;
 
@@ -158,7 +200,7 @@ namespace ACAudioVCServer
                         string reason = playerPacket.ReadString();
 
                         Server.Log($"Player {player} disconnected: {reason}");
-                        player.Client.Close();//no need to send disconnect message since client will have closed their socket
+                        player.Disconnect(null);//no need to send disconnect message since client will have closed their socket
                         Players.RemoveAt(playerIndex--);
                         continue;
                     }
@@ -183,7 +225,7 @@ namespace ACAudioVCServer
                         // for now, just send the packet straight back to everyone  (haxx loopback)
                         foreach (Player player2 in Players)
                         {
-                            detailAudio.Send(player2.Client);
+                            player2.Send(detailAudio);
                         }
 
                     }

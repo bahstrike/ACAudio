@@ -13,8 +13,11 @@ namespace ACAudioVCServer
 
         public const int DefaultTimeoutMsec = 1000;
 
+        public const int HeartbeatMsec = 1000;
+
         public enum MessageType
         {
+            Heartbeat,                      // any                  no info; just a keep-alive if nothing else has been sent  (so lost sockets can be detected)
             Disconnect,                     // any                  signal that the connection will be terminated
             PlayerConnect,                  // client->server       sent during initial connection to provide player info
             StreamInfo,                     // server->client       specifies the currently accepted audio format
@@ -24,7 +27,7 @@ namespace ACAudioVCServer
 
         public readonly MessageType Message;
 
-        public static Packet Receive(TcpClient client, int headerTimeoutMsec=DefaultTimeoutMsec, int dataTimeoutMsec=DefaultTimeoutMsec)
+        public static Packet InternalReceive(TcpClient client, int headerTimeoutMsec=DefaultTimeoutMsec, int dataTimeoutMsec=DefaultTimeoutMsec)
         {
             try
             {
@@ -93,7 +96,7 @@ namespace ACAudioVCServer
             Message = _Message;
         }
 
-        public void Send(TcpClient client)
+        public void InternalSend(TcpClient client)
         {
             try
             {

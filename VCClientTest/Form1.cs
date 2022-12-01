@@ -1,4 +1,4 @@
-﻿#define SELFHOST
+﻿//#define SELFHOST
 
 using System;
 using System.Collections.Generic;
@@ -430,11 +430,11 @@ namespace VCClientTest
                     clientInfo.WriteString("toon" + Smith.MathLib.random.Next(20));
                     clientInfo.WriteInt(Smith.MathLib.random.Next());//weenie ID
 
-                    clientInfo.Send(server);
+                    SendToServer(clientInfo);
 
 
 
-                    ACAudioVCServer.Packet serverInfo = ACAudioVCServer.Packet.Receive(server);
+                    ACAudioVCServer.Packet serverInfo = ReceiveFromServer();
 
                     ServerULaw = serverInfo.ReadBool();
                     ServerBitDepth = serverInfo.ReadInt();
@@ -483,7 +483,7 @@ namespace VCClientTest
             {
                 ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.Disconnect);
                 packet.WriteString("Client exit");
-                packet.Send(server);
+                SendToServer(packet);
 
                 server.Close();
                 server = null;
@@ -500,6 +500,23 @@ namespace VCClientTest
 
         uint lastRecordPosition = 0;
 
+        DateTime lastHeartbeat = new DateTime();
+        public void SendToServer(ACAudioVCServer.Packet p)
+        {
+            if (server == null)
+                return;
+
+            lastHeartbeat = DateTime.Now;
+            p.InternalSend(server);
+        }
+
+        public ACAudioVCServer.Packet ReceiveFromServer(int headerTimeoutMsec = ACAudioVCServer.Packet.DefaultTimeoutMsec, int dataTimeoutMsec = ACAudioVCServer.Packet.DefaultTimeoutMsec)
+        {
+            if (server == null)
+                return null;
+
+            return ACAudioVCServer.Packet.InternalReceive(server, headerTimeoutMsec, dataTimeoutMsec);
+        }
 
         DateTime recordTimestamp = new DateTime();
         private void timer1_Tick(object sender, EventArgs e)
@@ -528,6 +545,8 @@ namespace VCClientTest
             // have we been lost connection?
             if(server != null && !server.Connected)
             {
+                LogMsg("Lost connection to server");
+
                 server.Close();//probably not needed if disconnected but whatever
                 server = null;
             }
@@ -535,9 +554,13 @@ namespace VCClientTest
             // anything to receieve?
             if (server != null)
             {
+                // send periodic heartbeat
+                if(DateTime.Now.Subtract(lastHeartbeat).TotalMilliseconds >= ACAudioVCServer.Packet.HeartbeatMsec)
+                    SendToServer(new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.Heartbeat));
+
                 for (; ; )
                 {
-                    ACAudioVCServer.Packet packet = ACAudioVCServer.Packet.Receive(server, 0);
+                    ACAudioVCServer.Packet packet = ReceiveFromServer(0);
                     if (packet == null)
                         break;
                     
@@ -658,7 +681,7 @@ namespace VCClientTest
                     else
                         packet.WriteBuffer(buf);
 
-                    packet.Send(server);
+                    SendToServer(packet);
 
                     //LogMsg("Sent packet");
                 }
