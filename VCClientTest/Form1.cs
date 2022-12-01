@@ -409,7 +409,12 @@ namespace VCClientTest
                 try
                 {
                     server = new TcpClient();
-                    server.Connect("192.168.5.2"/*"127.0.0.1"*/, 42420);
+                    int port = 42420;
+#if SELFHOST
+                    server.Connect("127.0.0.1", port);
+#else
+                    server.Connect("192.168.5.2", port);
+#endif
                 }
                 catch
                 {
