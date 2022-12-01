@@ -146,47 +146,53 @@ namespace ACAudioVCServer
                     continue;
                 }
 
-                // dont wait for each client unless we at least have a header
-                Packet playerPacket = Packet.Receive(player.Client, 0);
-                if (playerPacket == null)
-                    continue;
-
-                if(playerPacket.Message == Packet.MessageType.Disconnect)
+                for (; ; )
                 {
-                    string reason = playerPacket.ReadString();
+                    // dont wait for client unless we at least have a header
+                    Packet playerPacket = Packet.Receive(player.Client, 0);
+                    if (playerPacket == null)
+                        break;
 
-                    Server.Log($"Player {player} disconnected: {reason}");
-                    player.Client.Close();//no need to send disconnect message since client will have closed their socket
-                    Players.RemoveAt(playerIndex--);
-                    continue;
-                }
-
-
-                if (playerPacket.Message == Packet.MessageType.RawAudio)
-                {
-                    // extract data from raw audio packet
-                    byte[] buf = playerPacket.ReadBuffer();
-                    if (buf == null || buf.Length == 0)
-                        continue;
-
-
-
-                    // reconstruct a detailed audio packet that includes the appropriate source information for redistribution
-                    Packet detailAudio = new Packet(Packet.MessageType.DetailAudio);
-                    detailAudio.WriteInt(player.WeenieID);
-                    detailAudio.WriteBuffer(buf);
-                    
-                    
-
-                    // for now, just send the packet straight back to everyone  (haxx loopback)
-                    foreach (Player player2 in Players)
+                    if (playerPacket.Message == Packet.MessageType.Disconnect)
                     {
-                        detailAudio.Send(player2.Client);
+                        string reason = playerPacket.ReadString();
+
+                        Server.Log($"Player {player} disconnected: {reason}");
+                        player.Client.Close();//no need to send disconnect message since client will have closed their socket
+                        Players.RemoveAt(playerIndex--);
+                        continue;
                     }
 
+
+                    if (playerPacket.Message == Packet.MessageType.RawAudio)
+                    {
+                        // extract data from raw audio packet
+                        byte[] buf = playerPacket.ReadBuffer();
+                        if (buf == null || buf.Length == 0)
+                            continue;
+
+
+
+                        // reconstruct a detailed audio packet that includes the appropriate source information for redistribution
+                        Packet detailAudio = new Packet(Packet.MessageType.DetailAudio);
+                        detailAudio.WriteInt(player.WeenieID);
+                        detailAudio.WriteBuffer(buf);
+
+
+
+                        // for now, just send the packet straight back to everyone  (haxx loopback)
+                        foreach (Player player2 in Players)
+                        {
+                            detailAudio.Send(player2.Client);
+                        }
+
+                    }
+
+
+                    // break out of loop if we only want to process 1 player packet at a time.   continue loop to process all
+                    //break;
                 }
 
-                //Server.Log("Relayed packet");
             }
         }
     }

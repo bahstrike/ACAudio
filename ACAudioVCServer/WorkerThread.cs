@@ -55,7 +55,7 @@ namespace ACAudioVCServer
 
         protected bool WantStop()
         {
-            // force a context release here so none of our threads are dumb and max CPU
+            // force a context release here so none of our threads are dumb and max CPU on accident by forgetting their own Sleep
             Thread.Sleep(1);
 
             return (ThreadState == ThreadStateValue.Stopping || ThreadState == ThreadStateValue.Stopped);

@@ -41,7 +41,7 @@ namespace VCClientTest
         }
 
 
-        public void LogMsg(string s)
+        public static void LogMsg(string s)
         {
             using (PendingLogMessagesCrit.Lock)
                 PendingLogMessages.Add("[Client] " + s);
@@ -156,27 +156,238 @@ namespace VCClientTest
         }
 
 
-        bool ServerULaw;
-        int ServerBitDepth;
-        int ServerSampleRate;
+        static bool ServerULaw;
+        static int ServerBitDepth;
+        static int ServerSampleRate;
 
         // average length of how long our audio sample packets will consist of
-        int ClientPacketMsec
+        static int ClientPacketMsec
         {
             get
             {
                 // we're trying to scrape mic samples and generate a packet every Timer tick so i guess use whatever that timer frequency is
-                return timer1.Interval;
+                return 50;//timer1.Interval;
             }
         }
 
         // whatever size playback stream buffer we want.  this also decides the delay before playback.
-        int ClientBufferMsec
+        static int ClientBufferMsec
         {
             get
             {
                 return ClientPacketMsec * 10;  // 50msec * 10 = 500msec
             }
+        }
+
+        class ReceiveStream : IDisposable
+        {
+            public readonly int WeenieID;
+
+            private FMOD.Sound Stream = null;
+            private FMOD.Channel Channel = null;
+
+            private ACAudioVCServer.CritSect receiveBufferCrit = new ACAudioVCServer.CritSect();
+            private List<byte> receiveBuffer = new List<byte>();
+
+            private DateTime lastReceivedPacketTime = new DateTime();
+
+            public ReceiveStream(int _WeenieID)
+            {
+                WeenieID = _WeenieID;
+            }
+
+            ~ReceiveStream()
+            {
+                Dispose(false);
+            }
+
+            public void Dispose()
+            {
+                Dispose(true);
+
+                GC.SuppressFinalize(this);
+            }
+
+            volatile bool disposed = false;
+            protected virtual void Dispose(bool disposing)
+            {
+                if (disposed)
+                    return;
+
+                disposed = true;
+
+                if(Channel != null)
+                {
+                    Channel.stop();
+                    Channel = null;
+                }
+
+                if(Stream != null)
+                {
+                    Stream.release();
+                    Stream = null;
+                }
+            }
+
+            public void Process(out bool wantDestroy)
+            {
+                wantDestroy = false;
+
+                int receiveBufferSize;
+                using (receiveBufferCrit.Lock)
+                    receiveBufferSize = receiveBuffer.Count;
+
+                if (receiveBufferSize == 0 && DateTime.Now.Subtract(lastReceivedPacketTime).TotalMilliseconds > ClientBufferMsec)
+                    wantDestroy = true;
+            }
+
+            public bool SupplyPacket(ACAudioVCServer.Packet packet)
+            {
+                byte[] buf = packet.ReadBuffer();
+                if (buf == null || buf.Length == 0)
+                    return false;
+
+                lastReceivedPacketTime = DateTime.Now;
+
+
+
+                int receiveBufferSize;
+                using (receiveBufferCrit.Lock)
+                {
+                    if (ServerULaw)
+                        receiveBuffer.AddRange(WinSound.Utils.MuLawToLinear(buf, ServerBitDepth, 1));
+                    else
+                        receiveBuffer.AddRange(buf);
+
+                    receiveBufferSize = receiveBuffer.Count;
+                }
+
+                if (Stream == null)
+                {
+                    //int desiredMsec = ClientBufferMsec;  // wait until we have this much audio before initializing stream
+                    //int desiredBytes = ServerSampleRate * (ServerBitDepth / 8) * desiredMsec / 1000;
+
+                    //if (receiveBufferSize >= ClientBufferMsec)
+                    {
+                        // pull out the desired bytes from receive buffer and provide to stream immediately
+                        /* byte[] buf = new byte[desiredBytes];
+                            receiveBuffer.CopyTo(0, buf, 0, desiredBytes);
+                            receiveBuffer.RemoveRange(0, desiredBytes);*/
+
+                        //LogMsg("Create/play receive stream");
+
+                        Stream = CreatePlaybackStream(ServerBitDepth, ServerSampleRate, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, WeenieID);
+                        Stream.setUserData(new IntPtr(WeenieID));
+
+                        // HAXXX  this needs to be "jitter buffer"'d
+                        Audio.fmod.playSound(Stream, null, false, out Channel);
+                    }
+                }
+
+                return true;
+            }
+
+            public byte[] RetrieveSamples(int len)
+            {
+#if true
+                //LogMsg($"retrievesamples for stream weenie {WeenieID}");
+
+                byte[] rBuf = new byte[len];
+
+                int bytesToCopy;
+                using (receiveBufferCrit.Lock)
+                {
+                    bytesToCopy = Math.Min(len, receiveBuffer.Count);
+                    if (bytesToCopy > 0)
+                    {
+                        receiveBuffer.CopyTo(0, rBuf, 0, bytesToCopy);
+                        receiveBuffer.RemoveRange(0, bytesToCopy);
+                    }
+                }
+
+                // if we didnt have enough samples, fill the rest with silence
+                for (int x = bytesToCopy; x < len; x++)
+                    rBuf[x] = 0;// should this be a 16-bit mid-range value like 32768 instead?
+
+                LogMsg($"{WeenieID.ToString("X8")}: SAMPLE CALLBACK{(bytesToCopy < len ? $" (STARVED {100-(bytesToCopy*100/len)}%)" : string.Empty)}");
+
+                return rBuf;
+#else
+            int bytes = Math.Min(len, receiveBuffer.Count);
+            if (bytes <= 0)
+                return null;
+
+            byte[] rBuf = new byte[bytes];
+
+            receiveBuffer.CopyTo(0, rBuf, 0, bytes);
+            receiveBuffer.RemoveRange(0, bytes);
+
+            return rBuf;
+#endif
+            }
+        }
+
+        static ACAudioVCServer.CritSect ReceiveStreamsCrit = new ACAudioVCServer.CritSect();
+        static Dictionary<int, ReceiveStream> ReceiveStreams = new Dictionary<int, ReceiveStream>();
+
+        static ReceiveStream GetReceiveStream(int weenieID)
+        {
+            using (ReceiveStreamsCrit.Lock)
+            {
+                ReceiveStream stream;
+                if (!ReceiveStreams.TryGetValue(weenieID, out stream))
+                    stream = null;
+
+                return stream;
+            }
+        }
+
+        static ReceiveStream GetOrCreateReceiveStream(int weenieID)
+        {
+            using (ReceiveStreamsCrit.Lock)
+            {
+                ReceiveStream stream;
+                if (!ReceiveStreams.TryGetValue(weenieID, out stream))
+                {
+                    LogMsg($"Create receive stream {weenieID.ToString("X8")}");
+
+                    stream = new ReceiveStream(weenieID);
+                    ReceiveStreams.Add(weenieID, stream);
+                }
+
+                return stream;
+            }
+        }
+
+        static void DestroyReceiveStream(int weenieID)
+        {
+            ReceiveStream stream;
+            using (ReceiveStreamsCrit.Lock)
+            {
+                if (!ReceiveStreams.TryGetValue(weenieID, out stream))
+                    return;
+
+                ReceiveStreams.Remove(weenieID);
+            }
+
+            LogMsg($"Destroy receive stream {stream.WeenieID.ToString("X8")}");
+
+            stream.Dispose();
+        }
+
+        static void DestroyAllReceiveStreams()
+        {
+            ReceiveStream[] streams;
+            using (ReceiveStreamsCrit.Lock)
+            {
+                streams = new ReceiveStream[ReceiveStreams.Values.Count];
+                ReceiveStreams.Values.CopyTo(streams, 0);
+
+                ReceiveStreams.Clear();
+            }
+
+            foreach (ReceiveStream stream in streams)
+                stream.Dispose();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -257,6 +468,8 @@ namespace VCClientTest
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
+            DestroyAllReceiveStreams();
+
             CloseRecordDevice();
             Audio.Shutdown();
 
@@ -283,72 +496,28 @@ namespace VCClientTest
         uint lastRecordPosition = 0;
 
 
-
-        FMOD.Sound receiveStream = null;
-        FMOD.Channel receiveChannel = null;
-        private byte[] DumbReceiveSamples(int len)
-        {
-#if true
-            byte[] rBuf = new byte[len];
-
-            int bytesToCopy;
-            using (receiveBufferCrit.Lock)
-            {
-                bytesToCopy = Math.Min(len, receiveBuffer.Count);
-                if (bytesToCopy > 0)
-                {
-                    receiveBuffer.CopyTo(0, rBuf, 0, bytesToCopy);
-                    receiveBuffer.RemoveRange(0, bytesToCopy);
-                }
-            }
-
-            // if we didnt have enough samples, fill the rest with silence
-            for (int x = bytesToCopy; x < len; x++)
-                rBuf[x] = 0;// should this be a 16-bit mid-range value like 32768 instead?
-
-            //LogMsg("SAMPLE CALLBACK" + (bytesToCopy < len ? " (STARVED)" : string.Empty));
-
-            return rBuf;
-#else
-            int bytes = Math.Min(len, receiveBuffer.Count);
-            if (bytes <= 0)
-                return null;
-
-            byte[] rBuf = new byte[bytes];
-
-            receiveBuffer.CopyTo(0, rBuf, 0, bytes);
-            receiveBuffer.RemoveRange(0, bytes);
-
-            return rBuf;
-#endif
-        }
-
-
-        ACAudioVCServer.CritSect receiveBufferCrit = new ACAudioVCServer.CritSect();
-        List<byte> receiveBuffer = new List<byte>();
-
-
-        DateTime lastReceivedPacketTime = new DateTime();
-
         DateTime recordTimestamp = new DateTime();
         private void timer1_Tick(object sender, EventArgs e)
         {
             using (PendingLogMessagesCrit.Lock)
             {
-                listBox2.BeginUpdate();
-
-                while (PendingLogMessages.Count > 0)
+                if (PendingLogMessages.Count > 0)
                 {
-                    while (listBox2.Items.Count > 100)
-                        listBox2.Items.RemoveAt(0);
+                    listBox2.BeginUpdate();
 
-                    listBox2.TopIndex = listBox2.Items.Add(PendingLogMessages[0]);
-                    PendingLogMessages.RemoveAt(0);
+                    while (PendingLogMessages.Count > 0)
+                    {
+                        while (listBox2.Items.Count > 100)
+                            listBox2.Items.RemoveAt(0);
+
+                        listBox2.TopIndex = listBox2.Items.Add(PendingLogMessages[0]);
+                        PendingLogMessages.RemoveAt(0);
+                    }
+
+                    listBox2.EndUpdate();
+
+                    listBox2.Update();
                 }
-
-                listBox2.EndUpdate();
-
-                listBox2.Update();
             }
 
             // have we been lost connection?
@@ -361,12 +530,13 @@ namespace VCClientTest
             // anything to receieve?
             if (server != null)
             {
-                ACAudioVCServer.Packet packet = ACAudioVCServer.Packet.Receive(server, 0);
-                bool receivedAudioPacket = false;
-
-                if (packet != null)
+                for (; ; )
                 {
-                    if(packet.Message == ACAudioVCServer.Packet.MessageType.Disconnect)
+                    ACAudioVCServer.Packet packet = ACAudioVCServer.Packet.Receive(server, 0);
+                    if (packet == null)
+                        break;
+                    
+                    if (packet.Message == ACAudioVCServer.Packet.MessageType.Disconnect)
                     {
                         string reason = packet.ReadString();
 
@@ -380,81 +550,34 @@ namespace VCClientTest
                     {
                         //LogMsg("Received packet");
 
-                        lastReceivedPacketTime = DateTime.Now;
-
                         int weenieID = packet.ReadInt();
 
-                        byte[] buf = packet.ReadBuffer();
+                        ReceiveStream stream = GetOrCreateReceiveStream(weenieID);
 
-                        if(buf != null && buf.Length > 0)
-                        {
-                            receivedAudioPacket = true;
-
-
-                            int receiveBufferSize;
-                            using (receiveBufferCrit.Lock)
-                            {
-                                if (ServerULaw)
-                                    receiveBuffer.AddRange(WinSound.Utils.MuLawToLinear(buf, ServerBitDepth, 1));
-                                else
-                                    receiveBuffer.AddRange(buf);
-
-                                receiveBufferSize = receiveBuffer.Count;
-                            }
-
-                            if (receiveStream == null)
-                            {
-                                int desiredMsec = ClientBufferMsec;  // wait until we have this much audio before initializing stream
-                                int desiredBytes = ServerSampleRate * (ServerBitDepth / 8) * desiredMsec / 1000;
-
-                                if (receiveBufferSize >= desiredBytes)
-                                {
-                                    // pull out the desired bytes from receive buffer and provide to stream immediately
-                                    /* byte[] buf = new byte[desiredBytes];
-                                     receiveBuffer.CopyTo(0, buf, 0, desiredBytes);
-                                     receiveBuffer.RemoveRange(0, desiredBytes);*/
-
-                                    LogMsg("Create/play receive stream");
-
-                                    receiveStream = CreatePlaybackStream(ServerBitDepth, ServerSampleRate, desiredMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, DumbReceiveSamples);
-
-                                    // HAXXX  this needs to be "jitter buffer"'d
-                                    Audio.fmod.playSound(receiveStream, null, false, out receiveChannel);
-                                }
-                            }
-                        }
-                    }
-                }
-                
-
-
-                if(!receivedAudioPacket)
-                {
-                    // if there's nothing left in the receive buffer, and its been a while since we receieved anything new, then kill stream
-                    if (receiveStream != null)
-                    {
-                        int receiveBufferSize;
-                        using (receiveBufferCrit.Lock)
-                            receiveBufferSize = receiveBuffer.Count;
-
-                        if (receiveBufferSize == 0 && DateTime.Now.Subtract(lastReceivedPacketTime).TotalMilliseconds > ClientBufferMsec)
-                        {
-                            LogMsg("Destroy receive stream");
-
-                            receiveChannel.stop();
-                            receiveChannel = null;
-
-                            receiveStream.release();
-                            receiveStream = null;
-
-                            lastReceivedPacketTime = new DateTime();
-                        }
+                        stream.SupplyPacket(packet);
                     }
                 }
             }
 
 
-            label2.Text = $"connected:{(server != null && server.Connected ? "yes":"no")}  recieveStream:{(receiveStream != null ? "valid" : "null")}   receiveBuffer:{receiveBuffer.Count}";
+            // process receive streams
+            ReceiveStream[] streams;
+            using (ReceiveStreamsCrit.Lock)
+            {
+                streams = new ReceiveStream[ReceiveStreams.Count];
+                ReceiveStreams.Values.CopyTo(streams, 0);
+            }
+            foreach(ReceiveStream stream in streams)
+            {
+                bool wantDestroy;
+                stream.Process(out wantDestroy);
+
+                if (wantDestroy)
+                    DestroyReceiveStream(stream.WeenieID);
+            }
+
+
+            label2.Text = $"connected:{(server != null && server.Connected ? "yes":"no")}  recieveStreams:{ReceiveStreams.Count}";
 
 
 
@@ -536,7 +659,7 @@ namespace VCClientTest
                 }
 
 
-                
+#if false
                 int width = pictureBox1.Width;
                 int height = pictureBox1.Height;
                 Bitmap bmp = new Bitmap(width, height);
@@ -554,6 +677,7 @@ namespace VCClientTest
                     }
                 }
                 pictureBox1.Image = bmp;
+#endif
             }
 
 
@@ -628,28 +752,35 @@ namespace VCClientTest
             return sound;
         }
 
-        public delegate byte[] GetStreamSamples(int maxlen);
-        private static GetStreamSamples gss = null;
-
         public static FMOD.SOUND_PCMREADCALLBACK PCMReadCallbackDelegate = new FMOD.SOUND_PCMREADCALLBACK(PCMReadCallback);
         public static FMOD.RESULT PCMReadCallback(IntPtr soundraw, IntPtr data, uint datalen)
         {
             FMOD.Sound sound = new FMOD.Sound(soundraw);
 
-            //IntPtr userdata;
-            //sound.getUserData(out userdata);
+            IntPtr userdata;
+            sound.getUserData(out userdata);
+            int weenieID = userdata.ToInt32();
 
-            byte[] buf = gss((int)datalen);
+            ReceiveStream stream = GetReceiveStream(weenieID);
+
+            byte[] buf;
+            if (stream == null)
+            {
+                buf = new byte[datalen];
+                for (int x = 0; x < datalen; x++)
+                    buf[x] = 0;
+            }
+            else
+                buf = stream.RetrieveSamples((int)datalen);
+
             if (buf != null)
                 Marshal.Copy(buf, 0, data, buf.Length);
 
             return FMOD.RESULT.OK;
         }
 
-        public static FMOD.Sound CreatePlaybackStream(int bitDepth, int rate, int bufferMsec, int samplingMsec, GetStreamSamples callback)
+        public static FMOD.Sound CreatePlaybackStream(int bitDepth, int rate, int bufferMsec, int samplingMsec, int userdata)
         {
-            gss = callback;
-
             int channels = 1;
 
             FMOD.Sound sound;
@@ -684,7 +815,7 @@ namespace VCClientTest
             cs.dlsname = IntPtr.Zero;
             cs.encryptionkey = IntPtr.Zero;
             cs.maxpolyphony = 0;
-            cs.userdata = IntPtr.Zero;// Marshal.GetFunctionPointerForDelegate(callback);
+            cs.userdata = new IntPtr(userdata);//IntPtr.Zero;// Marshal.GetFunctionPointerForDelegate(callback);
             cs.fileuseropen = null;
             cs.fileuserclose = null;
             cs.fileuserread = null;
@@ -704,7 +835,7 @@ namespace VCClientTest
             cs.nonblockthreadid = 0;
             cs.fsbguid = IntPtr.Zero;
 
-            FMOD.RESULT result = Audio.fmod.createStream((byte[])null, FMOD.MODE.CREATESTREAM | FMOD.MODE._2D | FMOD.MODE.OPENUSER | FMOD.MODE.LOOP_NORMAL, ref cs, out sound);
+            FMOD.RESULT result = Audio.fmod.createStream((byte[])null, FMOD.MODE.CREATESTREAM | FMOD.MODE._2D | FMOD.MODE.OPENUSER | FMOD.MODE.OPENONLY | FMOD.MODE.LOOP_NORMAL, ref cs, out sound);
             if (result != FMOD.RESULT.OK || sound == null)
             {
                 Log.Error("Failed to create sound: " + result.ToString());
