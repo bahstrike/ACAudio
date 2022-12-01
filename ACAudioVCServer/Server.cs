@@ -34,16 +34,17 @@ namespace ACAudioVCServer
 
         public static void Shutdown()
         {
-            if (clientProcessor != null)
-            {
-                clientProcessor.Stop();
-                clientProcessor = null;
-            }
-
+            // tear down listener first just in case someones trying to connect while we are shutting down
             if (listener != null)
             {
                 listener.Stop();
                 listener = null;
+            }
+
+            if (clientProcessor != null)
+            {
+                clientProcessor.Stop();
+                clientProcessor = null;
             }
         }
     }

@@ -13,6 +13,17 @@ namespace ACAudioVCServer
 
         public const int DefaultTimeoutMsec = 1000;
 
+        public enum MessageType
+        {
+            Disconnect,                     // any                  signal that the connection will be terminated
+            PlayerConnect,                  // client->server       sent during initial connection to provide player info
+            StreamInfo,                     // server->client       specifies the currently accepted audio format
+            RawAudio,                       // client->server       anonymous audio fragment
+            DetailAudio,                    // server->client       audio fragment with appropriate source information
+        }
+
+        public readonly MessageType Message;
+
         public static Packet Receive(TcpClient client, int headerTimeoutMsec=DefaultTimeoutMsec, int dataTimeoutMsec=DefaultTimeoutMsec)
         {
             try
@@ -37,6 +48,8 @@ namespace ACAudioVCServer
                 if (br.ReadInt32() != MAGIC)
                     return null;
 
+                MessageType message = (MessageType)br.ReadInt32();
+
                 int len = br.ReadInt32();
                 if (len <= 0 || len > MAX_BYTES)
                     return null;
@@ -60,7 +73,7 @@ namespace ACAudioVCServer
                 if (buf.Length != len)
                     return null;
 
-                return new Packet(buf);
+                return new Packet(message, buf);
             }
             catch
             {
@@ -68,32 +81,40 @@ namespace ACAudioVCServer
             }
         }
 
-        private Packet(byte[] buf)
+        private Packet(MessageType _Message, byte[] buf)
             : base(new MemoryStream(buf))
         {
-
+            Message = _Message;
         }
 
-        public Packet()
+        public Packet(MessageType _Message)
             : base(new MemoryStream())
         {
-
+            Message = _Message;
         }
 
         public void Send(TcpClient client)
         {
-            stream.Flush();
+            try
+            {
+                //stream.Flush();//shouldnt be necessary for memorystream
 
-            byte[] buf = (stream as MemoryStream).ToArray();
+                byte[] buf = (stream as MemoryStream).ToArray();
 
-            BinaryWriter bw = new BinaryWriter(client.GetStream());
-            bw.Write(MAGIC);
-            bw.Write(buf.Length);
-            bw.Write(buf);
+                BinaryWriter bw = new BinaryWriter(client.GetStream());
+                bw.Write(MAGIC);
+                bw.Write((int)Message);
+                bw.Write(buf.Length);
+                bw.Write(buf);
 
-            bw.Flush();
+                bw.Flush();
 
-            client.GetStream().Flush();
+                //client.GetStream().Flush();// supposedly does nothing for network stream
+            }
+            catch
+            {
+
+            }
         }
     }
 }

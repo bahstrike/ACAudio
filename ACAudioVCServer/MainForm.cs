@@ -23,17 +23,31 @@ namespace ACAudioVCServer
             logLB.TopIndex = logLB.Items.Add(s);
         }
 
+        CritSect pendingLogMessagesCrit = new CritSect();
+        List<string> pendingLogMessages = new List<string>();
+        void LogCallback(string s)
+        {
+            using (pendingLogMessagesCrit.Lock)
+                pendingLogMessages.Add(s);
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
             Log("Startup");
 
+            Server.LogCallback = LogCallback;
             Server.Init();
 
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            
+            using (pendingLogMessagesCrit.Lock)
+            {
+                foreach (string s in pendingLogMessages)
+                    Log(s);
+                pendingLogMessages.Clear();
+            }
         }
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)

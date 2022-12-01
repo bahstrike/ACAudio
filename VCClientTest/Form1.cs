@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define SELFHOST
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -179,8 +181,10 @@ namespace VCClientTest
 
         private void Form1_Load(object sender, EventArgs e)
         {
+#if SELFHOST
             ACAudioVCServer.Server.LogCallback = ServerLogCallback;
             ACAudioVCServer.Server.Init();
+#endif
 
 
             // ------------------------------------------------------------------------------------------------------------
@@ -191,27 +195,38 @@ namespace VCClientTest
 
             // connect to server
             {
-                server = new TcpClient();
-
-                server.Connect("127.0.0.1", 42420);
-
-                ACAudioVCServer.Packet serverInfo = ACAudioVCServer.Packet.Receive(server);
-
-                ServerULaw = serverInfo.ReadBool();
-                ServerBitDepth = serverInfo.ReadInt();
-                ServerSampleRate = serverInfo.ReadInt();
-
-
-                LogMsg($"Received server info:  µ-law:{ServerULaw}  bitDepth={ServerBitDepth}  sampleRate={ServerSampleRate}");
+                try
+                {
+                    server = new TcpClient();
+                    server.Connect("192.168.5.2"/*"127.0.0.1"*/, 42420);
+                }
+                catch
+                {
+                    server = null;
+                }
 
 
-                ACAudioVCServer.Packet clientInfo = new ACAudioVCServer.Packet();
+                if (server != null)
+                {
+                    ACAudioVCServer.Packet clientInfo = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.PlayerConnect);
 
-                clientInfo.WriteString("account lol");
-                clientInfo.WriteString("toon name");
-                clientInfo.WriteInt(1337);//weenie ID
+                    clientInfo.WriteString("account lol");
+                    clientInfo.WriteString("toon" + Smith.MathLib.random.Next(20));
+                    clientInfo.WriteInt(Smith.MathLib.random.Next());//weenie ID
 
-                clientInfo.Send(server);
+                    clientInfo.Send(server);
+
+
+
+                    ACAudioVCServer.Packet serverInfo = ACAudioVCServer.Packet.Receive(server);
+
+                    ServerULaw = serverInfo.ReadBool();
+                    ServerBitDepth = serverInfo.ReadInt();
+                    ServerSampleRate = serverInfo.ReadInt();
+
+
+                    LogMsg($"Received server info:  µ-law:{ServerULaw}  bitDepth={ServerBitDepth}  sampleRate={ServerSampleRate}");
+                }
             }
 
 
@@ -245,9 +260,20 @@ namespace VCClientTest
             CloseRecordDevice();
             Audio.Shutdown();
 
-            server.Close();
+            // issue disconnect
+            if (server != null)
+            {
+                ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.Disconnect);
+                packet.WriteString("Client exit");
+                packet.Send(server);
 
+                server.Close();
+                server = null;
+            }
+
+#if SELFHOST
             ACAudioVCServer.Server.Shutdown();
+#endif
         }
 
 
@@ -325,63 +351,84 @@ namespace VCClientTest
                 listBox2.Update();
             }
 
+            // have we been lost connection?
+            if(server != null && !server.Connected)
+            {
+                server.Close();//probably not needed if disconnected but whatever
+                server = null;
+            }
+
             // anything to receieve?
             if (server != null)
             {
                 ACAudioVCServer.Packet packet = ACAudioVCServer.Packet.Receive(server, 0);
+                bool receivedAudioPacket = false;
 
                 if (packet != null)
                 {
-                    //LogMsg("Received packet");
-
-                    lastReceivedPacketTime = DateTime.Now;
-
-                    int numBytes = packet.ReadInt();
-
-                    if (numBytes > 0)
+                    if(packet.Message == ACAudioVCServer.Packet.MessageType.Disconnect)
                     {
-                        byte[] buf = packet.ReadBytes(numBytes);
+                        string reason = packet.ReadString();
 
-                        int receiveBufferSize;
-                        using (receiveBufferCrit.Lock)
+                        // we're being ordered to disconnect. server will have already closed their socket. just close ours
+                        LogMsg("We have been disconnected from server: " + reason);
+                        server.Close();
+                        server = null;
+                    }
+
+                    if (packet.Message == ACAudioVCServer.Packet.MessageType.DetailAudio)
+                    {
+                        //LogMsg("Received packet");
+
+                        lastReceivedPacketTime = DateTime.Now;
+
+                        int weenieID = packet.ReadInt();
+
+                        byte[] buf = packet.ReadBuffer();
+
+                        if(buf != null && buf.Length > 0)
                         {
-                            if (ServerULaw)
-                            {
-                                byte[] linear = WinSound.Utils.MuLawToLinear(buf, ServerBitDepth, 1);
+                            receivedAudioPacket = true;
 
-                                receiveBuffer.AddRange(linear);
+
+                            int receiveBufferSize;
+                            using (receiveBufferCrit.Lock)
+                            {
+                                if (ServerULaw)
+                                    receiveBuffer.AddRange(WinSound.Utils.MuLawToLinear(buf, ServerBitDepth, 1));
+                                else
+                                    receiveBuffer.AddRange(buf);
+
+                                receiveBufferSize = receiveBuffer.Count;
                             }
-                            else
+
+                            if (receiveStream == null)
                             {
-                                receiveBuffer.AddRange(buf);
-                            }
+                                int desiredMsec = ClientBufferMsec;  // wait until we have this much audio before initializing stream
+                                int desiredBytes = ServerSampleRate * (ServerBitDepth / 8) * desiredMsec / 1000;
 
-                            receiveBufferSize = receiveBuffer.Count;
-                        }
+                                if (receiveBufferSize >= desiredBytes)
+                                {
+                                    // pull out the desired bytes from receive buffer and provide to stream immediately
+                                    /* byte[] buf = new byte[desiredBytes];
+                                     receiveBuffer.CopyTo(0, buf, 0, desiredBytes);
+                                     receiveBuffer.RemoveRange(0, desiredBytes);*/
 
-                        if (receiveStream == null)
-                        {
-                            int desiredMsec = ClientBufferMsec;  // wait until we have this much audio before initializing stream
-                            int desiredBytes = ServerSampleRate * (ServerBitDepth/8) * desiredMsec / 1000;
+                                    LogMsg("Create/play receive stream");
 
-                            if (receiveBufferSize >= desiredBytes)
-                            {
-                                // pull out the desired bytes from receive buffer and provide to stream immediately
-                                /* byte[] buf = new byte[desiredBytes];
-                                 receiveBuffer.CopyTo(0, buf, 0, desiredBytes);
-                                 receiveBuffer.RemoveRange(0, desiredBytes);*/
+                                    receiveStream = CreatePlaybackStream(ServerBitDepth, ServerSampleRate, desiredMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, DumbReceiveSamples);
 
-                                LogMsg("Create/play receive stream");
-
-                                receiveStream = CreatePlaybackStream(ServerBitDepth, ServerSampleRate, desiredMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, DumbReceiveSamples);
-
-                                // HAXXX  this needs to be "jitter buffer"'d
-                                Audio.fmod.playSound(receiveStream, null, false, out receiveChannel);
+                                    // HAXXX  this needs to be "jitter buffer"'d
+                                    Audio.fmod.playSound(receiveStream, null, false, out receiveChannel);
+                                }
                             }
                         }
                     }
                 }
-                else
+                
+
+
+                if(!receivedAudioPacket)
                 {
                     // if there's nothing left in the receive buffer, and its been a while since we receieved anything new, then kill stream
                     if (receiveStream != null)
@@ -407,7 +454,7 @@ namespace VCClientTest
             }
 
 
-            label2.Text = $"recieveStream:{(receiveStream != null ? "valid" : "null")}   receiveBuffer:{receiveBuffer.Count}";
+            label2.Text = $"connected:{(server != null && server.Connected ? "yes":"no")}  recieveStream:{(receiveStream != null ? "valid" : "null")}   receiveBuffer:{receiveBuffer.Count}";
 
 
 
@@ -476,22 +523,12 @@ namespace VCClientTest
                 // uhh whatever just send the audio packet (if valid)
                 if (server != null && buf.Length > 0)
                 {
-                    ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet();
+                    ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.RawAudio);
 
                     if (ServerULaw)
-                    {
-                        byte[] ulaw = WinSound.Utils.LinearToMulaw(buf, ServerBitDepth, 1);
-
-                        packet.WriteInt(ulaw.Length);
-                        for (int x = 0; x < ulaw.Length; x++)
-                            packet.WriteByte(ulaw[x]);
-                    }
+                        packet.WriteBuffer(WinSound.Utils.LinearToMulaw(buf, ServerBitDepth, 1));
                     else
-                    {
-                        packet.WriteInt(buf.Length);
-                        for (int x = 0; x < buf.Length; x++)
-                            packet.WriteByte(buf[x]);
-                    }
+                        packet.WriteBuffer(buf);
 
                     packet.Send(server);
 
