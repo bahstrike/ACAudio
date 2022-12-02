@@ -56,6 +56,27 @@ namespace ACAudioVCServer
                     Send(new Packet(Packet.MessageType.Heartbeat));
             }
 
+            private Server.StreamInfo lastStreamInfo = null;
+            public void SetCurrentStreamInfo(Server.StreamInfo streamInfo)
+            {
+                // if same who cares
+                if (lastStreamInfo != null && lastStreamInfo.magic == streamInfo.magic)
+                    return;
+
+                // if new, lets submit info immediately
+                Packet packet = new Packet(Packet.MessageType.StreamInfo);
+
+                packet.WriteInt(streamInfo.magic);
+                packet.WriteBool(streamInfo.ulaw);//µ-law
+                packet.WriteInt(streamInfo.bitDepth);//bitdepth
+                packet.WriteInt(streamInfo.sampleRate);//8000);//11025);//22050);//44100);//sampling frequency
+
+                Send(packet);
+
+                // remember
+                lastStreamInfo = streamInfo;
+            }
+
             public void Send(Packet p)
             {
                 LastHeartbeat = DateTime.Now;
@@ -130,7 +151,7 @@ namespace ACAudioVCServer
 
 
                 // check if same account/character name are already connected
-                foreach(Player existing in Players)
+                foreach (Player existing in Players)
                 {
                     if (player.AccountName != existing.AccountName ||
                         player.CharacterName != existing.CharacterName)
@@ -162,13 +183,7 @@ namespace ACAudioVCServer
 
 
                 // send server config
-                Packet serverInfo = new Packet(Packet.MessageType.StreamInfo);
-
-                serverInfo.WriteBool(true);//µ-law
-                serverInfo.WriteInt(16);//bitdepth
-                serverInfo.WriteInt(8000);//8000);//11025);//22050);//44100);//sampling frequency
-
-                player.Send(serverInfo);
+                player.SetCurrentStreamInfo(Server.CurrentStreamInfo);
             }
 
 
@@ -188,6 +203,11 @@ namespace ACAudioVCServer
                     continue;
                 }
 
+                // i guess they're still there :D
+                player.SetCurrentStreamInfo(Server.CurrentStreamInfo);//only sends packet when it needs to
+
+
+                // see what they have to say
                 for (; ; )
                 {
                     // dont wait for client unless we at least have a header

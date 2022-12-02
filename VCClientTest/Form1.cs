@@ -156,6 +156,7 @@ namespace VCClientTest
         }
 
 
+        static int ServerMagic;
         static bool ServerULaw;
         static int ServerBitDepth;
         static int ServerSampleRate;
@@ -431,17 +432,6 @@ namespace VCClientTest
                     clientInfo.WriteInt(Smith.MathLib.random.Next());//weenie ID
 
                     SendToServer(clientInfo);
-
-
-
-                    ACAudioVCServer.Packet serverInfo = ReceiveFromServer();
-
-                    ServerULaw = serverInfo.ReadBool();
-                    ServerBitDepth = serverInfo.ReadInt();
-                    ServerSampleRate = serverInfo.ReadInt();
-
-
-                    LogMsg($"Received server info:  µ-law:{ServerULaw}  bitDepth={ServerBitDepth}  sampleRate={ServerSampleRate}");
                 }
             }
 
@@ -583,6 +573,17 @@ namespace VCClientTest
                         ReceiveStream stream = GetOrCreateReceiveStream(weenieID);
 
                         stream.SupplyPacket(packet);
+                    }
+
+                    if(packet.Message == ACAudioVCServer.Packet.MessageType.StreamInfo)
+                    {
+                        ServerMagic = packet.ReadInt();
+                        ServerULaw = packet.ReadBool();
+                        ServerBitDepth = packet.ReadInt();
+                        ServerSampleRate = packet.ReadInt();
+
+
+                        LogMsg($"Received server info:  magic:{ServerMagic}   µ-law:{ServerULaw}  bitDepth={ServerBitDepth}  sampleRate={ServerSampleRate}");
                     }
                 }
             }
