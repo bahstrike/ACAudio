@@ -1,4 +1,4 @@
-﻿//#define SELFHOST
+﻿#define SELFHOST
 
 using System;
 using System.Collections.Generic;
@@ -521,6 +521,7 @@ namespace VCClientTest
         {
 #if SELFHOST
             ACAudioVCServer.Server.LogCallback = ServerLogCallback;
+            ACAudioVCServer.Server.CurrentStreamInfo = new ACAudioVCServer.Server.StreamInfo(true, 16, 8000);//we have to provide some default
             ACAudioVCServer.Server.Init();
 #endif
 
