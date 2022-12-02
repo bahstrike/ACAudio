@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using ACACommon;
 
 namespace ACAudioVCServer
 {
@@ -70,7 +71,7 @@ namespace ACAudioVCServer
 
             sampleRate = int.Parse(sampleRateCombo.SelectedItem as string);
 
-            Server.CurrentStreamInfo = new Server.StreamInfo(ulaw, bitDepth, sampleRate);
+            Server.CurrentStreamInfo = new StreamInfo(ulaw, bitDepth, sampleRate);
         }
 
         private void timer1_Tick(object sender, EventArgs e)

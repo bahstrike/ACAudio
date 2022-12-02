@@ -1,4 +1,4 @@
-﻿#define SELFHOST
+﻿//#define SELFHOST
 
 using System;
 using System.Collections.Generic;
@@ -14,6 +14,8 @@ using System.IO;
 using System.Xml;
 using Smith;
 using System.Net.NetworkInformation;
+using ACACommon;
+using ACAVoiceClient;
 
 namespace VCClientTest
 {
@@ -50,7 +52,7 @@ namespace VCClientTest
         static volatile TcpClient server = null;// ehh maybe needs more sync protections than "volatile" but we just prototyping for now
 
 
-        static ACAudioVCServer.CritSect PendingLogMessagesCrit = new ACAudioVCServer.CritSect();
+        static CritSect PendingLogMessagesCrit = new CritSect();
         static List<string> PendingLogMessages = new List<string>();
 
         static void ServerLogCallback(string s)
@@ -60,105 +62,9 @@ namespace VCClientTest
         }
 
 
-        private class SortNewest : IComparer<DateTime>
-        {
-            public int Compare(DateTime x, DateTime y)
-            {
-                return y.CompareTo(x);
-            }
-        }
-        string DetectServerAddressViaThwargle(string accountName)
-        {
-            try
-            {
-                string thwargPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ThwargLauncher");
-                if (!Directory.Exists(thwargPath))
-                    return null;
-
-                // check "Running" logs for most recent that matches provided account name
-                SortedList<DateTime, string> newestGames = new SortedList<DateTime, string>(new SortNewest());
-                foreach (string gameFile in Directory.GetFiles(Path.Combine(thwargPath, "Running"), "*.txt"))
-                {
-                    DateTime fileTime = new FileInfo(gameFile).LastWriteTime;
-
-                    // skip if not today
-                    if (DateTime.Now.Subtract(fileTime).TotalDays > 1)
-                        continue;
-
-                    newestGames.Add(fileTime, gameFile);
-                }
-
-                // scan most recent files for matching account name and try to scrape server name
-                string serverName = null;
-                foreach (DateTime fileTime in newestGames.Keys)
-                {
-                    string gameFile = newestGames[fileTime];
-
-                    using (StreamReader sr = File.OpenText(gameFile))
-                    {
-                        string fileAccountName = null;
-                        string fileServerName = null;
-                        while (!sr.EndOfStream && (fileAccountName == null || fileServerName == null))
-                        {
-                            string ln = sr.ReadLine();
-                            if (ln.StartsWith("AccountName:"))
-                                fileAccountName = ln.Substring(ln.IndexOf(':') + 1);
-                            else if (ln.StartsWith("ServerName:"))
-                                fileServerName = ln.Substring(ln.IndexOf(':') + 1);
-                        }
-
-                        if (fileAccountName == null || fileAccountName != accountName)
-                            continue;
-
-                        serverName = fileServerName;
-                        break;
-                    }
-                }
-
-                if (string.IsNullOrEmpty(serverName))
-                    return null;
-
-                // now we need to load all the server XMLs and try to find a match that includes a host address
-                foreach (string xmlFile in Directory.GetFiles(Path.Combine(thwargPath, "Servers"), "*.xml"))
-                {
-                    XmlDocument xmlDoc = new XmlDocument();
-                    xmlDoc.Load(xmlFile);
-
-                    foreach (XmlNode serverNode in xmlDoc.DocumentElement.SelectNodes("ServerItem"))
-                    {
-                        XmlNode node;
-
-                        node = serverNode.SelectSingleNode("name");
-                        if (node == null || node.InnerText != serverName)
-                            continue;
-
-                        node = serverNode.SelectSingleNode("connect_string");
-                        if (node == null)
-                            continue;
-
-                        // strip port out
-                        string connectString = node.InnerText;
-                        int i = connectString.IndexOf(':');
-                        if (i != -1)
-                            connectString = connectString.Substring(0, i);
-
-                        // we found it
-                        return connectString;
-                    }
-                }
-            }
-            catch
-            {
-                // it failed for some dumb reason. oh well.
-            }
-
-            return null;
-        }
-
-
-        private static ACAudioVCServer.CritSect _CurrentStreamInfoCrit = new ACAudioVCServer.CritSect();
-        private static ACAudioVCServer.Server.StreamInfo _CurrentStreamInfo = null;
-        public static ACAudioVCServer.Server.StreamInfo CurrentStreamInfo
+        private static CritSect _CurrentStreamInfoCrit = new CritSect();
+        private static StreamInfo _CurrentStreamInfo = null;
+        public static StreamInfo CurrentStreamInfo
         {
             get
             {
@@ -198,17 +104,17 @@ namespace VCClientTest
                 }
             }
 
-            public readonly ACAudioVCServer.Server.StreamInfo StreamInfo;
+            public readonly StreamInfo StreamInfo;
 
             private FMOD.Sound Stream = null;
             private FMOD.Channel Channel = null;
 
-            private ACAudioVCServer.CritSect receiveBufferCrit = new ACAudioVCServer.CritSect();
+            private CritSect receiveBufferCrit = new CritSect();
             private List<byte> receiveBuffer = new List<byte>();
 
             private DateTime lastReceivedPacketTime = new DateTime();
 
-            public ReceiveStream(ReceiveStreamID _ID, ACAudioVCServer.Server.StreamInfo _StreamInfo)
+            public ReceiveStream(ReceiveStreamID _ID, StreamInfo _StreamInfo)
             {
                 ID = _ID;
                 StreamInfo = _StreamInfo;
@@ -271,7 +177,7 @@ namespace VCClientTest
                     wantDestroy = true;
             }
 
-            public bool SupplyPacket(ACAudioVCServer.Packet packet)
+            public bool SupplyPacket(Packet packet)
             {
                 byte[] buf = packet.ReadBuffer();
                 if (buf == null || buf.Length == 0)
@@ -370,7 +276,7 @@ namespace VCClientTest
             }
         }
 
-        static ACAudioVCServer.CritSect ReceiveStreamsCrit = new ACAudioVCServer.CritSect();
+        static CritSect ReceiveStreamsCrit = new CritSect();
         static Dictionary<ReceiveStreamID, ReceiveStream> ReceiveStreams = new Dictionary<ReceiveStreamID, ReceiveStream>();
 
         static ReceiveStream GetReceiveStream(ReceiveStreamID id)
@@ -472,7 +378,7 @@ namespace VCClientTest
                 if (!SentServerHandshake)
                 {
                     // if its our first time here, then we should introduce ourselves
-                    ACAudioVCServer.Packet clientInfo = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.PlayerConnect);
+                    Packet clientInfo = new Packet(Packet.MessageType.PlayerConnect);
 
                     clientInfo.WriteString("account lol");
                     clientInfo.WriteString("toon" + Smith.MathLib.random.Next(20));
@@ -487,7 +393,7 @@ namespace VCClientTest
             }
 
             // dont try reconnect that often
-            if (DateTime.Now.Subtract(lastServerConnectAttempt).TotalMilliseconds < ACAudioVCServer.Packet.HeartbeatMsec/*can replace with another value if desired*/)
+            if (DateTime.Now.Subtract(lastServerConnectAttempt).TotalMilliseconds < Packet.HeartbeatMsec/*can replace with another value if desired*/)
                 return;
 
             // we are trying now
@@ -528,7 +434,7 @@ namespace VCClientTest
 
             // ------------------------------------------------------------------------------------------------------------
             // USE THIS IN FINAL PLUGIN TO AUTODETECT VOICE HOST (assuming the server admin is running ACAudioVCServer)
-            string serverAddress = DetectServerAddressViaThwargle("blahblahblah");
+            string serverAddress = Utils.DetectServerAddressViaThwargle("blahblahblah");
             // ------------------------------------------------------------------------------------------------------------
 
 
@@ -570,7 +476,7 @@ namespace VCClientTest
             // issue disconnect
             if (server != null)
             {
-                ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.Disconnect);
+                Packet packet = new Packet(Packet.MessageType.Disconnect);
                 packet.WriteString("Client exit");
                 SendToServer(packet);
 
@@ -590,7 +496,7 @@ namespace VCClientTest
         uint lastRecordPosition = 0;
 
         DateTime lastHeartbeat = new DateTime();
-        public void SendToServer(ACAudioVCServer.Packet p)
+        public void SendToServer(Packet p)
         {
             if (server == null)
                 return;
@@ -599,12 +505,12 @@ namespace VCClientTest
             p.InternalSend(server);
         }
 
-        public ACAudioVCServer.Packet ReceiveFromServer(int headerTimeoutMsec = ACAudioVCServer.Packet.DefaultTimeoutMsec, int dataTimeoutMsec = ACAudioVCServer.Packet.DefaultTimeoutMsec)
+        public Packet ReceiveFromServer(int headerTimeoutMsec = Packet.DefaultTimeoutMsec, int dataTimeoutMsec = Packet.DefaultTimeoutMsec)
         {
             if (server == null)
                 return null;
 
-            return ACAudioVCServer.Packet.InternalReceive(server, headerTimeoutMsec, dataTimeoutMsec);
+            return Packet.InternalReceive(server, headerTimeoutMsec, dataTimeoutMsec);
         }
 
         DateTime recordTimestamp = new DateTime();
@@ -647,16 +553,16 @@ namespace VCClientTest
             if (server != null)
             {
                 // send periodic heartbeat
-                if(DateTime.Now.Subtract(lastHeartbeat).TotalMilliseconds >= ACAudioVCServer.Packet.HeartbeatMsec)
-                    SendToServer(new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.Heartbeat));
+                if(DateTime.Now.Subtract(lastHeartbeat).TotalMilliseconds >= Packet.HeartbeatMsec)
+                    SendToServer(new Packet(Packet.MessageType.Heartbeat));
 
                 for (; ; )
                 {
-                    ACAudioVCServer.Packet packet = ReceiveFromServer(0);
+                    Packet packet = ReceiveFromServer(0);
                     if (packet == null)
                         break;
                     
-                    if (packet.Message == ACAudioVCServer.Packet.MessageType.Disconnect)
+                    if (packet.Message == Packet.MessageType.Disconnect)
                     {
                         string reason = packet.ReadString();
 
@@ -666,7 +572,7 @@ namespace VCClientTest
                         server = null;
                     }
 
-                    if (packet.Message == ACAudioVCServer.Packet.MessageType.DetailAudio)
+                    if (packet.Message == Packet.MessageType.DetailAudio)
                     {
                         //LogMsg("Received packet");
 
@@ -696,9 +602,9 @@ namespace VCClientTest
                         stream.SupplyPacket(packet);
                     }
 
-                    if(packet.Message == ACAudioVCServer.Packet.MessageType.StreamInfo)
+                    if(packet.Message == Packet.MessageType.StreamInfo)
                     {
-                        ACAudioVCServer.Server.StreamInfo newStreamInfo = ACAudioVCServer.Server.StreamInfo.FromPacket(packet);
+                        StreamInfo newStreamInfo = StreamInfo.FromPacket(packet);
 
                         // this should be only place that the current stream info is updated
                         using (_CurrentStreamInfoCrit.Lock)
@@ -732,7 +638,7 @@ namespace VCClientTest
 
 
             // if current record device isnt the up-to-date settings then lets force a re-open
-            ACAudioVCServer.Server.StreamInfo streamInfo = CurrentStreamInfo;//precache because of sync
+            StreamInfo streamInfo = CurrentStreamInfo;//precache because of sync
             if(currentRecordStreamInfo != null && currentRecordStreamInfo.magic != streamInfo.magic)
                 CloseRecordDevice();//nobody wants previous quality samples so flag for re-open, to force new settings
 
@@ -798,7 +704,7 @@ namespace VCClientTest
                 // uhh whatever just send the audio packet (if valid)
                 if (server != null && buf.Length > 0)
                 {
-                    ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.RawAudio);
+                    Packet packet = new Packet(Packet.MessageType.RawAudio);
 
                     packet.WriteInt(currentRecordStreamInfo.magic);//embed id of known current format
 
@@ -840,7 +746,7 @@ namespace VCClientTest
 
 
 
-        static FMOD.Sound CreateRecordBuffer(ACAudioVCServer.Server.StreamInfo streamInfo)
+        static FMOD.Sound CreateRecordBuffer(StreamInfo streamInfo)
         {
             int channels = 1;
 
@@ -933,7 +839,7 @@ namespace VCClientTest
             return FMOD.RESULT.OK;
         }
 
-        public static FMOD.Sound CreatePlaybackStream(ACAudioVCServer.Server.StreamInfo streamInfo, int bufferMsec, int samplingMsec, IntPtr userdata)
+        public static FMOD.Sound CreatePlaybackStream(StreamInfo streamInfo, int bufferMsec, int samplingMsec, IntPtr userdata)
         {
             int channels = 1;
 
@@ -1036,8 +942,8 @@ namespace VCClientTest
         public bool Loopback = false;
         FMOD.Channel loopbackChannel = null;
 
-        ACAudioVCServer.Server.StreamInfo currentRecordStreamInfo = null;
-        void OpenRecordDevice(ACAudioVCServer.Server.StreamInfo streamInfo)
+        StreamInfo currentRecordStreamInfo = null;
+        void OpenRecordDevice(StreamInfo streamInfo)
         {
             // if properties are the same then its fine
             //if (ACAudioVCServer.Server.StreamInfo.CompareProperties(currentRecordStreamInfo, streamInfo))

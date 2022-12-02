@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ACAudio VoiceChat Server")]
+[assembly: AssemblyTitle("ACAudio VoiceClient Library")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("8ca2f1d2-7403-47ab-a555-75969eb8aaca")]
+[assembly: Guid("a03dca0d-da6c-4df1-bf6e-de1ebfd775c1")]
 
 // Version information for an assembly consists of the following four values:
 //

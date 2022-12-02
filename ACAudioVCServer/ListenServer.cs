@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading;
 using System.Net;
 using System.Net.Sockets;
+using ACACommon;
 
 namespace ACAudioVCServer
 {

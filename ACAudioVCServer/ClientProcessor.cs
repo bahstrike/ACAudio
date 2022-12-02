@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using ACACommon;
 
 namespace ACAudioVCServer
 {
@@ -56,8 +57,8 @@ namespace ACAudioVCServer
                     Send(new Packet(Packet.MessageType.Heartbeat));
             }
 
-            private Server.StreamInfo lastStreamInfo = null;
-            public void SetCurrentStreamInfo(Server.StreamInfo streamInfo)
+            private StreamInfo lastStreamInfo = null;
+            public void SetCurrentStreamInfo(StreamInfo streamInfo)
             {
                 // if incoming is invalid then bust
                 if (streamInfo == null)
@@ -124,7 +125,7 @@ namespace ACAudioVCServer
 
         protected sealed override void _Run()
         {
-            Server.StreamInfo streamInfo = Server.CurrentStreamInfo;//preache;  internal sync
+            StreamInfo streamInfo = Server.CurrentStreamInfo;//preache;  internal sync
 
             TcpClient[] clients = listener.CollectClients();
             foreach (TcpClient client in clients)

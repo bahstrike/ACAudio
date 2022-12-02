@@ -4,9 +4,9 @@ using System.Text;
 using System.IO;
 using System.Net.Sockets;
 
-namespace ACAudioVCServer
+namespace ACACommon
 {
-    public class Packet : Smith.ZipUtil_Stream
+    public class Packet : ZipUtil_Stream
     {
         private const int MAGIC = 0x0ACA6D10;
         private const int MAX_BYTES = 100 * 1024;// i dunno, some number of kilobytes for a single packet
