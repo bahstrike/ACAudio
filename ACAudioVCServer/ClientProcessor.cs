@@ -120,6 +120,8 @@ namespace ACAudioVCServer
 
         protected sealed override void _Run()
         {
+            Server.StreamInfo streamInfo = Server.CurrentStreamInfo;//preache;  internal sync
+
             TcpClient[] clients = listener.CollectClients();
             foreach (TcpClient client in clients)
             {
@@ -183,12 +185,13 @@ namespace ACAudioVCServer
 
 
                 // send server config
-                player.SetCurrentStreamInfo(Server.CurrentStreamInfo);
+                player.SetCurrentStreamInfo(streamInfo);
             }
 
 
+
             // process players
-            for(int playerIndex=0; playerIndex<Players.Count; playerIndex++)
+            for (int playerIndex=0; playerIndex<Players.Count; playerIndex++)
             {
                 Player player = Players[playerIndex];
 
@@ -228,6 +231,12 @@ namespace ACAudioVCServer
 
                     if (playerPacket.Message == Packet.MessageType.RawAudio)
                     {
+                        int magic = playerPacket.ReadInt();
+
+                        // if magic doesnt match current server streaminfo (wrong format) then just ignore the rest of this packet
+                        if (magic != streamInfo.magic)
+                            continue;
+
                         // extract data from raw audio packet
                         byte[] buf = playerPacket.ReadBuffer();
                         if (buf == null || buf.Length == 0)
@@ -237,6 +246,7 @@ namespace ACAudioVCServer
 
                         // reconstruct a detailed audio packet that includes the appropriate source information for redistribution
                         Packet detailAudio = new Packet(Packet.MessageType.DetailAudio);
+                        detailAudio.WriteInt(streamInfo.magic);
                         detailAudio.WriteInt(player.WeenieID);
                         detailAudio.WriteBuffer(buf);
 

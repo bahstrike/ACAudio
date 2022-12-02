@@ -156,10 +156,16 @@ namespace VCClientTest
         }
 
 
-        static int ServerMagic;
-        static bool ServerULaw;
-        static int ServerBitDepth;
-        static int ServerSampleRate;
+        private static ACAudioVCServer.CritSect _CurrentStreamInfoCrit = new ACAudioVCServer.CritSect();
+        private static ACAudioVCServer.Server.StreamInfo _CurrentStreamInfo = null;
+        public static ACAudioVCServer.Server.StreamInfo CurrentStreamInfo
+        {
+            get
+            {
+                using(_CurrentStreamInfoCrit.Lock)
+                    return _CurrentStreamInfo;
+            }
+        }
 
         // average length of how long our audio sample packets will consist of
         static int ClientPacketMsec
@@ -182,7 +188,17 @@ namespace VCClientTest
 
         class ReceiveStream : IDisposable
         {
-            public readonly int WeenieID;
+            public readonly ReceiveStreamID ID;
+            private IntPtr _ID_Unmanaged = IntPtr.Zero;
+            public IntPtr ID_Unmanaged
+            {
+                get
+                {
+                    return _ID_Unmanaged;
+                }
+            }
+
+            public readonly ACAudioVCServer.Server.StreamInfo StreamInfo;
 
             private FMOD.Sound Stream = null;
             private FMOD.Channel Channel = null;
@@ -192,9 +208,13 @@ namespace VCClientTest
 
             private DateTime lastReceivedPacketTime = new DateTime();
 
-            public ReceiveStream(int _WeenieID)
+            public ReceiveStream(ReceiveStreamID _ID, ACAudioVCServer.Server.StreamInfo _StreamInfo)
             {
-                WeenieID = _WeenieID;
+                ID = _ID;
+                StreamInfo = _StreamInfo;
+
+                _ID_Unmanaged = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(ReceiveStreamID)));
+                Marshal.StructureToPtr(ID, _ID_Unmanaged, false);
             }
 
             ~ReceiveStream()
@@ -228,6 +248,12 @@ namespace VCClientTest
                     Stream.release();
                     Stream = null;
                 }
+
+                if(_ID_Unmanaged != null)
+                {
+                    Marshal.FreeHGlobal(_ID_Unmanaged);
+                    _ID_Unmanaged = IntPtr.Zero;
+                }
             }
 
             public void Process(out bool wantDestroy)
@@ -240,6 +266,9 @@ namespace VCClientTest
 
                 if (receiveBufferSize == 0 && DateTime.Now.Subtract(lastReceivedPacketTime).TotalMilliseconds > ClientBufferMsec)
                     wantDestroy = true;
+
+                if (ID.StreamInfoMagic != CurrentStreamInfo.magic)
+                    wantDestroy = true;
             }
 
             public bool SupplyPacket(ACAudioVCServer.Packet packet)
@@ -250,13 +279,11 @@ namespace VCClientTest
 
                 lastReceivedPacketTime = DateTime.Now;
 
-
-
                 int receiveBufferSize;
                 using (receiveBufferCrit.Lock)
                 {
-                    if (ServerULaw)
-                        receiveBuffer.AddRange(WinSound.Utils.MuLawToLinear(buf, ServerBitDepth, 1));
+                    if (StreamInfo.ulaw)
+                        receiveBuffer.AddRange(WinSound.Utils.MuLawToLinear(buf, StreamInfo.bitDepth, 1));
                     else
                         receiveBuffer.AddRange(buf);
 
@@ -277,8 +304,7 @@ namespace VCClientTest
 
                         //LogMsg("Create/play receive stream");
 
-                        Stream = CreatePlaybackStream(ServerBitDepth, ServerSampleRate, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, WeenieID);
-                        Stream.setUserData(new IntPtr(WeenieID));
+                        Stream = CreatePlaybackStream(StreamInfo, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
 
                         // HAXXX  this needs to be "jitter buffer"'d
                         Audio.fmod.playSound(Stream, null, false, out Channel);
@@ -310,7 +336,7 @@ namespace VCClientTest
                 for (int x = bytesToCopy; x < len; x++)
                     rBuf[x] = 0;// should this be a 16-bit mid-range value like 32768 instead?
 
-                LogMsg($"{WeenieID.ToString("X8")}: SAMPLE CALLBACK{(bytesToCopy < len ? $" (STARVED {100-(bytesToCopy*100/len)}%)" : string.Empty)}");
+                LogMsg($"{ID}: SAMPLE CALLBACK{(bytesToCopy < len ? $" (STARVED {100-(bytesToCopy*100/len)}%)" : string.Empty)}");
 
                 return rBuf;
 #else
@@ -328,50 +354,66 @@ namespace VCClientTest
             }
         }
 
-        static ACAudioVCServer.CritSect ReceiveStreamsCrit = new ACAudioVCServer.CritSect();
-        static Dictionary<int, ReceiveStream> ReceiveStreams = new Dictionary<int, ReceiveStream>();
+        public struct ReceiveStreamID
+        {
+            public int StreamInfoMagic;
+            public int WeenieID;
 
-        static ReceiveStream GetReceiveStream(int weenieID)
+            public override string ToString()
+            {
+                return $"({StreamInfoMagic.ToString("X8")})({WeenieID.ToString("X8")})";
+            }
+
+            public static ReceiveStreamID FromUnmanaged(IntPtr ptr)
+            {
+                return (ReceiveStreamID)Marshal.PtrToStructure(ptr, typeof(ReceiveStreamID));
+            }
+        }
+
+        static ACAudioVCServer.CritSect ReceiveStreamsCrit = new ACAudioVCServer.CritSect();
+        static Dictionary<ReceiveStreamID, ReceiveStream> ReceiveStreams = new Dictionary<ReceiveStreamID, ReceiveStream>();
+
+        static ReceiveStream GetReceiveStream(ReceiveStreamID id)
         {
             using (ReceiveStreamsCrit.Lock)
             {
                 ReceiveStream stream;
-                if (!ReceiveStreams.TryGetValue(weenieID, out stream))
+                if (!ReceiveStreams.TryGetValue(id, out stream))
                     stream = null;
 
                 return stream;
             }
         }
 
-        static ReceiveStream GetOrCreateReceiveStream(int weenieID)
+        static ReceiveStream GetOrCreateReceiveStream(ReceiveStreamID id)
         {
             using (ReceiveStreamsCrit.Lock)
             {
                 ReceiveStream stream;
-                if (!ReceiveStreams.TryGetValue(weenieID, out stream))
+                if (!ReceiveStreams.TryGetValue(id, out stream))
                 {
-                    LogMsg($"Create receive stream {weenieID.ToString("X8")}");
+                    LogMsg($"Create receive stream {id}");
 
-                    stream = new ReceiveStream(weenieID);
-                    ReceiveStreams.Add(weenieID, stream);
+                    stream = new ReceiveStream(id, CurrentStreamInfo);
+                    ReceiveStreams.Add(id, stream);
                 }
 
                 return stream;
             }
         }
 
-        static void DestroyReceiveStream(int weenieID)
+        static void DestroyReceiveStream(ReceiveStreamID id)
         {
             ReceiveStream stream;
             using (ReceiveStreamsCrit.Lock)
             {
-                if (!ReceiveStreams.TryGetValue(weenieID, out stream))
+                if (!ReceiveStreams.TryGetValue(id, out stream))
                     return;
 
-                ReceiveStreams.Remove(weenieID);
+                ReceiveStreams.Remove(id);
             }
 
-            LogMsg($"Destroy receive stream {stream.WeenieID.ToString("X8")}");
+            LogMsg($"Destroy receive stream {id}");
 
             stream.Dispose();
         }
@@ -568,22 +610,41 @@ namespace VCClientTest
                     {
                         //LogMsg("Received packet");
 
-                        int weenieID = packet.ReadInt();
+                        ReceiveStreamID id = new ReceiveStreamID();
+                        id.StreamInfoMagic = packet.ReadInt();
+                        id.WeenieID = packet.ReadInt();
 
-                        ReceiveStream stream = GetOrCreateReceiveStream(weenieID);
+
+
+                        // if we have a previous stream with this audio source (weenie) but different magic then we should kill it immediately because we're about to start another one
+                        using (ReceiveStreamsCrit.Lock)
+                        {
+                            List<ReceiveStreamID> destroyStreams = new List<ReceiveStreamID>();
+                            foreach (ReceiveStreamID checkID in ReceiveStreams.Keys)
+                                if (checkID.StreamInfoMagic != id.StreamInfoMagic &&
+                                    checkID.WeenieID == id.WeenieID)
+                                    destroyStreams.Add(checkID);
+                             
+                            foreach(ReceiveStreamID destroyID in destroyStreams)
+                                DestroyReceiveStream(destroyID);
+                        }
+
+
+
+                        ReceiveStream stream = GetOrCreateReceiveStream(id);
 
                         stream.SupplyPacket(packet);
                     }
 
                     if(packet.Message == ACAudioVCServer.Packet.MessageType.StreamInfo)
                     {
-                        ServerMagic = packet.ReadInt();
-                        ServerULaw = packet.ReadBool();
-                        ServerBitDepth = packet.ReadInt();
-                        ServerSampleRate = packet.ReadInt();
+                        ACAudioVCServer.Server.StreamInfo newStreamInfo = ACAudioVCServer.Server.StreamInfo.FromPacket(packet);
 
+                        // this should be only place that the current stream info is updated
+                        using (_CurrentStreamInfoCrit.Lock)
+                            _CurrentStreamInfo = newStreamInfo;
 
-                        LogMsg($"Received server info:  magic:{ServerMagic}   µ-law:{ServerULaw}  bitDepth={ServerBitDepth}  sampleRate={ServerSampleRate}");
+                        LogMsg($"Received streaminfo: {newStreamInfo}");
                     }
                 }
             }
@@ -602,7 +663,7 @@ namespace VCClientTest
                 stream.Process(out wantDestroy);
 
                 if (wantDestroy)
-                    DestroyReceiveStream(stream.WeenieID);
+                    DestroyReceiveStream(stream.ID);
             }
 
 
@@ -610,13 +671,16 @@ namespace VCClientTest
 
 
 
+            // if current record device isnt the up-to-date settings then lets force a re-open
+            ACAudioVCServer.Server.StreamInfo streamInfo = CurrentStreamInfo;//precache because of sync
+            if(currentRecordStreamInfo != null && currentRecordStreamInfo.magic != streamInfo.magic)
+                CloseRecordDevice();//nobody wants previous quality samples so flag for re-open, to force new settings
+
 
             if ((GetAsyncKeyState((int)' ') & 0x8000) != 0)
             {
                 if (recordTimestamp == new DateTime())
-                    OpenRecordDevice();
-
-                recordTimestamp = DateTime.Now;
+                    OpenRecordDevice(streamInfo);
             }
             else
             {
@@ -626,7 +690,6 @@ namespace VCClientTest
                     if (DateTime.Now.Subtract(recordTimestamp).TotalMilliseconds > 350)
                     {
                         CloseRecordDevice();
-                        recordTimestamp = new DateTime();
                     }
                 }
             }
@@ -650,8 +713,8 @@ namespace VCClientTest
 
                     blocklength += (int)recordBufferLength;
                 }
-
-                uint bytesPerSample = (uint)(1/*channels*/ * (ServerBitDepth / 8)/*bitdepth*/);
+                
+                uint bytesPerSample = (uint)(1/*channels*/ * (currentRecordStreamInfo.bitDepth / 8)/*bitdepth*/);
                 IntPtr ptr1, ptr2;
                 uint len1, len2;
                 recordBuffer.@lock(lastRecordPosition * bytesPerSample, (uint)blocklength * bytesPerSample, out ptr1, out ptr2, out len1, out len2);
@@ -677,8 +740,10 @@ namespace VCClientTest
                 {
                     ACAudioVCServer.Packet packet = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.RawAudio);
 
-                    if (ServerULaw)
-                        packet.WriteBuffer(WinSound.Utils.LinearToMulaw(buf, ServerBitDepth, 1));
+                    packet.WriteInt(currentRecordStreamInfo.magic);//embed id of known current format
+
+                    if (currentRecordStreamInfo.ulaw)
+                        packet.WriteBuffer(WinSound.Utils.LinearToMulaw(buf, currentRecordStreamInfo.bitDepth, 1));
                     else
                         packet.WriteBuffer(buf);
 
@@ -715,18 +780,18 @@ namespace VCClientTest
 
 
 
-        FMOD.Sound CreateRecordBuffer(int bitDepth, int rate)
+        static FMOD.Sound CreateRecordBuffer(ACAudioVCServer.Server.StreamInfo streamInfo)
         {
             int channels = 1;
 
             FMOD.Sound sound;
             FMOD.CREATESOUNDEXINFO cs = new FMOD.CREATESOUNDEXINFO();
             cs.cbsize = Marshal.SizeOf(typeof(FMOD.CREATESOUNDEXINFO));
-            cs.length = (uint)(rate * (bitDepth/8) * channels * 2);//(uint)buf.Length;
+            cs.length = (uint)(streamInfo.sampleRate * (streamInfo.bitDepth/ 8) * channels * 2);//(uint)buf.Length;
             cs.fileoffset = 0;
             cs.numchannels = channels;
-            cs.defaultfrequency = rate;
-            switch (bitDepth)
+            cs.defaultfrequency = streamInfo.sampleRate;
+            switch (streamInfo.bitDepth)
             {
                 case 8:
                     cs.format = FMOD.SOUND_FORMAT.PCM8;
@@ -788,9 +853,9 @@ namespace VCClientTest
 
             IntPtr userdata;
             sound.getUserData(out userdata);
-            int weenieID = userdata.ToInt32();
+            ReceiveStreamID id = ReceiveStreamID.FromUnmanaged(userdata);
 
-            ReceiveStream stream = GetReceiveStream(weenieID);
+            ReceiveStream stream = GetReceiveStream(id);
 
             byte[] buf;
             if (stream == null)
@@ -808,18 +873,18 @@ namespace VCClientTest
             return FMOD.RESULT.OK;
         }
 
-        public static FMOD.Sound CreatePlaybackStream(int bitDepth, int rate, int bufferMsec, int samplingMsec, int userdata)
+        public static FMOD.Sound CreatePlaybackStream(ACAudioVCServer.Server.StreamInfo streamInfo, int bufferMsec, int samplingMsec, IntPtr userdata)
         {
             int channels = 1;
 
             FMOD.Sound sound;
             FMOD.CREATESOUNDEXINFO cs = new FMOD.CREATESOUNDEXINFO();
             cs.cbsize = Marshal.SizeOf(typeof(FMOD.CREATESOUNDEXINFO));
-            cs.length = (uint)(bufferMsec * rate * (bitDepth/8) / 1000);//(uint)buf.Length;//(uint)(rate * sizeof(short) * channels * 2);//(uint)buf.Length;
+            cs.length = (uint)(bufferMsec * streamInfo.sampleRate * (streamInfo.bitDepth/ 8) / 1000);//(uint)buf.Length;//(uint)(rate * sizeof(short) * channels * 2);//(uint)buf.Length;
             cs.fileoffset = 0;
             cs.numchannels = channels;
-            cs.defaultfrequency = rate;
-            switch (bitDepth)
+            cs.defaultfrequency = streamInfo.sampleRate;
+            switch (streamInfo.bitDepth)
             {
                 case 8:
                     cs.format = FMOD.SOUND_FORMAT.PCM8;
@@ -833,7 +898,7 @@ namespace VCClientTest
                     cs.format = FMOD.SOUND_FORMAT.NONE;
                     break;
             }
-            cs.decodebuffersize = (uint)(samplingMsec * rate * (bitDepth/8) / 1000);//(uint)(cs.length / 4);//(uint)(10 * rate * 2 / 1000);//call pcm callback with small buffer size and frequently?   //cs.length;// (uint)buflen;
+            cs.decodebuffersize = (uint)(samplingMsec * streamInfo.sampleRate * (streamInfo.bitDepth/ 8) / 1000);//(uint)(cs.length / 4);//(uint)(10 * rate * 2 / 1000);//call pcm callback with small buffer size and frequently?   //cs.length;// (uint)buflen;
             cs.initialsubsound = 0;
             cs.numsubsounds = 0;
             cs.inclusionlist = IntPtr.Zero;
@@ -844,7 +909,7 @@ namespace VCClientTest
             cs.dlsname = IntPtr.Zero;
             cs.encryptionkey = IntPtr.Zero;
             cs.maxpolyphony = 0;
-            cs.userdata = new IntPtr(userdata);//IntPtr.Zero;// Marshal.GetFunctionPointerForDelegate(callback);
+            cs.userdata = userdata;
             cs.fileuseropen = null;
             cs.fileuserclose = null;
             cs.fileuserread = null;
@@ -885,6 +950,8 @@ namespace VCClientTest
 
         void CloseRecordDevice()
         {
+            LogMsg("MICROPHONE: END");
+
             if (CurrentRecordDevice != null && recordBuffer != null)
                 Audio.fmod.recordStop(CurrentRecordDevice.ID);
 
@@ -901,19 +968,27 @@ namespace VCClientTest
             }
 
             lastRecordPosition = 0;
+            recordTimestamp = new DateTime();
         }
 
         public bool Loopback = false;
         FMOD.Channel loopbackChannel = null;
 
-        void OpenRecordDevice()
+        ACAudioVCServer.Server.StreamInfo currentRecordStreamInfo = null;
+        void OpenRecordDevice(ACAudioVCServer.Server.StreamInfo streamInfo)
         {
+            // if properties are the same then its fine
+            //if (ACAudioVCServer.Server.StreamInfo.CompareProperties(currentRecordStreamInfo, streamInfo))
+                //return;
+
             CloseRecordDevice();
 
             if (CurrentRecordDevice == null)
                 return;
 
-            recordBuffer = CreateRecordBuffer(ServerBitDepth, ServerSampleRate);
+            currentRecordStreamInfo = streamInfo;
+
+            recordBuffer = CreateRecordBuffer(currentRecordStreamInfo);
             Audio.fmod.recordStart(CurrentRecordDevice.ID, recordBuffer, true);
 
 
@@ -922,6 +997,11 @@ namespace VCClientTest
                 System.Threading.Thread.Sleep(50);
                 Audio.fmod.playSound(recordBuffer, null, false, out loopbackChannel);
             }
+
+            recordTimestamp = DateTime.Now;
+
+
+            LogMsg("MICROPHONE: START");
         }
 
         FMOD.Sound recordBuffer = null;
