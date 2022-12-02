@@ -47,7 +47,7 @@ namespace VCClientTest
                 PendingLogMessages.Add("[Client] " + s);
         }
 
-        TcpClient server = null;
+        static volatile TcpClient server = null;// ehh maybe needs more sync protections than "volatile" but we just prototyping for now
 
 
         static ACAudioVCServer.CritSect PendingLogMessagesCrit = new ACAudioVCServer.CritSect();
@@ -433,6 +433,90 @@ namespace VCClientTest
                 stream.Dispose();
         }
 
+        private static volatile bool WaitingForConnect = false;
+        public static void ConnectCallback(IAsyncResult ar)
+        {
+            if (!ar.IsCompleted)
+                return;
+
+            TcpClient newServer = ar.AsyncState as TcpClient;
+            try
+            {
+                newServer.EndConnect(ar);
+
+                // looks OK
+                server = newServer;
+            }
+            catch
+            {
+
+            }
+
+            // regardless.. this attempt is done
+            WaitingForConnect = false;
+        }
+
+        private bool SentServerHandshake = false;
+        private DateTime lastServerConnectAttempt = new DateTime();
+        void MaintainServer()
+        {
+            if (WaitingForConnect)
+            {
+                lastServerConnectAttempt = DateTime.Now;//refresh timer while our attempt is active  (ensures our next attempt will only start from desired value w/o tcp timeout)
+                return;
+            }
+
+            // is server already good?
+            if (server != null && server.Connected)
+            {
+                if (!SentServerHandshake)
+                {
+                    // if its our first time here, then we should introduce ourselves
+                    ACAudioVCServer.Packet clientInfo = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.PlayerConnect);
+
+                    clientInfo.WriteString("account lol");
+                    clientInfo.WriteString("toon" + Smith.MathLib.random.Next(20));
+                    clientInfo.WriteInt(Smith.MathLib.random.Next());//weenie ID
+
+                    SendToServer(clientInfo);
+
+                    SentServerHandshake = true;
+                }
+
+                return;
+            }
+
+            // dont try reconnect that often
+            if (DateTime.Now.Subtract(lastServerConnectAttempt).TotalMilliseconds < ACAudioVCServer.Packet.HeartbeatMsec/*can replace with another value if desired*/)
+                return;
+
+            // we are trying now
+            lastServerConnectAttempt = DateTime.Now;
+            SentServerHandshake = false;
+
+            try
+            {
+                TcpClient tryServer = new TcpClient();
+                int port = 42420;
+#if SELFHOST
+                string ip = "127.0.0.1";
+#else
+                string ip = "192.168.5.2";
+#endif
+
+
+                LogMsg($"Attempting connection to {ip}:{port}");
+
+                WaitingForConnect = true;
+                tryServer.BeginConnect(ip, port, ConnectCallback, tryServer);
+            }
+            catch
+            {
+                server = null;
+            }
+
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
 #if SELFHOST
@@ -447,36 +531,8 @@ namespace VCClientTest
             // ------------------------------------------------------------------------------------------------------------
 
 
-            // connect to server
-            {
-                try
-                {
-                    server = new TcpClient();
-                    int port = 42420;
-#if SELFHOST
-                    server.Connect("127.0.0.1", port);
-#else
-                    server.Connect("192.168.5.2", port);
-#endif
-                }
-                catch
-                {
-                    server = null;
-                }
-
-
-                if (server != null)
-                {
-                    ACAudioVCServer.Packet clientInfo = new ACAudioVCServer.Packet(ACAudioVCServer.Packet.MessageType.PlayerConnect);
-
-                    clientInfo.WriteString("account lol");
-                    clientInfo.WriteString("toon" + Smith.MathLib.random.Next(20));
-                    clientInfo.WriteInt(Smith.MathLib.random.Next());//weenie ID
-
-                    SendToServer(clientInfo);
-                }
-            }
-
+            // connect to server straight away
+            MaintainServer();
 
 
             Audio.Init(32);
@@ -575,13 +631,16 @@ namespace VCClientTest
             }
 
             // have we been lost connection?
-            if(server != null && !server.Connected)
+            if(!WaitingForConnect && server != null && !server.Connected)
             {
                 LogMsg("Lost connection to server");
 
                 server.Close();//probably not needed if disconnected but whatever
                 server = null;
             }
+
+            // connect to server straight away if possible, when we lost one
+            MaintainServer();
 
             // anything to receieve?
             if (server != null)
@@ -950,7 +1009,8 @@ namespace VCClientTest
 
         void CloseRecordDevice()
         {
-            LogMsg("MICROPHONE: END");
+            if(currentRecordStreamInfo != null)//just dumb filter for log message/ can remove lol
+                LogMsg("MICROPHONE: END");
 
             if (CurrentRecordDevice != null && recordBuffer != null)
                 Audio.fmod.recordStop(CurrentRecordDevice.ID);
@@ -969,6 +1029,7 @@ namespace VCClientTest
 
             lastRecordPosition = 0;
             recordTimestamp = new DateTime();
+            currentRecordStreamInfo = null;
         }
 
         public bool Loopback = false;
@@ -983,7 +1044,7 @@ namespace VCClientTest
 
             CloseRecordDevice();
 
-            if (CurrentRecordDevice == null)
+            if (CurrentRecordDevice == null || streamInfo == null)
                 return;
 
             currentRecordStreamInfo = streamInfo;

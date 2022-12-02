@@ -59,6 +59,10 @@ namespace ACAudioVCServer
             private Server.StreamInfo lastStreamInfo = null;
             public void SetCurrentStreamInfo(Server.StreamInfo streamInfo)
             {
+                // if incoming is invalid then bust
+                if (streamInfo == null)
+                    return;
+
                 // if same who cares
                 if (lastStreamInfo != null && lastStreamInfo.magic == streamInfo.magic)
                     return;
