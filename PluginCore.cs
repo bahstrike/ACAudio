@@ -13,6 +13,8 @@ using System.Drawing;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 
+using ACAVoiceClient;
+
 namespace ACAudio
 {
     [WireUpBaseEvents]
@@ -401,6 +403,18 @@ namespace ACAudio
 
             ReloadConfig();
 
+            VCClient.Init();
+
+            VCClient.RecordDeviceEntry[] recordDevices = VCClient.QueryRecordDevices();
+            foreach(VCClient.RecordDeviceEntry rde in recordDevices)
+            {
+                if((rde.DriverState & FMOD.DRIVER_STATE.DEFAULT)!=0)
+                {
+                    VCClient.CurrentRecordDevice = rde;
+                    break;
+                }
+            }
+
 
             IsPortaling = true;
             StartPortalSong();// first time login portal deserves one
@@ -660,6 +674,12 @@ namespace ACAudio
             q.tries++;
             q.lastTryWorldTime = WorldTime;
         }
+
+
+        // maybe remove if we use decal/virindi hotkey system
+        [DllImport("User32.dll")]
+        public static extern short GetAsyncKeyState(int vKey);
+
 
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
@@ -1230,6 +1250,12 @@ namespace ACAudio
 
 
             // Z is up
+
+
+            PerfTrack.Start("Client.Process");
+            VCClient.PushToTalkEnable = (GetAsyncKeyState((int)' ') & 0x8000) != 0;
+            VCClient.Process(dt);
+
 
             PerfTrack.Start("Audio.Process");
             {
@@ -2057,6 +2083,7 @@ namespace ACAudio
 
         private void Shutdown_Internal()
         {
+            VCClient.Shutdown();
             Music.Shutdown();
             Audio.Shutdown();
 

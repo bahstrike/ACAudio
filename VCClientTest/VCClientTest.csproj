@@ -32,7 +32,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SmithLib">
+    <Reference Include="SmithLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\DEPLOY\SmithLib.dll</HintPath>
     </Reference>
     <Reference Include="System" />

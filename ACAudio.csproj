@@ -81,6 +81,12 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ACAVoiceClient\ACAVoiceClient.csproj">
+      <Project>{a03dca0d-da6c-4df1-bf6e-de1ebfd775c1}</Project>
+      <Name>ACAVoiceClient</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /y "$(TargetPath)" "$(SolutionDir)\DEPLOY\$(TargetFileName)"</PostBuildEvent>
