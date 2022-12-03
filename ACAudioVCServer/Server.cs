@@ -16,6 +16,8 @@ namespace ACAudioVCServer
         public delegate void LogDelegate(string s);
         public static LogDelegate LogCallback = null;
 
+        public static volatile bool ShowPlayerIPAndAccountInLogs = false;
+
         public static void Log(string s)
         {
             if (LogCallback != null)

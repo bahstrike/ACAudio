@@ -31,7 +31,10 @@ namespace ACAudioVCServer
 
             public override string ToString()
             {
-                return $"[{IPAddress}][{AccountName}][{CharacterName}][{WeenieID.ToString("X8")}]";
+                if(Server.ShowPlayerIPAndAccountInLogs)
+                    return $"[{IPAddress}][{AccountName}][{CharacterName}][{WeenieID.ToString("X8")}]";
+                else
+                    return $"[{CharacterName}][{WeenieID.ToString("X8")}]";
             }
 
             public IPAddress IPAddress

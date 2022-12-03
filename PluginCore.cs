@@ -387,6 +387,11 @@ namespace ACAudio
             }
         }
 
+        private static void VCClientLog(string s)
+        {
+            Log("[VCClient] " + s);
+        }
+
         private void Startup_Internal()
         {
             Shutdown_Internal();
@@ -403,8 +408,11 @@ namespace ACAudio
 
             ReloadConfig();
 
-            VCClient.Init();
 
+            VCClient.LogCallback = VCClientLog;
+
+
+            // safe to do without initialization
             VCClient.RecordDeviceEntry[] recordDevices = VCClient.QueryRecordDevices();
             foreach(VCClient.RecordDeviceEntry rde in recordDevices)
             {
@@ -523,6 +531,10 @@ namespace ACAudio
 
                 LogOff = true;
             }
+
+
+            // doesnt matter if we do another later for good measure;  when we log out then our weenie isnt good anymore so kill immediately
+            VCClient.Shutdown();
 
 
             using (INIFile ini = INIFile)
@@ -1955,6 +1967,16 @@ namespace ACAudio
                 //TryMusic();
 
                 IsPortaling = false;
+
+
+                if (NeedFirstLoginPlayerWeenie)
+                {
+                    NeedFirstLoginPlayerWeenie = false;
+
+
+                    Log("TRYING TO CONNECT TO VOICECHAT");
+                    VCClient.Init(Core.CharacterFilter.AccountName, Player.Name, Player.Id, "192.168.5.2");
+                }
             }
         }
 
@@ -2053,10 +2075,16 @@ namespace ACAudio
             return false;
         }
 
+        public bool NeedFirstLoginPlayerWeenie = true;
+
         [BaseEvent("LoginComplete", "CharacterFilter")]
         private void CharacterFilter_LoginComplete(object sender, EventArgs e)
         {
             WriteToChat($"Startup");
+
+
+            // even though we're logged in, we havent spawned in-game yet.  set flag to do logic upon first gamespawn
+            NeedFirstLoginPlayerWeenie = true;
 
 
             // start our world timer

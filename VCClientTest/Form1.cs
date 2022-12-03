@@ -64,7 +64,7 @@ namespace VCClientTest
 
 
             VCClient.LogCallback = ClientLogCallback;
-            VCClient.Init();
+            VCClient.Init("VCClientTest", "toon"+MathLib.random.Next(20), MathLib.random.Next(), "192.168.5.2");
 
 
             // ------------------------------------------------------------------------------------------------------------

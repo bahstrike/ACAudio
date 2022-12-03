@@ -21,8 +21,24 @@ namespace ACAVoiceClient
         }
 
         private static volatile TcpClient server = null;// ehh maybe needs more sync protections than "volatile" but we just prototyping for now
+        private static string ServerIP = null;
+        private static int ServerPort = 0;
+        public const int DefaultServerPort = 42420;
 
-        public static void Init()
+        private static string AccountName = null;
+        private static string CharacterName = null;
+        private static int WeenieID = 0;
+
+        private static bool _IsInitialized = false;
+        public static bool IsInitialized
+        {
+            get
+            {
+                return _IsInitialized;
+            }
+        }
+
+        public static void Init(string _AccountName, string _CharacterName, int _WeenieID, string _ServerIP, int _ServerPort=DefaultServerPort)
         {
             Shutdown();
 
@@ -32,6 +48,17 @@ namespace ACAVoiceClient
                 Log("Can't initialize voice client;  FMOD is not initialized");
                 return;
             }
+
+            AccountName = _AccountName;
+            CharacterName = _CharacterName;
+            WeenieID = _WeenieID;
+
+            ServerIP = _ServerIP;
+            ServerPort = _ServerPort;
+
+            _IsInitialized = true;
+
+
 
             // connect to server straight away
             MaintainServer();
@@ -53,10 +80,28 @@ namespace ACAVoiceClient
             DestroyAllReceiveStreams();
 
             CloseRecordDevice();
+
+
+
+            ServerIP = null;
+            ServerPort = 0;
+
+            AccountName = null;
+            CharacterName = null;
+            WeenieID = 0;
+
+
+            SentServerHandshake = false;
+            lastHeartbeat = new DateTime();
+
+            _IsInitialized = false;
         }
 
         public static void Process(double dt)
         {
+            if (!IsInitialized)
+                return;
+
             // have we been lost connection?
             if (!WaitingForConnect && server != null && !server.Connected)
             {
@@ -578,9 +623,9 @@ namespace ACAVoiceClient
                     // if its our first time here, then we should introduce ourselves
                     Packet clientInfo = new Packet(Packet.MessageType.PlayerConnect);
 
-                    clientInfo.WriteString("account lol");
-                    clientInfo.WriteString("toon" + Smith.MathLib.random.Next(20));
-                    clientInfo.WriteInt(Smith.MathLib.random.Next());//weenie ID
+                    clientInfo.WriteString(AccountName);
+                    clientInfo.WriteString(CharacterName);
+                    clientInfo.WriteInt(WeenieID);
 
                     SendToServer(clientInfo);
 
@@ -601,18 +646,11 @@ namespace ACAVoiceClient
             try
             {
                 TcpClient tryServer = new TcpClient();
-                int port = 42420;
-#if SELFHOST
-                string ip = "127.0.0.1";
-#else
-                string ip = "192.168.5.2";
-#endif
 
-
-                Log($"Attempting connection to {ip}:{port}");
+                Log($"Attempting connection to {ServerIP}:{ServerPort}");
 
                 WaitingForConnect = true;
-                tryServer.BeginConnect(ip, port, ConnectCallback, tryServer);
+                tryServer.BeginConnect(ServerIP, ServerPort, ConnectCallback, tryServer);
             }
             catch
             {
