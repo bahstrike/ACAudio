@@ -479,6 +479,7 @@ namespace ACAVoiceClient
 
                         Stream = CreatePlaybackStream(StreamInfo, ID.Speak3D, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
 
+                        Stream.set3DMinMaxDistance(5.0f, 35.0f);
 
                         // playing with smith audio so the master volume can work (when alt-tabbed out).. could be risky given the "smartness" acaudio does with channels. need to incorporate properly.
                         // technically we should pause to ensure position (and maybe other) properties are set first.. but since stream will be silence until PCM sample callback, then Process should have enough time to sync info
