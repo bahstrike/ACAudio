@@ -233,7 +233,7 @@ namespace ACAVoiceClient
                 if (blocklength < 0)
                 {
                     uint recordBufferLength;
-                    recordBuffer.sound.getLength(out recordBufferLength, FMOD.TIMEUNIT.PCM);
+                    recordBuffer.getLength(out recordBufferLength, FMOD.TIMEUNIT.PCM);
 
                     blocklength += (int)recordBufferLength;
                 }
@@ -241,7 +241,7 @@ namespace ACAVoiceClient
                 uint bytesPerSample = (uint)(1/*channels*/ * (currentRecordStreamInfo.bitDepth / 8)/*bitdepth*/);
                 IntPtr ptr1, ptr2;
                 uint len1, len2;
-                recordBuffer.sound.@lock(lastRecordPosition * bytesPerSample, (uint)blocklength * bytesPerSample, out ptr1, out ptr2, out len1, out len2);
+                recordBuffer.@lock(lastRecordPosition * bytesPerSample, (uint)blocklength * bytesPerSample, out ptr1, out ptr2, out len1, out len2);
 
                 byte[] buf = new byte[len1 + len2];
                 if (ptr1 != IntPtr.Zero && len1 > 0)
@@ -250,7 +250,7 @@ namespace ACAVoiceClient
                 if (ptr2 != IntPtr.Zero && len2 > 0)
                     Marshal.Copy(ptr2, buf, (int)len1, (int)len2);
 
-                recordBuffer.sound.unlock(ptr1, ptr2, len1, len2);
+                recordBuffer.unlock(ptr1, ptr2, len1, len2);
 
                 lastRecordPosition = recordPosition;
 
@@ -465,7 +465,7 @@ namespace ACAVoiceClient
                         Stream.sound = snd;
 
 
-                        // HAXXX  this needs to be "jitter buffer"'d
+                        // playing with smith audio so the master volume can work (when alt-tabbed out).. could be risky given the "smartness" acaudio does with channels. need to incorporate properly
                         Channel = Audio.PlaySound(Stream);
                     }
                 }
@@ -759,7 +759,7 @@ namespace ACAVoiceClient
 
             if (recordBuffer != null)
             {
-                Audio.CleanupSound(recordBuffer);
+                recordBuffer.release();
                 recordBuffer = null;
             }
 
@@ -772,7 +772,7 @@ namespace ACAVoiceClient
         static Audio.Channel loopbackChannel = null;
 
 
-        static Audio.Sound recordBuffer = null;
+        static FMOD.Sound recordBuffer = null;
 
         static StreamInfo currentRecordStreamInfo = null;
         static void OpenRecordDevice(StreamInfo streamInfo)
@@ -789,13 +789,13 @@ namespace ACAVoiceClient
             currentRecordStreamInfo = streamInfo;
 
             recordBuffer = CreateRecordBuffer(currentRecordStreamInfo);
-            Audio.fmod.recordStart(CurrentRecordDevice.ID, recordBuffer.sound, true);
+            Audio.fmod.recordStart(CurrentRecordDevice.ID, recordBuffer, true);
 
 
             if (Loopback)
             {
                 System.Threading.Thread.Sleep(50);
-                loopbackChannel = Audio.PlaySound(recordBuffer);//Audio.fmod.playSound(recordBuffer, null, false, out loopbackChannel);
+                loopbackChannel = Audio.PlaySound(recordBuffer, Audio.DimensionMode._2D, true);//Audio.fmod.playSound(recordBuffer, null, false, out loopbackChannel);
             }
 
             recordTimestamp = DateTime.Now;
@@ -804,7 +804,7 @@ namespace ACAVoiceClient
             Log("MICROPHONE: START");
         }
 
-        static Audio.Sound CreateRecordBuffer(StreamInfo streamInfo)
+        static FMOD.Sound CreateRecordBuffer(StreamInfo streamInfo)
         {
             int channels = 1;
 
@@ -867,7 +867,7 @@ namespace ACAVoiceClient
                 return null;
             }
 
-            return Audio.RegisterSound(sound, "MICROPHONE", Audio.DimensionMode._2D, true);
+            return sound;//return Audio.RegisterSound(sound, "MICROPHONE", Audio.DimensionMode._2D, true);
         }
 
         private static FMOD.SOUND_PCMREADCALLBACK PCMReadCallbackDelegate = new FMOD.SOUND_PCMREADCALLBACK(PCMReadCallback);
