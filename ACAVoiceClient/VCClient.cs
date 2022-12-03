@@ -351,7 +351,7 @@ namespace ACAVoiceClient
 
             public readonly StreamInfo StreamInfo;
 
-            private Audio.Sound Stream = null;
+            private FMOD.Sound Stream = null;
             private Audio.Channel Channel = null;
 
             private CritSect receiveBufferCrit = new CritSect();
@@ -396,7 +396,7 @@ namespace ACAVoiceClient
 
                 if (Stream != null)
                 {
-                    Audio.CleanupSound(Stream);
+                    Stream.release();
                     Stream = null;
                 }
 
@@ -455,18 +455,11 @@ namespace ACAVoiceClient
 
                         //LogMsg("Create/play receive stream");
 
-                        FMOD.Sound snd = CreatePlaybackStream(StreamInfo, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
-
-                        // haxxx just to get our sound properly registered.   probably CreatePlaybackStream should be part of the Audio library
-                        Stream = new Audio.Sound();
-                        Stream.Name = ID.ToString();//StreamInfo.ToString();
-                        Stream.Is3D = Audio.DimensionMode._2D;
-                        Stream.Looping = true;
-                        Stream.sound = snd;
+                        Stream = CreatePlaybackStream(StreamInfo, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
 
 
                         // playing with smith audio so the master volume can work (when alt-tabbed out).. could be risky given the "smartness" acaudio does with channels. need to incorporate properly
-                        Channel = Audio.PlaySound(Stream);
+                        Channel = Audio.PlaySound(Stream, Audio.DimensionMode._2D, true);
                     }
                 }
 
