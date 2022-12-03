@@ -163,8 +163,10 @@ namespace ACAVoiceClient
 
 
                         ReceiveStream stream = GetOrCreateReceiveStream(id);
-
-                        stream.SupplyPacket(packet);
+                        if (stream != null)
+                        {
+                            stream.SupplyPacket(packet);
+                        }
                     }
 
                     if (packet.Message == Packet.MessageType.StreamInfo)
@@ -231,7 +233,7 @@ namespace ACAVoiceClient
                 if (blocklength < 0)
                 {
                     uint recordBufferLength;
-                    recordBuffer.getLength(out recordBufferLength, FMOD.TIMEUNIT.PCM);
+                    recordBuffer.sound.getLength(out recordBufferLength, FMOD.TIMEUNIT.PCM);
 
                     blocklength += (int)recordBufferLength;
                 }
@@ -239,7 +241,7 @@ namespace ACAVoiceClient
                 uint bytesPerSample = (uint)(1/*channels*/ * (currentRecordStreamInfo.bitDepth / 8)/*bitdepth*/);
                 IntPtr ptr1, ptr2;
                 uint len1, len2;
-                recordBuffer.@lock(lastRecordPosition * bytesPerSample, (uint)blocklength * bytesPerSample, out ptr1, out ptr2, out len1, out len2);
+                recordBuffer.sound.@lock(lastRecordPosition * bytesPerSample, (uint)blocklength * bytesPerSample, out ptr1, out ptr2, out len1, out len2);
 
                 byte[] buf = new byte[len1 + len2];
                 if (ptr1 != IntPtr.Zero && len1 > 0)
@@ -248,7 +250,7 @@ namespace ACAVoiceClient
                 if (ptr2 != IntPtr.Zero && len2 > 0)
                     Marshal.Copy(ptr2, buf, (int)len1, (int)len2);
 
-                recordBuffer.unlock(ptr1, ptr2, len1, len2);
+                recordBuffer.sound.unlock(ptr1, ptr2, len1, len2);
 
                 lastRecordPosition = recordPosition;
 
@@ -349,8 +351,8 @@ namespace ACAVoiceClient
 
             public readonly StreamInfo StreamInfo;
 
-            private FMOD.Sound Stream = null;
-            private FMOD.Channel Channel = null;
+            private Audio.Sound Stream = null;
+            private Audio.Channel Channel = null;
 
             private CritSect receiveBufferCrit = new CritSect();
             private List<byte> receiveBuffer = new List<byte>();
@@ -388,13 +390,13 @@ namespace ACAVoiceClient
 
                 if (Channel != null)
                 {
-                    Channel.stop();
+                    Channel.Stop();
                     Channel = null;
                 }
 
                 if (Stream != null)
                 {
-                    Stream.release();
+                    Audio.CleanupSound(Stream);
                     Stream = null;
                 }
 
@@ -453,10 +455,18 @@ namespace ACAVoiceClient
 
                         //LogMsg("Create/play receive stream");
 
-                        Stream = CreatePlaybackStream(StreamInfo, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
+                        FMOD.Sound snd = CreatePlaybackStream(StreamInfo, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
+
+                        // haxxx just to get our sound properly registered.   probably CreatePlaybackStream should be part of the Audio library
+                        Stream = new Audio.Sound();
+                        Stream.Name = ID.ToString();//StreamInfo.ToString();
+                        Stream.Is3D = Audio.DimensionMode._2D;
+                        Stream.Looping = true;
+                        Stream.sound = snd;
+
 
                         // HAXXX  this needs to be "jitter buffer"'d
-                        Audio.fmod.playSound(Stream, null, false, out Channel);
+                        Channel = Audio.PlaySound(Stream);
                     }
                 }
 
@@ -536,6 +546,11 @@ namespace ACAVoiceClient
 
         static ReceiveStream GetOrCreateReceiveStream(ReceiveStreamID id)
         {
+            // dont make a stream if we havent gotten the current settings yet
+            StreamInfo streamInfo = CurrentStreamInfo;
+            if (streamInfo == null || streamInfo.magic != id.StreamInfoMagic)
+                return null;
+
             using (ReceiveStreamsCrit.Lock)
             {
                 ReceiveStream stream;
@@ -543,7 +558,7 @@ namespace ACAVoiceClient
                 {
                     Log($"Create receive stream {id}");
 
-                    stream = new ReceiveStream(id, CurrentStreamInfo);
+                    stream = new ReceiveStream(id, streamInfo);
                     ReceiveStreams.Add(id, stream);
                 }
 
@@ -738,13 +753,13 @@ namespace ACAVoiceClient
 
             if (loopbackChannel != null)
             {
-                loopbackChannel.stop();
+                loopbackChannel.Stop();
                 loopbackChannel = null;
             }
 
             if (recordBuffer != null)
             {
-                recordBuffer.release();
+                Audio.CleanupSound(recordBuffer);
                 recordBuffer = null;
             }
 
@@ -754,10 +769,10 @@ namespace ACAVoiceClient
         }
 
         public static bool Loopback = false;
-        static FMOD.Channel loopbackChannel = null;
+        static Audio.Channel loopbackChannel = null;
 
 
-        static FMOD.Sound recordBuffer = null;
+        static Audio.Sound recordBuffer = null;
 
         static StreamInfo currentRecordStreamInfo = null;
         static void OpenRecordDevice(StreamInfo streamInfo)
@@ -774,13 +789,13 @@ namespace ACAVoiceClient
             currentRecordStreamInfo = streamInfo;
 
             recordBuffer = CreateRecordBuffer(currentRecordStreamInfo);
-            Audio.fmod.recordStart(CurrentRecordDevice.ID, recordBuffer, true);
+            Audio.fmod.recordStart(CurrentRecordDevice.ID, recordBuffer.sound, true);
 
 
             if (Loopback)
             {
                 System.Threading.Thread.Sleep(50);
-                Audio.fmod.playSound(recordBuffer, null, false, out loopbackChannel);
+                loopbackChannel = Audio.PlaySound(recordBuffer);//Audio.fmod.playSound(recordBuffer, null, false, out loopbackChannel);
             }
 
             recordTimestamp = DateTime.Now;
@@ -789,7 +804,7 @@ namespace ACAVoiceClient
             Log("MICROPHONE: START");
         }
 
-        static FMOD.Sound CreateRecordBuffer(StreamInfo streamInfo)
+        static Audio.Sound CreateRecordBuffer(StreamInfo streamInfo)
         {
             int channels = 1;
 
@@ -852,32 +867,39 @@ namespace ACAVoiceClient
                 return null;
             }
 
-            return sound;
+            return Audio.RegisterSound(sound, "MICROPHONE", Audio.DimensionMode._2D, true);
         }
 
         private static FMOD.SOUND_PCMREADCALLBACK PCMReadCallbackDelegate = new FMOD.SOUND_PCMREADCALLBACK(PCMReadCallback);
         private static FMOD.RESULT PCMReadCallback(IntPtr soundraw, IntPtr data, uint datalen)
         {
-            FMOD.Sound sound = new FMOD.Sound(soundraw);
-
-            IntPtr userdata;
-            sound.getUserData(out userdata);
-            ReceiveStreamID id = ReceiveStreamID.FromUnmanaged(userdata);
-
-            ReceiveStream stream = GetReceiveStream(id);
-
-            byte[] buf;
-            if (stream == null)
+            try
             {
-                buf = new byte[datalen];
-                for (int x = 0; x < datalen; x++)
-                    buf[x] = 0;
-            }
-            else
-                buf = stream.RetrieveSamples((int)datalen);
+                FMOD.Sound sound = new FMOD.Sound(soundraw);
 
-            if (buf != null)
-                Marshal.Copy(buf, 0, data, buf.Length);
+                IntPtr userdata;
+                sound.getUserData(out userdata);
+                ReceiveStreamID id = ReceiveStreamID.FromUnmanaged(userdata);
+
+                ReceiveStream stream = GetReceiveStream(id);
+
+                byte[] buf;
+                if (stream == null)
+                {
+                    buf = new byte[datalen];
+                    for (int x = 0; x < datalen; x++)
+                        buf[x] = 0;
+                }
+                else
+                    buf = stream.RetrieveSamples((int)datalen);
+
+                if (buf != null)
+                    Marshal.Copy(buf, 0, data, buf.Length);
+            }
+            catch(Exception ex)
+            {
+                Log($"ITS ME, PCMREADCALLBACK.  IM THE BITCH: {ex.Message}");
+            }
 
             return FMOD.RESULT.OK;
         }

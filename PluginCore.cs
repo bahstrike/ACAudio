@@ -1198,7 +1198,7 @@ namespace ACAudio
                 // build list of all currently playing sounds
                 List<Audio.Sound> activeSounds = new List<Audio.Sound>();
                 foreach (Audio.Channel channel in Audio.GetAllChannels())
-                    if (channel.IsPlaying && !activeSounds.Contains(channel.Sound))
+                    if (channel.IsPlaying && channel.Sound != null && !activeSounds.Contains(channel.Sound))
                         activeSounds.Add(channel.Sound);
 
 
@@ -1265,14 +1265,28 @@ namespace ACAudio
 
 
             PerfTrack.Start("Client.Process");
-            VCClient.PushToTalkEnable = (GetAsyncKeyState((int)' ') & 0x8000) != 0;
-            VCClient.Process(dt);
+            try
+            {
+                VCClient.PushToTalkEnable = DoesACHaveFocus() && (GetAsyncKeyState((int)' ') & 0x8000) != 0;
+                VCClient.Process(dt);
+            }
+            catch(Exception ex)
+            {
+                Log($"VCClient.Process exception: {ex.Message}");
+            }
 
 
             PerfTrack.Start("Audio.Process");
             {
                 // do all this based on camera (listener MUST be camera for proper 3d audio without sounding weird)
-                Audio.Process(dt, truedt, playerPos.CameraPos.Global, Vec3.Zero, playerPos.CameraMat.Up, playerPos.CameraMat.Forward);
+                try
+                {
+                    Audio.Process(dt, truedt, playerPos.CameraPos.Global, Vec3.Zero, playerPos.CameraMat.Up, playerPos.CameraMat.Forward);
+                }
+                catch(Exception ex)
+                {
+                    Log($"Audio process exception: {ex.Message}");
+                }
             }
 
 
