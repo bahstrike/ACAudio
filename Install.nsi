@@ -50,9 +50,12 @@ Section "" CoreSection
 
 	File "${BUILDPATH}\${ASSEMBLY}"
 	File "${BUILDPATH}\data\credits.txt"
+	File "${BUILDPATH}\ACACommon.dll"
+	File "${BUILDPATH}\ACAVoiceClient.dll"
 	File "${BUILDPATH}\fmod.dll"
 	File "${BUILDPATH}\SmithLib.dll"
 	File "${BUILDPATH}\static.dat"
+	File "${BUILDPATH}\speaking.png"
 
 	SetOutPath "$INSTDIR\data"
 	File "${BUILDPATH}\data\*.*"
@@ -101,9 +104,12 @@ Section Uninstall
 	Delete "$INSTDIR\${APPNAME}.ini"
 	Delete "$INSTDIR\${APPNAME}.log"
 	Delete "$INSTDIR\credits.txt"
+	Delete "$INSTDIR\ACACommon.dll"
+	Delete "$INSTDIR\ACAVoiceClient.dll"
 	Delete "$INSTDIR\fmod.dll"
 	Delete "$INSTDIR\SmithLib.dll"
 	Delete "$INSTDIR\static.dat"
+	Delete "$INSTDIR\speaking.png"
 
 	RMDir /r "$INSTDIR\data"
 

@@ -41,6 +41,10 @@ namespace ACAVoiceClient
         public delegate Vec3? GetWeeniePositionDelegate(int weenieID);
         public static GetWeeniePositionDelegate GetWeeniePosition = null;
 
+        public delegate void SpeakingIconDelegate(int weenieID);
+        public static SpeakingIconDelegate CreateSpeakingIcon = null;
+        public static SpeakingIconDelegate DestroySpeakingIcon = null;
+
         public static void Init(string _AccountName, string _CharacterName, int _WeenieID, string _ServerIP, int _ServerPort=DefaultServerPort)
         {
             Shutdown();
@@ -398,6 +402,9 @@ namespace ACAVoiceClient
 
                 disposed = true;
 
+                if (VCClient.DestroySpeakingIcon != null)
+                    VCClient.DestroySpeakingIcon(ID.WeenieID);
+
                 if (Channel != null)
                 {
                     Channel.Stop();
@@ -442,6 +449,15 @@ namespace ACAVoiceClient
                     if(pos.HasValue)
                         Channel.SetPosition(pos.Value, Vec3.Zero);
                 }
+
+                // if this is the first (mainthread) situation we have provided samples to playback stream then this is our mark to create in-game speaking icon
+                if(SpeakingIconState == SpeakingIconStateType.GotSamples)
+                {
+                    if (VCClient.CreateSpeakingIcon != null)
+                        VCClient.CreateSpeakingIcon(ID.WeenieID);
+
+                    SpeakingIconState = SpeakingIconStateType.Done;
+                }
             }
 
             public bool SupplyPacket(Packet packet)
@@ -484,14 +500,29 @@ namespace ACAVoiceClient
                         // playing with smith audio so the master volume can work (when alt-tabbed out).. could be risky given the "smartness" acaudio does with channels. need to incorporate properly.
                         // technically we should pause to ensure position (and maybe other) properties are set first.. but since stream will be silence until PCM sample callback, then Process should have enough time to sync info
                         Channel = Audio.PlaySound(Stream, ID.Speak3D ? Audio.DimensionMode._3DPositional : Audio.DimensionMode._2D, true);
+
+                        // maybe wait until pcm callback flags as being called for first time
+                        //if (VCClient.CreateSpeakingIcon != null)
+                            //VCClient.CreateSpeakingIcon(ID.WeenieID);
                     }
                 }
 
                 return true;
             }
 
+            private volatile SpeakingIconStateType SpeakingIconState = SpeakingIconStateType.WaitingForSamples;
+            private enum SpeakingIconStateType
+            {
+                WaitingForSamples,
+                GotSamples,
+                Done
+            }
+
             public byte[] RetrieveSamples(int len)
             {
+                if (SpeakingIconState == SpeakingIconStateType.WaitingForSamples)
+                    SpeakingIconState = SpeakingIconStateType.GotSamples;
+
 #if true
                 //LogMsg($"retrievesamples for stream weenie {WeenieID}");
 

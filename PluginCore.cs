@@ -403,6 +403,36 @@ namespace ACAudio
             return pos.Value.Global;
         }
 
+        private Dictionary<int, D3DObj> ActiveSpeakingIcons = new Dictionary<int, D3DObj>();
+
+        void VCClientCreateSpeakingIcon(int weenieID)
+        {
+            if (ActiveSpeakingIcons.ContainsKey(weenieID))
+                return;
+
+            D3DObj obj = Core.D3DService.NewD3DObj();
+
+            obj.SetIcon(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "speaking.png"));
+            obj.Anchor(weenieID, 1.3f, 0.0f, 0.0f, 0.0f);
+            obj.OrientToCamera(false);
+            obj.Visible = true;
+            obj.Autoscale = false;
+            obj.Scale(0.3f);
+            obj.Color = unchecked((int)0xFFFFFFFF);
+
+            ActiveSpeakingIcons.Add(weenieID, obj);
+        }
+
+        void VCClientDestroySpeakingIcon(int weenieID)
+        {
+            D3DObj obj;
+            if (!ActiveSpeakingIcons.TryGetValue(weenieID, out obj))
+                return;
+
+            obj.Visible = false;// set as invisible since i guess we're not allowed to dispose manually (wait for GC)
+            ActiveSpeakingIcons.Remove(weenieID);
+        }
+
         private void Startup_Internal()
         {
             Shutdown_Internal();
@@ -422,6 +452,8 @@ namespace ACAudio
 
             VCClient.LogCallback = VCClientLog;
             VCClient.GetWeeniePosition = VCClientGetWeeniePosition;
+            VCClient.CreateSpeakingIcon = VCClientCreateSpeakingIcon;
+            VCClient.DestroySpeakingIcon = VCClientDestroySpeakingIcon;
 
 
 
@@ -750,7 +782,8 @@ namespace ACAudio
 
             PlayerPos playerPos = PlayerPos.Create();
 
-            
+
+
             {
                 PerfTrack.Start("Internal Process");
                 PerfTrack.Push();
@@ -1322,6 +1355,7 @@ namespace ACAudio
             }
 
 
+
             pt_process.Stop();
             lastProcessTime = pt_process.Duration;
 
@@ -1367,6 +1401,9 @@ namespace ACAudio
                 Log("------------");
             }
         }
+
+
+        D3DObj TestSpeakerIcon = null;
 
 
         private uint _dynamicObjectIndex = 0;
