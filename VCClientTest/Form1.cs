@@ -64,6 +64,8 @@ namespace VCClientTest
 
 
             VCClient.LogCallback = ClientLogCallback;
+            VCClient.Loopback = true;
+            VCClient.Speak3D = false;
             VCClient.Init("VCClientTest", "toon"+MathLib.random.Next(20), MathLib.random.Next(), "192.168.5.2");
 
 

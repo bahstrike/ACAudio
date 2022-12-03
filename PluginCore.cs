@@ -162,8 +162,6 @@ namespace ACAudio
 
                 View = new VirindiViewService.HudView(properties, controls);
 
-
-
                 //Log("hook events");
                 View.ThemeChanged += delegate (object sender, EventArgs e)
                 {
@@ -392,6 +390,19 @@ namespace ACAudio
             Log("[VCClient] " + s);
         }
 
+        Vec3? VCClientGetWeeniePosition(int weenieID)
+        {
+            WorldObject obj = Core.WorldFilter[weenieID];
+            if (obj == null)
+                return null;
+
+            Position? pos = Position.FromObject(obj);
+            if (pos == null)
+                return null;
+
+            return pos.Value.Global;
+        }
+
         private void Startup_Internal()
         {
             Shutdown_Internal();
@@ -410,23 +421,35 @@ namespace ACAudio
 
 
             VCClient.LogCallback = VCClientLog;
+            VCClient.GetWeeniePosition = VCClientGetWeeniePosition;
 
+
+
+            HudCombo recordDeviceCombo = View["RecordDevice"] as HudCombo;
+            recordDeviceCombo.Clear();
 
             // safe to do without initialization
-            VCClient.RecordDeviceEntry[] recordDevices = VCClient.QueryRecordDevices();
-            foreach(VCClient.RecordDeviceEntry rde in recordDevices)
+            AvailableRecordDevices = VCClient.QueryRecordDevices();
+            int defaultIndex = -1;
+            for(int x=0; x<AvailableRecordDevices.Length; x++)
             {
-                if((rde.DriverState & FMOD.DRIVER_STATE.DEFAULT)!=0)
-                {
-                    VCClient.CurrentRecordDevice = rde;
-                    break;
-                }
+                VCClient.RecordDeviceEntry rde = AvailableRecordDevices[x];
+
+                recordDeviceCombo.AddItem(rde.Name, null);
+
+                if ((rde.DriverState & FMOD.DRIVER_STATE.DEFAULT) != 0)
+                    defaultIndex = x;
             }
+
+            recordDeviceCombo.Current = defaultIndex;
+            
 
 
             IsPortaling = true;
             StartPortalSong();// first time login portal deserves one
         }
+
+        private VCClient.RecordDeviceEntry[] AvailableRecordDevices;
 
         private void ReloadConfig()
         {
@@ -1267,6 +1290,15 @@ namespace ACAudio
             PerfTrack.Start("Client.Process");
             try
             {
+                VCClient.Loopback = (View["MicLoopback"] as HudCheckBox).Checked;
+                VCClient.Speak3D = (View["Mic3D"] as HudCheckBox).Checked;
+
+                int recordDeviceIndex = (View["RecordDevice"] as HudCombo).Current;
+                if (recordDeviceIndex < 0 || recordDeviceIndex >= AvailableRecordDevices.Length)
+                    VCClient.CurrentRecordDevice = null;
+                else
+                    VCClient.CurrentRecordDevice = AvailableRecordDevices[recordDeviceIndex];
+
                 VCClient.PushToTalkEnable = DoesACHaveFocus() && (GetAsyncKeyState((int)' ') & 0x8000) != 0;
                 VCClient.Process(dt);
             }

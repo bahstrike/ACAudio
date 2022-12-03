@@ -240,6 +240,8 @@ namespace ACAudioVCServer
                     if (playerPacket.Message == Packet.MessageType.RawAudio)
                     {
                         int magic = playerPacket.ReadInt();
+                        bool loopback = playerPacket.ReadBool();
+                        bool speak3d = playerPacket.ReadBool();
 
                         // if magic doesnt match current server streaminfo (wrong format) then just ignore the rest of this packet
                         if (magic != streamInfo.magic)
@@ -255,15 +257,25 @@ namespace ACAudioVCServer
                         // reconstruct a detailed audio packet that includes the appropriate source information for redistribution
                         Packet detailAudio = new Packet(Packet.MessageType.DetailAudio);
                         detailAudio.WriteInt(streamInfo.magic);
+                        detailAudio.WriteBool(speak3d);
                         detailAudio.WriteInt(player.WeenieID);
                         detailAudio.WriteBuffer(buf);
 
 
-
-                        // for now, just send the packet straight back to everyone  (haxx loopback)
-                        foreach (Player player2 in Players)
+                        // if loopback, just send back to player
+                        if (loopback)
+                            player.Send(detailAudio);
+                        else
                         {
-                            player2.Send(detailAudio);
+                            // for now, just send the packet straight back to everyone  (haxx loopback)
+                            foreach (Player player2 in Players)
+                            {
+                                // dont perform loopback
+                                if (object.ReferenceEquals(player, player2))
+                                    continue;
+
+                                player2.Send(detailAudio);
+                            }
                         }
 
                     }

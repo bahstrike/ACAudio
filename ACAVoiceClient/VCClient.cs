@@ -38,6 +38,9 @@ namespace ACAVoiceClient
             }
         }
 
+        public delegate Vec3? GetWeeniePositionDelegate(int weenieID);
+        public static GetWeeniePositionDelegate GetWeeniePosition = null;
+
         public static void Init(string _AccountName, string _CharacterName, int _WeenieID, string _ServerIP, int _ServerPort=DefaultServerPort)
         {
             Shutdown();
@@ -143,6 +146,7 @@ namespace ACAVoiceClient
 
                         ReceiveStreamID id = new ReceiveStreamID();
                         id.StreamInfoMagic = packet.ReadInt();
+                        id.Speak3D = packet.ReadBool();
                         id.WeenieID = packet.ReadInt();
 
 
@@ -152,8 +156,10 @@ namespace ACAVoiceClient
                         {
                             List<ReceiveStreamID> destroyStreams = new List<ReceiveStreamID>();
                             foreach (ReceiveStreamID checkID in ReceiveStreams.Keys)
-                                if (checkID.StreamInfoMagic != id.StreamInfoMagic &&
-                                    checkID.WeenieID == id.WeenieID)
+                                if (checkID.WeenieID == id.WeenieID && 
+                                    (checkID.StreamInfoMagic != id.StreamInfoMagic ||
+                                     checkID.Speak3D != id.Speak3D)
+                                    )
                                     destroyStreams.Add(checkID);
 
                             foreach (ReceiveStreamID destroyID in destroyStreams)
@@ -202,7 +208,7 @@ namespace ACAVoiceClient
 
             // if current record device isnt the up-to-date settings then lets force a re-open
             StreamInfo streamInfo = CurrentStreamInfo;//precache because of sync
-            if (currentRecordStreamInfo != null && currentRecordStreamInfo.magic != streamInfo.magic)
+            if ((currentRecordStreamInfo != null && currentRecordStreamInfo.magic != streamInfo.magic) || (CurrentRecordDevice == null || CurrentRecordDevice.ID != recordBufferDeviceID))
                 CloseRecordDevice();//nobody wants previous quality samples so flag for re-open, to force new settings
 
 
@@ -262,6 +268,8 @@ namespace ACAVoiceClient
                     Packet packet = new Packet(Packet.MessageType.RawAudio);
 
                     packet.WriteInt(currentRecordStreamInfo.magic);//embed id of known current format
+                    packet.WriteBool(Loopback);
+                    packet.WriteBool(Speak3D);
 
                     if (currentRecordStreamInfo.ulaw)
                         packet.WriteBuffer(WinSound.Utils.LinearToMulaw(buf, currentRecordStreamInfo.bitDepth, 1));
@@ -305,6 +313,8 @@ namespace ACAVoiceClient
 
         public static volatile bool PushToTalkEnable = false;
         public static volatile RecordDeviceEntry CurrentRecordDevice = null;
+        public static volatile bool Loopback = false;
+        public static volatile bool Speak3D = false;
 
 
         private static CritSect _CurrentStreamInfoCrit = new CritSect();
@@ -420,6 +430,18 @@ namespace ACAVoiceClient
 
                 if (ID.StreamInfoMagic != CurrentStreamInfo.magic)
                     wantDestroy = true;
+
+                // if 3d positional, keep updating position
+                if (Channel != null && ID.Speak3D)
+                {
+                    Vec3? pos = null;
+
+                    if (VCClient.GetWeeniePosition != null)
+                        pos = VCClient.GetWeeniePosition(ID.WeenieID);
+
+                    if(pos.HasValue)
+                        Channel.SetPosition(pos.Value, Vec3.Zero);
+                }
             }
 
             public bool SupplyPacket(Packet packet)
@@ -455,11 +477,12 @@ namespace ACAVoiceClient
 
                         //LogMsg("Create/play receive stream");
 
-                        Stream = CreatePlaybackStream(StreamInfo, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
+                        Stream = CreatePlaybackStream(StreamInfo, ID.Speak3D, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
 
 
-                        // playing with smith audio so the master volume can work (when alt-tabbed out).. could be risky given the "smartness" acaudio does with channels. need to incorporate properly
-                        Channel = Audio.PlaySound(Stream, Audio.DimensionMode._2D, true);
+                        // playing with smith audio so the master volume can work (when alt-tabbed out).. could be risky given the "smartness" acaudio does with channels. need to incorporate properly.
+                        // technically we should pause to ensure position (and maybe other) properties are set first.. but since stream will be silence until PCM sample callback, then Process should have enough time to sync info
+                        Channel = Audio.PlaySound(Stream, ID.Speak3D ? Audio.DimensionMode._3DPositional : Audio.DimensionMode._2D, true);
                     }
                 }
 
@@ -509,6 +532,7 @@ namespace ACAVoiceClient
         public struct ReceiveStreamID
         {
             public int StreamInfoMagic;
+            public bool Speak3D;
             public int WeenieID;
 
             public override string ToString()
@@ -744,11 +768,11 @@ namespace ACAVoiceClient
             if (CurrentRecordDevice != null && recordBuffer != null)
                 Audio.fmod.recordStop(CurrentRecordDevice.ID);
 
-            if (loopbackChannel != null)
+            /*if (loopbackChannel != null)
             {
                 loopbackChannel.Stop();
                 loopbackChannel = null;
-            }
+            }*/
 
             if (recordBuffer != null)
             {
@@ -759,12 +783,14 @@ namespace ACAVoiceClient
             lastRecordPosition = 0;
             recordTimestamp = new DateTime();
             currentRecordStreamInfo = null;
+            recordBufferDeviceID = -1;
         }
 
-        public static bool Loopback = false;
-        static Audio.Channel loopbackChannel = null;
+        //public static bool Loopback = false;
+        //static Audio.Channel loopbackChannel = null;
 
 
+        static int recordBufferDeviceID = -1;
         static FMOD.Sound recordBuffer = null;
 
         static StreamInfo currentRecordStreamInfo = null;
@@ -781,15 +807,16 @@ namespace ACAVoiceClient
 
             currentRecordStreamInfo = streamInfo;
 
+            recordBufferDeviceID = CurrentRecordDevice.ID;
             recordBuffer = CreateRecordBuffer(currentRecordStreamInfo);
             Audio.fmod.recordStart(CurrentRecordDevice.ID, recordBuffer, true);
 
 
-            if (Loopback)
+            /*if (Loopback)
             {
                 System.Threading.Thread.Sleep(50);
                 loopbackChannel = Audio.PlaySound(recordBuffer, Audio.DimensionMode._2D, true);//Audio.fmod.playSound(recordBuffer, null, false, out loopbackChannel);
-            }
+            }*/
 
             recordTimestamp = DateTime.Now;
 
@@ -897,7 +924,7 @@ namespace ACAVoiceClient
             return FMOD.RESULT.OK;
         }
 
-        private static FMOD.Sound CreatePlaybackStream(StreamInfo streamInfo, int bufferMsec, int samplingMsec, IntPtr userdata)
+        private static FMOD.Sound CreatePlaybackStream(StreamInfo streamInfo, bool is3d, int bufferMsec, int samplingMsec, IntPtr userdata)
         {
             int channels = 1;
 
@@ -953,7 +980,7 @@ namespace ACAVoiceClient
             cs.nonblockthreadid = 0;
             cs.fsbguid = IntPtr.Zero;
 
-            FMOD.RESULT result = Audio.fmod.createStream((byte[])null, FMOD.MODE.CREATESTREAM | FMOD.MODE._2D | FMOD.MODE.OPENUSER | FMOD.MODE.OPENONLY | FMOD.MODE.LOOP_NORMAL, ref cs, out sound);
+            FMOD.RESULT result = Audio.fmod.createStream((byte[])null, FMOD.MODE.CREATESTREAM | (is3d ? FMOD.MODE._3D : FMOD.MODE._2D) | FMOD.MODE.OPENUSER | FMOD.MODE.OPENONLY | FMOD.MODE.LOOP_NORMAL, ref cs, out sound);
             if (result != FMOD.RESULT.OK || sound == null)
             {
                 Log("Failed to create sound: " + result.ToString());
