@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using ACACommon;
+using Smith;
 
 namespace ACAudioVCServer
 {

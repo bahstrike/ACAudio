@@ -34,8 +34,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SmithLib">
-      <HintPath>..\DEPLOY\SmithLib.dll</HintPath>
+    <Reference Include="SmithCore">
+      <HintPath>..\DEPLOY\SmithCore.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -88,7 +88,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y "$(SolutionDir)\DEPLOY\SmithCore.dll" "$(SolutionDir)\VOICESERVER\TestClient\SmithCore.dll"
+    <PostBuildEvent>copy /y "$(SolutionDir)\DEPLOY\SmithCore.dll" "$(SolutionDir)\VOICESERVER\SmithCore.dll"
 copy /y "$(TargetPath)" "$(SolutionDir)\VOICESERVER\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
 </Project>
