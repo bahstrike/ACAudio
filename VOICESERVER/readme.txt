@@ -22,17 +22,17 @@ RF
 trevis
 
 
-SmithLib.dll
+Smith Libraries  (SmithCore.dll, SmithAudio.dll)
 --------------------------------------------------------------------------------------------
-SmithLib.dll is a math and utilities library written by Strike (Bad Ass Hackers) for a proprietary game engine called Smith (https://smith.bah.wtf).
+Smith Libraries are a math and utilities library written by Strike (Bad Ass Hackers) for a proprietary game engine called Smith (https://smith.bah.wtf).
 
-SmithLib.dll MAY be used (as-is) in non-commercial projects:
+Smith Libraries MAY be used (as-is) in non-commercial projects:
  - The following attribution must be easily visible to the end-user within your application:  "Uses components from Smith Engine (Bad Ass Hackers)"
- - The entirety of this "SmithLib.dll" subsection must be present within your readme file or legal disclaimer.
+ - The entirety of this "Smith Libraries" subsection must be present within your readme file or legal disclaimer.
 
-You MAY NOT rename, modify, decompile, reverse engineer or sell SmithLib.dll. You must contact Bad Ass Hackers to discuss.
-You MAY NOT use SmithLib.dll in a commercial project. You must contact Bad Ass Hackers to discuss.
-You MAY NOT distribute SmithLib.dll in any fashion, unless the entirety of this "SmithLib.dll" subsection is present within your readme file or legal disclaimer.
+You MAY NOT rename, modify, decompile, reverse engineer or sell Smith Libraries. You must contact Bad Ass Hackers to discuss.
+You MAY NOT use Smith Libraries in a commercial project. You must contact Bad Ass Hackers to discuss.
+You MAY NOT distribute Smith Libraries in any fashion, unless the entirety of this "Smith Libraries" subsection is present within your readme file or legal disclaimer.
 
 
 

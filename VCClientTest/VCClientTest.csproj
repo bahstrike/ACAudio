@@ -32,9 +32,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SmithLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\DEPLOY\SmithLib.dll</HintPath>
+    <Reference Include="SmithAudio">
+      <HintPath>..\DEPLOY\SmithAudio.dll</HintPath>
+    </Reference>
+    <Reference Include="SmithCore">
+      <HintPath>..\DEPLOY\SmithCore.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -87,7 +89,8 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /y "$(SolutionDir)\DEPLOY\fmod.dll" "$(SolutionDir)\VOICESERVER\TestClient\fmod.dll"
-copy /y "$(SolutionDir)\DEPLOY\SmithLib.dll" "$(SolutionDir)\VOICESERVER\TestClient\SmithLib.dll"
+copy /y "$(SolutionDir)\DEPLOY\SmithCore.dll" "$(SolutionDir)\VOICESERVER\TestClient\SmithCore.dll"
+copy /y "$(SolutionDir)\DEPLOY\SmithAudio.dll" "$(SolutionDir)\VOICESERVER\TestClient\SmithAudio.dll"
 copy /y "$(TargetPath)" "$(SolutionDir)\VOICESERVER\TestClient\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
 </Project>

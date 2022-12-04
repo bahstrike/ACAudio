@@ -39,8 +39,11 @@
     <Reference Include="Decal.Adapter">
       <HintPath>..\Program Files (x86)\Decal 3.0\Decal.Adapter.dll</HintPath>
     </Reference>
-    <Reference Include="SmithLib">
-      <HintPath>DEPLOY\SmithLib.dll</HintPath>
+    <Reference Include="SmithAudio">
+      <HintPath>DEPLOY\SmithAudio.dll</HintPath>
+    </Reference>
+    <Reference Include="SmithCore">
+      <HintPath>DEPLOY\SmithCore.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />

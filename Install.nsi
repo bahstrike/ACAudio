@@ -53,7 +53,8 @@ Section "" CoreSection
 	File "${BUILDPATH}\ACACommon.dll"
 	File "${BUILDPATH}\ACAVoiceClient.dll"
 	File "${BUILDPATH}\fmod.dll"
-	File "${BUILDPATH}\SmithLib.dll"
+	File "${BUILDPATH}\SmithCore.dll"
+	File "${BUILDPATH}\SmithAudio.dll"
 	File "${BUILDPATH}\static.dat"
 	File "${BUILDPATH}\speaking.png"
 
@@ -107,7 +108,8 @@ Section Uninstall
 	Delete "$INSTDIR\ACACommon.dll"
 	Delete "$INSTDIR\ACAVoiceClient.dll"
 	Delete "$INSTDIR\fmod.dll"
-	Delete "$INSTDIR\SmithLib.dll"
+	Delete "$INSTDIR\SmithCore.dll"
+	Delete "$INSTDIR\SmithAudio.dll"
 	Delete "$INSTDIR\static.dat"
 	Delete "$INSTDIR\speaking.png"
 

@@ -88,6 +88,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y "$(TargetPath)" "$(SolutionDir)\VOICESERVER\$(TargetFileName)"</PostBuildEvent>
+    <PostBuildEvent>copy /y "$(SolutionDir)\DEPLOY\SmithCore.dll" "$(SolutionDir)\VOICESERVER\TestClient\SmithCore.dll"
+copy /y "$(TargetPath)" "$(SolutionDir)\VOICESERVER\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
 </Project>
