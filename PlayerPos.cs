@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Smith;
 using Decal.Adapter.Wrappers;
+using ACACommon;
 
 namespace ACAudio
 {
@@ -66,7 +67,7 @@ namespace ACAudio
 
         public static PlayerPos Create()
         {
-            Position objectPos = SmithInterop.Position(PluginCore.Instance.Player) ?? ACAudio.Position.Invalid;
+            Position objectPos = SmithInterop.Position(PluginCore.Instance.Player) ?? ACACommon.Position.Invalid;
 
             Position cameraPos;
             Mat4 cameraMat;

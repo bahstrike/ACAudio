@@ -13,6 +13,7 @@ using System.Drawing;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 
+using ACACommon;
 using ACAVoiceClient;
 
 namespace ACAudio
@@ -209,7 +210,7 @@ namespace ACAudio
                     WriteToChat("WEEE");
 
                     // the log message is intended to be copy&paste to the .ACA files
-                    Log($"pos {Position.FromObject(Player).ToString().Replace(" ", "")/*condense*/}");
+                    Log($"pos {SmithInterop.Position(Player).ToString().Replace(" ", "")/*condense*/}");
                 };
 
                 (View["Enable"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
@@ -242,7 +243,7 @@ namespace ACAudio
                 {
                     List<StaticPosition> list = LoadStaticPositions(true);
 
-                    Position? pos = Position.FromObject(Player);
+                    Position? pos = SmithInterop.Position(Player);
                     if(pos.HasValue)
                     {
                         List<uint> nearDIDs = new List<uint>();
@@ -396,7 +397,7 @@ namespace ACAudio
             if (obj == null)
                 return null;
 
-            Position? pos = Position.FromObject(obj);
+            Position? pos = SmithInterop.Position(obj);
             if (pos == null)
                 return null;
 
@@ -1403,9 +1404,6 @@ namespace ACAudio
         }
 
 
-        D3DObj TestSpeakerIcon = null;
-
-
         private uint _dynamicObjectIndex = 0;
         private void DynamicObjectsTick(double dt, PlayerPos playerPos)
         {
@@ -1790,7 +1788,7 @@ namespace ACAudio
             {
                 get
                 {
-                    return Position.FromObject(WorldObject) ?? Position.Invalid;
+                    return SmithInterop.Position(WorldObject) ?? Position.Invalid;
                 }
             }
 
@@ -2203,12 +2201,12 @@ namespace ACAudio
 
         private void FilterCore_CommandLineText(object sender, ChatParserInterceptEventArgs e)
         {
-            if (false)
+            /*if (false)
             {
 
                 //Do not execute as AC command.
                 e.Eat = true;
-            }
+            }*/
 
         }
 

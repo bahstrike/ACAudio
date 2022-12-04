@@ -152,11 +152,11 @@ namespace ACAudioVCServer
 
 
                 // check for ban / already connected / etc?
-                if (false)
+                /*if (false)
                 {
                     player.Disconnect("banned or something lol");
                     continue;
-                }
+                }*/
 
 
 

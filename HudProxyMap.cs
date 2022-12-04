@@ -6,6 +6,7 @@ using Decal.Adapter.Wrappers;
 using VirindiViewService;
 using VirindiViewService.Controls;
 using Smith;
+using ACACommon;
 
 namespace ACAudio
 {
@@ -65,7 +66,7 @@ namespace ACAudio
                 WorldObject player = pc.Player;
                 int playerID = player.Id;
 
-                Position? _playerPos = Position.FromObject(player);
+                Position? _playerPos = SmithInterop.Position(player);
                 if (!_playerPos.HasValue)
                     return;
 

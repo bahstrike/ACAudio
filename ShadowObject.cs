@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Smith;
 using Decal.Adapter.Wrappers;
+using ACACommon;
 
 namespace ACAudio
 {
@@ -53,7 +54,7 @@ namespace ACAudio
                 if (_Position.Equals(Position.Invalid) || (PluginCore.Instance.WorldTime - _Position_Timestamp) > 0.1 + TimerVariance)
                 {
                     _Position_Timestamp = PluginCore.Instance.WorldTime;
-                    _Position = Position.FromObject(Object) ?? Position.Invalid;
+                    _Position = SmithInterop.Position(Object) ?? Position.Invalid;
                 }
 
                 return _Position;

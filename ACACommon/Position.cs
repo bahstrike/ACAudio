@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using Smith;
-using Decal.Adapter.Wrappers;
 
-namespace ACAudio
+namespace ACACommon
 {
     public struct Position
     {
@@ -154,22 +153,6 @@ namespace ACAudio
             return p;
         }
 
-        public static Position? FromObject(WorldObject obj)
-        {
-            if (obj == null)
-                return null;
-
-#if true
-            return SmithInterop.Position(obj);
-#else
-            uint landblock = (uint)obj.Values(LongValueKey.Landblock);
-            if (landblock == 0)
-                return null;
-
-            return FromLocal(landblock, SmithInterop.Vector(obj.RawCoordinates()));
-#endif
-        }
-
         public static Position FromStream(ZipUtil zip, bool floats)
         {
             uint lb = zip.ReadUInt();
@@ -196,6 +179,14 @@ namespace ACAudio
                 return false;
 
             return (Local == o.Local);
+        }
+
+        public override int GetHashCode()
+        {
+            return unchecked(
+                (int)Landblock //+
+                //Local.GetHashCode()
+                );
         }
     }
 }

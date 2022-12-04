@@ -4,6 +4,7 @@ using System.Text;
 using Smith;
 using System.IO;
 using Decal.Adapter.Wrappers;
+using ACACommon;
 
 namespace ACAudio
 {

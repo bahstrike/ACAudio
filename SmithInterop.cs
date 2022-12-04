@@ -4,6 +4,7 @@ using System.Text;
 using Smith;
 using Decal.Adapter.Wrappers;
 using UtilityBelt.Lib;
+using ACACommon;
 
 namespace ACAudio
 {
@@ -31,7 +32,7 @@ namespace ACAudio
 
         public static Position Position(Frame f)
         {
-            return ACAudio.Position.FromLocal(f.landblock, (double)f.x, (double)f.y, (double)f.z);
+            return ACACommon.Position.FromLocal(f.landblock, (double)f.x, (double)f.y, (double)f.z);
         }
 
         public static void GetCameraInfo(out Position pos, out Mat4 mat)
@@ -44,6 +45,9 @@ namespace ACAudio
 
         public static Position? Position(WorldObject obj)
         {
+            if (obj == null)
+                return null;
+
             if (!PluginCore.PluginHost.Actions.Underlying.IsValidObject(obj.Id))
                 return null;
 
@@ -52,7 +56,7 @@ namespace ACAudio
             uint lb = (uint)UtilityBelt.Lib.PhysicsObject.GetLandcell_ByPointer(p);
             float[] fv = UtilityBelt.Lib.PhysicsObject.GetPosition_ByPointer(p);
 
-            return ACAudio.Position.FromLocal(lb, new Vec3((double)fv[0], (double)fv[1], (double)fv[2]));
+            return ACACommon.Position.FromLocal(lb, new Vec3((double)fv[0], (double)fv[1], (double)fv[2]));
         }
 
         // returns Vec3.Infinite if obj is invalid
