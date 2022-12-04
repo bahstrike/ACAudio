@@ -8,7 +8,10 @@ namespace ACACommon
 {
     public class Packet : ZipUtil_Stream
     {
-        private const int MAGIC = 0x0ACA6D10;
+        private const int MAGIC = 0x0ACA6D10;//never change magic unless this internal packet structure changes
+
+        public const int ProtocolVersion = 0x20000000;//update this if our messages or expected number of read/writes changes between versions
+
         private const int MAX_BYTES = 100 * 1024;// i dunno, some number of kilobytes for a single packet
 
         public const int DefaultTimeoutMsec = 1000;
@@ -37,8 +40,8 @@ namespace ACACommon
                 start = DateTime.Now;
                 for (; ; )
                 {
-                    // need 8 bytes:  magic and packet len
-                    if (client.Available >= 8)
+                    // need 16 bytes:  magic, version, messagetype and packet len
+                    if (client.Available >= 16)
                         break;
 
                     System.Threading.Thread.Sleep(1);
@@ -50,6 +53,8 @@ namespace ACACommon
                 BinaryReader br = new BinaryReader(client.GetStream());
                 if (br.ReadInt32() != MAGIC)
                     return null;
+
+                int version = br.ReadInt32();
 
                 MessageType message = (MessageType)br.ReadInt32();
 
@@ -74,6 +79,10 @@ namespace ACACommon
                 byte[] buf = br.ReadBytes(len);
 
                 if (buf.Length != len)
+                    return null;
+
+                // after we've read/skipped past the remainder of the message, check protocol version to see if we even care
+                if (version != ProtocolVersion)
                     return null;
 
                 return new Packet(message, buf);
@@ -106,6 +115,7 @@ namespace ACACommon
 
                 BinaryWriter bw = new BinaryWriter(client.GetStream());
                 bw.Write(MAGIC);
+                bw.Write(ProtocolVersion);
                 bw.Write((int)Message);
                 bw.Write(buf.Length);
                 bw.Write(buf);

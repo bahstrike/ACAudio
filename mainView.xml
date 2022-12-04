@@ -24,8 +24,8 @@
     <page label="VoiceChat">
       <control progid="DecalControls.FixedLayout" clipped="">
         <control progid="DecalControls.Choice" name="RecordDevice" left="10" top="10" width="320" height="20" />
-        <control progid="DecalControls.CheckBox" name="MicLoopback" left="10" top="40" width="120" height="20" text="Loopback" checked="True"/>
-        <control progid="DecalControls.CheckBox" name="Mic3D" left="10" top="70" width="120" height="20" text="3D" checked="False"/>
+        <control progid="DecalControls.CheckBox" name="MicLoopback" left="10" top="40" width="120" height="20" text="Loopback" checked="False"/>
+        <control progid="DecalControls.CheckBox" name="Mic3D" left="10" top="70" width="120" height="20" text="3D" checked="True"/>
       </control>
     </page>
 
