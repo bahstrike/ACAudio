@@ -11,109 +11,6 @@ namespace ACAudioVCServer
     public class ClientProcessor : WorkerThread
     {
         private ListenServer listener;
-        
-        class Player
-        {
-            private readonly TcpClient Client;
-            public readonly string AccountName;
-            public readonly string CharacterName;
-            public readonly int WeenieID;
-            public Position Position = Position.Invalid;
-
-            public Player(TcpClient _Client, string _AccountName, string _CharacterName, int _WeenieID)
-            {
-                Client = _Client;
-                AccountName = _AccountName;
-                CharacterName = _CharacterName;
-                WeenieID = _WeenieID;
-            }
-
-            private DateTime LastHeartbeat = new DateTime();
-
-            public override string ToString()
-            {
-                if(Server.ShowPlayerIPAndAccountInLogs)
-                    return $"[{IPAddress}][{AccountName}][{CharacterName}][{WeenieID.ToString("X8")}]";
-                else
-                    return $"[{CharacterName}][{WeenieID.ToString("X8")}]";
-            }
-
-            public IPAddress IPAddress
-            {
-                get
-                {
-                    return ((IPEndPoint)Client.Client.RemoteEndPoint).Address;
-                }
-            }
-
-            public bool Connected
-            {
-                get
-                {
-                    return Client.Connected;
-                }
-            }
-
-            public DateTime LastServerStatusTime = new DateTime();
-
-            public void Process()
-            {
-                // send periodic heartbeat if necessary
-                if (DateTime.Now.Subtract(LastHeartbeat).TotalMilliseconds >= Packet.HeartbeatMsec)
-                    Send(new Packet(Packet.MessageType.Heartbeat));
-            }
-
-            private StreamInfo lastStreamInfo = null;
-            public void SetCurrentStreamInfo(StreamInfo streamInfo)
-            {
-                // if incoming is invalid then bust
-                if (streamInfo == null)
-                    return;
-
-                // if same who cares
-                if (lastStreamInfo != null && lastStreamInfo.magic == streamInfo.magic)
-                    return;
-
-                // if new, lets submit info immediately
-                Packet packet = new Packet(Packet.MessageType.StreamInfo);
-
-                packet.WriteInt(streamInfo.magic);
-                packet.WriteBool(streamInfo.ulaw);//µ-law
-                packet.WriteInt(streamInfo.bitDepth);//bitdepth
-                packet.WriteInt(streamInfo.sampleRate);//8000);//11025);//22050);//44100);//sampling frequency
-
-                Send(packet);
-
-                // remember
-                lastStreamInfo = streamInfo;
-            }
-
-            public void Send(Packet p)
-            {
-                //Server.Log($"SEND {p.Message} TO {this}");
-
-                LastHeartbeat = DateTime.Now;
-                p.InternalSend(Client);
-            }
-
-            public Packet Receive(int headerTimeoutMsec = Packet.DefaultTimeoutMsec, int dataTimeoutMsec = Packet.DefaultTimeoutMsec)
-            {
-                return Packet.InternalReceive(Client, headerTimeoutMsec, dataTimeoutMsec);
-            }
-
-            // specify reason:null to skip sending a disconnect packet and just close the socket
-            public void Disconnect(string reason)
-            {
-                if (reason != null)
-                {
-                    Packet packet = new Packet(Packet.MessageType.Disconnect);
-                    packet.WriteString(reason);
-                    Send(packet);
-                }
-
-                Client.Close();
-            }
-        }
 
         private List<Player> Players = new List<Player>();
 
@@ -282,12 +179,24 @@ namespace ACAudioVCServer
                             player.Send(detailAudio);
                         else
                         {
-                            // for now, just send the packet straight back to everyone  (haxx loopback)
+                            // relay audio packet to anyone who should hear it   (implement BVH??)
                             foreach (Player player2 in Players)
                             {
                                 // dont perform loopback
                                 if (object.ReferenceEquals(player, player2))
                                     continue;
+
+                                // perform proximity logic if 3d
+                                if (speak3d)
+                                {
+                                    // skip if incompatible landblocks
+                                    if (!player.Position.IsCompatibleWith(player2.Position))
+                                        continue;
+
+                                    // skip if too far apart
+                                    if ((player.Position.Global - player2.Position.Global).Magnitude > StreamInfo.PlayerMaxDist)
+                                        continue;
+                                }
 
                                 player2.Send(detailAudio);
                             }
@@ -321,7 +230,7 @@ namespace ACAudioVCServer
                             continue;
 
                         // skip if outside of audible range
-                        if ((player.Position.Global - player2.Position.Global).Magnitude > 50/*hardcoded for now*/)
+                        if ((player.Position.Global - player2.Position.Global).Magnitude > StreamInfo.PlayerMaxDist)
                             continue;
 
                         // should be audible

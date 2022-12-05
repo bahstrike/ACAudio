@@ -11,6 +11,10 @@ namespace ACACommon
         public int bitDepth;
         public int sampleRate;
 
+        // could be incorporated to protocol but we're just sticking some common constants here
+        public const double PlayerMinDist = 15.0;
+        public const double PlayerMaxDist = 50.0;
+
         private static Random random = new Random((int)DateTime.Now.ToBinary());
 
         private StreamInfo()
