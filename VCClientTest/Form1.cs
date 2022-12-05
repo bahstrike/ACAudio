@@ -103,6 +103,8 @@ namespace VCClientTest
 
         private void timer1_Tick(object sender, EventArgs e)
         {
+            PerfTrack.Reset();
+
             using (PendingLogMessagesCrit.Lock)
             {
                 if (PendingLogMessages.Count > 0)

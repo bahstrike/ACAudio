@@ -840,6 +840,7 @@ namespace ACAVoiceClient
                 Log("MICROPHONE: END");
 
             if (CurrentRecordDevice != null && recordBuffer != null)
+                // this seems to sometimes take ~150msec on side PC with wireless headset mic.  could result in frameskips if left on main thread
                 Audio.fmod.recordStop(CurrentRecordDevice.ID);
 
             /*if (loopbackChannel != null)
