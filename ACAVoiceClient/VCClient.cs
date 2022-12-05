@@ -100,9 +100,15 @@ namespace ACAVoiceClient
 
             SentServerHandshake = false;
             lastHeartbeat = new DateTime();
+            lastSentPlayerStatusTime = new DateTime();
 
             _IsInitialized = false;
         }
+
+        private static DateTime lastSentPlayerStatusTime = new DateTime();
+        private static Position lastSentPlayerPosition = Position.Invalid;
+
+        private static bool AreThereNearbyPlayers = false;// flag to prevent sending RawAudio packets if server says nobody is around to hear them
 
         public static void Process(double dt)
         {
@@ -121,13 +127,27 @@ namespace ACAVoiceClient
             // connect to server straight away if possible, when we lost one
             MaintainServer();
 
-            // anything to receieve?
+            // anything to send/receieve?
             if (server != null)
             {
-                // send periodic heartbeat
-                if (DateTime.Now.Subtract(lastHeartbeat).TotalMilliseconds >= Packet.HeartbeatMsec)
-                    SendToServer(new Packet(Packet.MessageType.Heartbeat));
+                // check if we need to send new player status
+                if (
+                    !PlayerPosition.IsCompatibleWith(lastSentPlayerPosition) ||  // always send immediately if our landblocks have sufficiently changed
+                    (!PlayerPosition.Equals(lastSentPlayerPosition) && DateTime.Now.Subtract(lastSentPlayerStatusTime).TotalMilliseconds > 250)  // send periodically if we're moving
+                    )
+                {
 
+                    Packet p = new Packet(Packet.MessageType.ClientStatus);
+
+                    PlayerPosition.ToStream(p, true);
+
+                    SendToServer(p);
+
+
+                    lastSentPlayerStatusTime = DateTime.Now;
+                }
+
+                // try to receive stuff
                 for (; ; )
                 {
                     Packet packet = ReceiveFromServer(0);
@@ -142,6 +162,12 @@ namespace ACAVoiceClient
                         Log("We have been disconnected from server: " + reason);
                         server.Close();
                         server = null;
+                        break;
+                    }
+
+                    if(packet.Message == Packet.MessageType.ServerStatus)
+                    {
+                        AreThereNearbyPlayers = packet.ReadBool();
                     }
 
                     if (packet.Message == Packet.MessageType.DetailAudio)
@@ -189,6 +215,14 @@ namespace ACAVoiceClient
 
                         Log($"Received streaminfo: {newStreamInfo}");
                     }
+                }
+
+
+                if (server != null)
+                {
+                    // send periodic heartbeat
+                    if (DateTime.Now.Subtract(lastHeartbeat).TotalMilliseconds >= Packet.HeartbeatMsec)
+                        SendToServer(new Packet(Packet.MessageType.Heartbeat));
                 }
             }
 
@@ -269,20 +303,27 @@ namespace ACAVoiceClient
                 // uhh whatever just send the audio packet (if valid)
                 if (server != null && buf.Length > 0)
                 {
-                    Packet packet = new Packet(Packet.MessageType.RawAudio);
+                    if (Loopback || !Speak3D || AreThereNearbyPlayers)// dont send a 3d audio packet unless there are nearby players.  but allow loopback or non-3d
+                    {
+                        Packet packet = new Packet(Packet.MessageType.RawAudio);
 
-                    packet.WriteInt(currentRecordStreamInfo.magic);//embed id of known current format
-                    packet.WriteBool(Loopback);
-                    packet.WriteBool(Speak3D);
+                        packet.WriteInt(currentRecordStreamInfo.magic);//embed id of known current format
+                        packet.WriteBool(Loopback);
+                        packet.WriteBool(Speak3D);
 
-                    if (currentRecordStreamInfo.ulaw)
-                        packet.WriteBuffer(WinSound.Utils.LinearToMulaw(buf, currentRecordStreamInfo.bitDepth, 1));
+                        if (currentRecordStreamInfo.ulaw)
+                            packet.WriteBuffer(WinSound.Utils.LinearToMulaw(buf, currentRecordStreamInfo.bitDepth, 1));
+                        else
+                            packet.WriteBuffer(buf);
+
+                        SendToServer(packet);
+
+                        //Log("Sent RawAudio packet");
+                    }
                     else
-                        packet.WriteBuffer(buf);
-
-                    SendToServer(packet);
-
-                    //LogMsg("Sent packet");
+                    {
+                        //Log("Didn't send RawAudio; nobody to hear");
+                    }
                 }
             }
 
@@ -315,10 +356,11 @@ namespace ACAVoiceClient
         }
 
 
-        public static volatile bool PushToTalkEnable = false;
-        public static volatile RecordDeviceEntry CurrentRecordDevice = null;
-        public static volatile bool Loopback = false;
-        public static volatile bool Speak3D = false;
+        public static bool PushToTalkEnable = false;
+        public static RecordDeviceEntry CurrentRecordDevice = null;
+        public static bool Loopback = false;
+        public static bool Speak3D = false;
+        public static Position PlayerPosition = Position.Invalid;
 
 
         private static CritSect _CurrentStreamInfoCrit = new CritSect();

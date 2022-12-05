@@ -166,6 +166,16 @@ namespace ACACommon
             return Position.FromLocal(lb, local);
         }
 
+        public void ToStream(ZipUtil zip, bool floats)
+        {
+            zip.WriteUInt(Landblock);
+
+            if (floats)
+                zip.WriteVec3Float(Local);
+            else
+                zip.WriteVec3(Local);
+        }
+
         public override string ToString()
         {
             return $"0x{Landblock.ToString("X8")}, {Local}";

@@ -27,6 +27,8 @@ namespace ACACommon
             StreamInfo,                     // server->client       specifies the currently accepted audio format
             RawAudio,                       // client->server       anonymous audio fragment
             DetailAudio,                    // server->client       audio fragment with appropriate source information
+            ClientStatus,                   // client->server       sent often by clients to inform server where players are and whatnot
+            ServerStatus,                   // server->client       sent often by server to inform client if there are any potential listeners and whatnot
         }
 
         public readonly MessageType Message;

@@ -1324,6 +1324,7 @@ namespace ACAudio
             PerfTrack.Start("Client.Process");
             try
             {
+                // update parameters
                 VCClient.Loopback = (View["MicLoopback"] as HudCheckBox).Checked;
                 VCClient.Speak3D = (View["Mic3D"] as HudCheckBox).Checked;
 
@@ -1333,7 +1334,12 @@ namespace ACAudio
                 else
                     VCClient.CurrentRecordDevice = AvailableRecordDevices[recordDeviceIndex];
 
+                VCClient.PlayerPosition = playerPos.ObjectPos;
+
                 VCClient.PushToTalkEnable = DoesACHaveFocus() && (GetAsyncKeyState((int)' ') & 0x8000) != 0;
+
+
+                // do whatever we gotta do
                 VCClient.Process(dt);
             }
             catch(Exception ex)

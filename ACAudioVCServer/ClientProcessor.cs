@@ -18,6 +18,7 @@ namespace ACAudioVCServer
             public readonly string AccountName;
             public readonly string CharacterName;
             public readonly int WeenieID;
+            public Position Position = Position.Invalid;
 
             public Player(TcpClient _Client, string _AccountName, string _CharacterName, int _WeenieID)
             {
@@ -53,6 +54,8 @@ namespace ACAudioVCServer
                 }
             }
 
+            public DateTime LastServerStatusTime = new DateTime();
+
             public void Process()
             {
                 // send periodic heartbeat if necessary
@@ -87,6 +90,8 @@ namespace ACAudioVCServer
 
             public void Send(Packet p)
             {
+                //Server.Log($"SEND {p.Message} TO {this}");
+
                 LastHeartbeat = DateTime.Now;
                 p.InternalSend(Client);
             }
@@ -203,8 +208,6 @@ namespace ACAudioVCServer
             {
                 Player player = Players[playerIndex];
 
-                player.Process();
-
                 // lost connection?
                 if(!player.Connected)
                 {
@@ -226,6 +229,10 @@ namespace ACAudioVCServer
                     if (playerPacket == null)
                         break;
 
+
+                    //Server.Log($"RECEIVE {playerPacket.Message} FROM {player}");
+
+
                     if (playerPacket.Message == Packet.MessageType.Disconnect)
                     {
                         string reason = playerPacket.ReadString();
@@ -234,6 +241,14 @@ namespace ACAudioVCServer
                         player.Disconnect(null);//no need to send disconnect message since client will have closed their socket
                         Players.RemoveAt(playerIndex--);
                         continue;
+                    }
+
+                    if(playerPacket.Message == Packet.MessageType.ClientStatus)
+                    {
+                        player.Position = Position.FromStream(playerPacket, true);
+
+                        // update BVH
+
                     }
 
 
@@ -285,6 +300,49 @@ namespace ACAudioVCServer
                     //break;
                 }
 
+
+
+
+                // check if we should send the client some info about their surroundings
+                if(player.Position.IsValid && DateTime.Now.Subtract(player.LastServerStatusTime).TotalMilliseconds > 250)
+                {
+                    // replace with BVH
+                    List<Player> nearbyPlayers = new List<Player>();
+                    foreach(Player player2 in Players)
+                    {
+                        if (object.ReferenceEquals(player, player2))
+                            continue;
+
+                        if (!player2.Position.IsValid)
+                            continue;
+
+                        // skip if landblocks are incompatible
+                        if (!player.Position.IsCompatibleWith(player2.Position))
+                            continue;
+
+                        // skip if outside of audible range
+                        if ((player.Position.Global - player2.Position.Global).Magnitude > 50/*hardcoded for now*/)
+                            continue;
+
+                        // should be audible
+                        nearbyPlayers.Add(player2);
+
+                        break;//could keep going if we want a real list, but for now we're just sending a flag if anyone is in range
+                    }
+
+                    Packet p = new Packet(Packet.MessageType.ServerStatus);
+                    p.WriteBool(nearbyPlayers.Count > 0);
+                    player.Send(p);
+
+
+                    player.LastServerStatusTime = DateTime.Now;
+                }
+
+
+
+
+                // do other internal stuff like send heartbeat or watever
+                player.Process();
             }
         }
     }
