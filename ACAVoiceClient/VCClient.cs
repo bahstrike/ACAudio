@@ -300,29 +300,42 @@ namespace ACAVoiceClient
 
 
 
-                // uhh whatever just send the audio packet (if valid)
-                if (server != null && buf.Length > 0)
+                // only track and handle samples if we are connected anywhere
+                if (server != null)
                 {
-                    if (Loopback || !Speak3D || AreThereNearbyPlayers)// dont send a 3d audio packet unless there are nearby players.  but allow loopback or non-3d
+                    // if we got new stuff, add it
+                    if (buf.Length > 0)
+                        pendingRecordSamples.AddRange(buf);
+
+
+                    // do we have samples to send, and is it time to send an audio chunk?
+                    if (DateTime.Now.Subtract(lastSentRecordSamplesTime).TotalMilliseconds >= StreamInfo.DesiredAudioChunkMsec && pendingRecordSamples.Count > 0)
                     {
-                        Packet packet = new Packet(Packet.MessageType.RawAudio);
+                        lastSentRecordSamplesTime = DateTime.Now;//ok we're doing something with these samples now
+                        byte[] outBuf = pendingRecordSamples.ToArray();
+                        pendingRecordSamples.Clear();
 
-                        packet.WriteInt(currentRecordStreamInfo.magic);//embed id of known current format
-                        packet.WriteBool(Loopback);
-                        packet.WriteBool(Speak3D);
+                        if (Loopback || !Speak3D || AreThereNearbyPlayers)// dont send a 3d audio packet unless there are nearby players.  but allow loopback or non-3d
+                        {
+                            Packet packet = new Packet(Packet.MessageType.RawAudio);
 
-                        if (currentRecordStreamInfo.ulaw)
-                            packet.WriteBuffer(WinSound.Utils.LinearToMulaw(buf, currentRecordStreamInfo.bitDepth, 1));
+                            packet.WriteInt(currentRecordStreamInfo.magic);//embed id of known current format
+                            packet.WriteBool(Loopback);
+                            packet.WriteBool(Speak3D);
+
+                            if (currentRecordStreamInfo.ulaw)
+                                packet.WriteBuffer(WinSound.Utils.LinearToMulaw(outBuf, currentRecordStreamInfo.bitDepth, 1));
+                            else
+                                packet.WriteBuffer(outBuf);
+
+                            SendToServer(packet);
+
+                            //Log("Sent RawAudio packet");
+                        }
                         else
-                            packet.WriteBuffer(buf);
-
-                        SendToServer(packet);
-
-                        //Log("Sent RawAudio packet");
-                    }
-                    else
-                    {
-                        //Log("Didn't send RawAudio; nobody to hear");
+                        {
+                            //Log("Didn't send RawAudio; nobody to hear");
+                        }
                     }
                 }
             }
@@ -769,6 +782,9 @@ namespace ACAVoiceClient
         static DateTime recordTimestamp = new DateTime();
 
         static uint lastRecordPosition = 0;
+
+        static List<byte> pendingRecordSamples = new List<byte>();
+        static DateTime lastSentRecordSamplesTime = new DateTime();
 
         static DateTime lastHeartbeat = new DateTime();
         private  static void SendToServer(Packet p)

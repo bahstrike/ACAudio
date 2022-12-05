@@ -14,6 +14,7 @@ namespace ACACommon
         // could be incorporated to protocol but we're just sticking some common constants here
         public const double PlayerMinDist = 15.0;
         public const double PlayerMaxDist = 50.0;
+        public const int DesiredAudioChunkMsec = 100;// shrug
 
         private static Random random = new Random((int)DateTime.Now.ToBinary());
 
