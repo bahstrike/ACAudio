@@ -14,8 +14,14 @@ namespace ACAudioVCServer
         public readonly string CharacterName;
         public readonly int WeenieID;
 
-        public int AllegianceID = -1;
-        public int FellowshipID = -1;
+        public ushort AllegianceID
+        {
+            get
+            {
+                return (ushort)(WeenieID >> 16);
+            }
+        }
+        public int FellowshipID = 0;
         public Position Position = Position.Invalid;
 
         public Player(TcpClient _Client, string _AccountName, string _CharacterName, int _WeenieID)
@@ -30,7 +36,7 @@ namespace ACAudioVCServer
 
         public override string ToString()
         {
-            string str = $"[{CharacterName}][{WeenieID.ToString("X8")}][{AllegianceID.ToString("X8")}][{FellowshipID.ToString("X8")}]";
+            string str = $"[{CharacterName}][{WeenieID.ToString("X8")}][{FellowshipID.ToString("X8")}]";
 
             if (Server.ShowPlayerIPAndAccountInLogs)
                 str = $"[{IPAddress}][{AccountName}]{str}";

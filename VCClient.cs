@@ -81,8 +81,7 @@ namespace ACAudio
                 packet.WriteString("Client exit");
                 SendToServer(packet);
 
-                server.Close();
-                server = null;
+                ServerClose();
             }
 
             DestroyAllReceiveStreams();
@@ -107,8 +106,23 @@ namespace ACAudio
 
         private static DateTime lastSentPlayerStatusTime = new DateTime();
         private static Position lastSentPlayerPosition = Position.Invalid;
-        private static int lastSentPlayerAllegianceID = -1;
-        private static int lastSentPlayerFellowshipID = -1;
+        //private static short lastSentPlayerAllegianceID = -1;
+        private static int lastSentPlayerFellowshipID = 0;
+
+        // when closing socket, and ensuring gameplay flags are set for next connection to send relevant data
+        private static void ServerClose()
+        {
+            if (server != null)
+            {
+                server.Close();//probably not needed if disconnected but whatever
+                server = null;
+            }
+
+            lastSentPlayerStatusTime = new DateTime();
+            lastSentPlayerPosition = Position.Invalid;
+            //lastSentPlayerAllegianceID = -1;
+            lastSentPlayerFellowshipID = 0;
+        }
 
         private static bool _AreThereNearbyPlayers = false;// flag to prevent sending RawAudio packets if server says nobody is around to hear them
         public static bool AreThereNearbyPlayers
@@ -138,8 +152,7 @@ namespace ACAudio
             {
                 Log("Lost connection to server");
 
-                server.Close();//probably not needed if disconnected but whatever
-                server = null;
+                ServerClose();
             }
 
             // connect to server straight away if possible, when we lost one
@@ -152,7 +165,7 @@ namespace ACAudio
                 if (
                     // send immediately if our basic info has sufficiently changed
                     !PlayerPosition.IsCompatibleWith(lastSentPlayerPosition) ||
-                    PlayerAllegianceID != lastSentPlayerAllegianceID ||
+                    //PlayerAllegianceID != lastSentPlayerAllegianceID ||
                     PlayerFellowshipID != lastSentPlayerFellowshipID ||
 
                     // otherwise send periodically if our position has changed
@@ -162,7 +175,6 @@ namespace ACAudio
 
                     Packet p = new Packet(Packet.MessageType.ClientStatus);
 
-                    p.WriteInt(PlayerAllegianceID);
                     p.WriteInt(PlayerFellowshipID);
                     PlayerPosition.ToStream(p, true);
 
@@ -171,7 +183,7 @@ namespace ACAudio
 
                     lastSentPlayerStatusTime = DateTime.Now;
                     lastSentPlayerPosition = PlayerPosition;//struct, its ok: deepcopy
-                    lastSentPlayerAllegianceID = PlayerAllegianceID;
+                    //lastSentPlayerAllegiance = PlayerAllegiance;
                     lastSentPlayerFellowshipID = PlayerFellowshipID;
                 }
 
@@ -188,8 +200,7 @@ namespace ACAudio
 
                         // we're being ordered to disconnect. server will have already closed their socket. just close ours
                         Log("We have been disconnected from server: " + reason);
-                        server.Close();
-                        server = null;
+                        ServerClose();
                         break;
                     }
 
@@ -402,8 +413,14 @@ namespace ACAudio
         public static bool Loopback = false;
         public static StreamInfo.VoiceChannel SpeakChannel = StreamInfo.VoiceChannel.Proximity3D;
         public static Position PlayerPosition = Position.Invalid;
-        public static int PlayerAllegianceID = -1;
-        public static int PlayerFellowshipID = -1;
+        public static short PlayerAllegianceID
+        {
+            get
+            {
+                return (short)(WeenieID >> 16);
+            }
+        }
+        public static int PlayerFellowshipID = 0;
 
 
         private static CritSect _CurrentStreamInfoCrit = new CritSect();
@@ -789,8 +806,7 @@ namespace ACAudio
                         SendToServer(p);
                     }
 
-                    server.Close();
-                    server = null;
+                    ServerClose();
                 }
 
                 currentServerHost = ServerIP;

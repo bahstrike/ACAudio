@@ -446,7 +446,7 @@ namespace ACAudio
             }
         }
 
-        public int FellowshipID = -1;
+        public int FellowshipID = 0;
 
         private void _CharacterFilter_ChangeFellowship(object sender, ChangeFellowshipEventArgs e)
         {
@@ -1420,8 +1420,14 @@ namespace ACAudio
                     VCClient.CurrentRecordDevice = AvailableRecordDevices[recordDeviceIndex];
 
                 VCClient.PlayerPosition = playerPos.ObjectPos;
-                if(!NeedFirstLoginPlayerWeenie)// core.characterfilter.allegiance is probably dead until we finish logging in
-                    VCClient.PlayerAllegianceID = Core.CharacterFilter.Allegiance?.Id ?? -1;
+                /*if (!NeedFirstLoginPlayerWeenie)// core.characterfilter.allegiance is probably dead until we finish logging in
+                {
+                    AllegianceInfoWrapper allegianceInfo = Core.CharacterFilter.Allegiance;
+                    if (allegianceInfo != null)
+                        VCClient.PlayerAllegiance = new Allegiance(allegianceInfo.Id);
+                    else
+                        VCClient.PlayerAllegiance = Allegiance.Invalid;
+                }*/
                 VCClient.PlayerFellowshipID = FellowshipID;
 
                 VCClient.PushToTalkEnable = DoesACHaveFocus() && (GetAsyncKeyState((int)' ') & 0x8000) != 0;

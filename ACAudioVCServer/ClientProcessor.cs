@@ -142,15 +142,11 @@ namespace ACAudioVCServer
 
                     if (playerPacket.Message == Packet.MessageType.ClientStatus)
                     {
-                        int newAllegID = playerPacket.ReadInt();
                         int newFellowID = playerPacket.ReadInt();
 
-                        // just log if IDs have changed, not position lol
-                        if (newAllegID != player.AllegianceID ||
-                            newFellowID != player.FellowshipID)
-                            Server.Log($"Updating player info  allegiance:{player.AllegianceID}->{newAllegID}   fellowship:{player.FellowshipID}->{newFellowID}");
+                        if (newFellowID != player.FellowshipID)
+                            Server.Log($"Updating player fellowship {player}:{player.FellowshipID.ToString("X8")}->{newFellowID.ToString("X8")}");
 
-                        player.AllegianceID = newAllegID;
                         player.FellowshipID = newFellowID;
                         player.Position = Position.FromStream(playerPacket, true);
 
