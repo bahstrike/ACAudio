@@ -127,8 +127,6 @@ namespace ACAudio
             return cb.Checked;
         }
 
-        public static bool PluginEnable;
-
         /// <summary>
         /// This is called when the plugin is started up. This happens only once.
         /// </summary>
@@ -142,17 +140,20 @@ namespace ACAudio
             Smith.Log.ErrorCallback = _LogError;
 
 
-            using (INIFile ini = INIFile)
-                PluginEnable = ini.GetKeyString(Core.CharacterFilter.AccountName, "PluginEnable", "1") != "0";
-
             try
             {
-                if (PluginEnable && File.Exists(FinalLogFilepath))
+                if (File.Exists(FinalLogFilepath))
                     File.Delete(FinalLogFilepath);
 
                 Log("----------------------------------------------------------------------");
                 Log("                            ACAudio Startup");
                 Log("----------------------------------------------------------------------");
+
+
+                //Log("init audio");
+                if (!Audio.Init(128, dopplerscale: 0.135f))
+                    Log("Failed to initialize Audio");
+
 
 
                 //Log("Generate virindi view");
@@ -310,6 +311,49 @@ namespace ACAudio
                 debugLayout.AddControl(hudmap, (Rectangle)(fillRC.Offsetted(-fillRC.UL).Inflated(Vec2.One * -fillRC.Size.Magnitude * 0.01)));
 
 
+
+
+
+                VCClient.LogCallback = VCClientLog;
+                VCClient.GetWeeniePosition = VCClientGetWeeniePosition;
+                VCClient.CreateSpeakingIcon = VCClientCreateSpeakingIcon;
+                VCClient.DestroySpeakingIcon = VCClientDestroySpeakingIcon;
+
+
+                (View["VCServerAutoCheck"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
+                {
+                    if ((sender as HudCheckBox).Checked)
+                        (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
+                };
+
+                (View["VCServerCustomCheck"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
+                {
+                    if ((sender as HudCheckBox).Checked)
+                        (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
+                };
+
+                (View["VCServerAutoHost"] as HudStaticText).Text = Utils.DetectServerAddressViaThwargle(Core.CharacterFilter.AccountName) ?? "-failed to query-";
+
+
+                HudCombo recordDeviceCombo = View["RecordDevice"] as HudCombo;
+                recordDeviceCombo.Clear();
+
+                // safe to do without initialization
+                AvailableRecordDevices = VCClient.QueryRecordDevices();
+                int defaultIndex = -1;
+                for (int x = 0; x < AvailableRecordDevices.Length; x++)
+                {
+                    VCClient.RecordDeviceEntry rde = AvailableRecordDevices[x];
+
+                    recordDeviceCombo.AddItem(rde.Name, null);
+
+                    if ((rde.DriverState & FMOD.DRIVER_STATE.DEFAULT) != 0)
+                        defaultIndex = x;
+                }
+
+
+
+
                 using (INIFile ini = INIFile)
                 {
                     (View["Enable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "Enable", "1") != "0";
@@ -319,7 +363,39 @@ namespace ACAudio
                     (View["MusicVolume"] as HudHSlider).Position = int.Parse(ini.GetKeyString(Core.CharacterFilter.AccountName, "MusicVolume", "35"));
 
                     (View["PortalMusicEnable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "PortalMusicEnable", "1") != "0";
+
+
+                    if (ini.GetKeyString(Core.CharacterFilter.AccountName, "VCServerAutoCheck", "1") != "0")
+                    {
+                        (View["VCServerAutoCheck"] as HudCheckBox).Checked = true;
+                        (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
+                    }
+                    else
+                    {
+                        (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
+                        (View["VCServerCustomCheck"] as HudCheckBox).Checked = true;
+                    }
+
+                    (View["VCServerCustomHost"] as HudTextBox).Text = ini.GetKeyString(Core.CharacterFilter.AccountName, "VCServerCustomHost", string.Empty);
+
+
+                    string preferredMic = ini.GetKeyString(Core.CharacterFilter.AccountName, "RecordDevice", string.Empty);
+                    for (int x = 0; x < AvailableRecordDevices.Length; x++)
+                    {
+                        VCClient.RecordDeviceEntry rde = AvailableRecordDevices[x];
+
+                        if(rde.Name.Trim() == preferredMic)
+                        {
+                            defaultIndex = x;
+                            break;
+                        }
+                    }
                 }
+
+
+
+                recordDeviceCombo.Current = defaultIndex;// set microphone input
+
 
 
                 //Log("regen logos");
@@ -334,7 +410,15 @@ namespace ACAudio
                 Core.ChatBoxMessage += _ChatBoxMessage;
 
 
-                Startup_Internal();
+                Music.Init();
+
+
+                ReloadConfig();
+
+
+
+                IsPortaling = true;
+                StartPortalSong();// first time login portal deserves one
             }
             catch (Exception ex)
             {
@@ -434,54 +518,6 @@ namespace ACAudio
             ActiveSpeakingIcons.Remove(weenieID);
         }
 
-        private void Startup_Internal()
-        {
-            Shutdown_Internal();
-
-            if (!PluginEnable)
-                return;
-
-            //Log("init audio");
-            if (!Audio.Init(1000, dopplerscale: 0.135f))
-                Log("Failed to initialize Audio");
-
-            Music.Init();
-
-
-            ReloadConfig();
-
-
-            VCClient.LogCallback = VCClientLog;
-            VCClient.GetWeeniePosition = VCClientGetWeeniePosition;
-            VCClient.CreateSpeakingIcon = VCClientCreateSpeakingIcon;
-            VCClient.DestroySpeakingIcon = VCClientDestroySpeakingIcon;
-
-
-
-            HudCombo recordDeviceCombo = View["RecordDevice"] as HudCombo;
-            recordDeviceCombo.Clear();
-
-            // safe to do without initialization
-            AvailableRecordDevices = VCClient.QueryRecordDevices();
-            int defaultIndex = -1;
-            for(int x=0; x<AvailableRecordDevices.Length; x++)
-            {
-                VCClient.RecordDeviceEntry rde = AvailableRecordDevices[x];
-
-                recordDeviceCombo.AddItem(rde.Name, null);
-
-                if ((rde.DriverState & FMOD.DRIVER_STATE.DEFAULT) != 0)
-                    defaultIndex = x;
-            }
-
-            recordDeviceCombo.Current = defaultIndex;
-            
-
-
-            IsPortaling = true;
-            StartPortalSong();// first time login portal deserves one
-        }
-
         private VCClient.RecordDeviceEntry[] AvailableRecordDevices;
 
         private void ReloadConfig()
@@ -576,17 +612,15 @@ namespace ACAudio
         private bool LogOff = false;
         private void _CharacterFilter_Logoff(object sender, LogoffEventArgs e)
         {
-            if (PluginEnable)
-            {
-                if (LogOff)
-                    return;
+            if (LogOff)
+                return;
 
-                Log("LOGOFF LOL");
-                IsPortaling = true;
-                StartPortalSong();
+            Log("LOGOFF LOL");
+            IsPortaling = true;
+            StartPortalSong();
 
-                LogOff = true;
-            }
+            LogOff = true;
+
 
 
             // doesnt matter if we do another later for good measure;  when we log out then our weenie isnt good anymore so kill immediately
@@ -595,8 +629,6 @@ namespace ACAudio
 
             using (INIFile ini = INIFile)
             {
-                ini.WriteKey(Core.CharacterFilter.AccountName, "PluginEnable", (View["PluginEnable"] as HudCheckBox).Checked ? "1" : "0");
-
                 ini.WriteKey(Core.CharacterFilter.AccountName, "Enable", (View["Enable"] as HudCheckBox).Checked ? "1" : "0");
                 ini.WriteKey(Core.CharacterFilter.AccountName, "Volume", (View["Volume"] as HudHSlider).Position.ToString());
 
@@ -604,6 +636,12 @@ namespace ACAudio
                 ini.WriteKey(Core.CharacterFilter.AccountName, "MusicVolume", (View["MusicVolume"] as HudHSlider).Position.ToString());
 
                 ini.WriteKey(Core.CharacterFilter.AccountName, "PortalMusicEnable", (View["PortalMusicEnable"] as HudCheckBox).Checked ? "1" : "0");
+
+
+                ini.WriteKey(Core.CharacterFilter.AccountName, "VCServerAutoCheck", (View["VCServerAutoCheck"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey(Core.CharacterFilter.AccountName, "VCServerCustomHost", (View["VCServerCustomHost"] as HudTextBox).Text);
+
+                ini.WriteKey(Core.CharacterFilter.AccountName, "RecordDevice", VCClient.CurrentRecordDevice == null ? string.Empty : VCClient.CurrentRecordDevice.Name.Trim());
             }
         }
 
@@ -1324,6 +1362,15 @@ namespace ACAudio
             PerfTrack.Start("Client.Process");
             try
             {
+                if(VCClient.IsConnected)
+                    (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Connected   Players: {VCClient.TotalConnectedPlayers}   Nearby: {(VCClient.AreThereNearbyPlayers ? "Yes" : "No")}";
+                else
+                    (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Disconnected";
+
+                /*View["RecordDevice"].Visible = VCClient.IsConnected;
+                View["MicLoopback"].Visible = VCClient.IsConnected;
+                View["Mic3D"].Visible = VCClient.IsConnected;*/
+
                 // update parameters
                 VCClient.Loopback = (View["MicLoopback"] as HudCheckBox).Checked;
                 VCClient.Speak3D = (View["Mic3D"] as HudCheckBox).Checked;
@@ -2183,7 +2230,13 @@ namespace ACAudio
         /// </summary>
         protected override void Shutdown()
         {
-            Shutdown_Internal();
+            VCClient.Shutdown();
+            Music.Shutdown();
+            Audio.Shutdown();
+
+            SoundCache.Clear();
+
+
 
             //Log("unhook stuff");
             Core.ChatBoxMessage -= _ChatBoxMessage;
@@ -2194,15 +2247,6 @@ namespace ACAudio
             Log("----------------------------------------------------------------------");
             Log("                           ACAudio Shutdown");
             Log("----------------------------------------------------------------------");
-        }
-
-        private void Shutdown_Internal()
-        {
-            VCClient.Shutdown();
-            Music.Shutdown();
-            Audio.Shutdown();
-
-            SoundCache.Clear();
         }
 
         private void FilterCore_CommandLineText(object sender, ChatParserInterceptEventArgs e)
@@ -2244,9 +2288,6 @@ namespace ACAudio
 
         public static void Log(string ln)
         {
-            if (!PluginEnable)
-                return;
-
             using (StreamWriter logFile = File.AppendText(FinalLogFilepath))
                 logFile.WriteLine($"{DateTime.Now.ToLongTimeString()}: {ln}");
         }

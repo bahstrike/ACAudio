@@ -108,7 +108,23 @@ namespace ACAVoiceClient
         private static DateTime lastSentPlayerStatusTime = new DateTime();
         private static Position lastSentPlayerPosition = Position.Invalid;
 
-        private static bool AreThereNearbyPlayers = false;// flag to prevent sending RawAudio packets if server says nobody is around to hear them
+        private static bool _AreThereNearbyPlayers = false;// flag to prevent sending RawAudio packets if server says nobody is around to hear them
+        public static bool AreThereNearbyPlayers
+        {
+            get
+            {
+                return _AreThereNearbyPlayers;
+            }
+        }
+
+        private static int _TotalConnectedPlayers = 0;
+        public static int TotalConnectedPlayers
+        {
+            get
+            {
+                return _TotalConnectedPlayers;
+            }
+        }
 
         public static void Process(double dt)
         {
@@ -167,7 +183,8 @@ namespace ACAVoiceClient
 
                     if(packet.Message == Packet.MessageType.ServerStatus)
                     {
-                        AreThereNearbyPlayers = packet.ReadBool();
+                        _TotalConnectedPlayers = packet.ReadInt();
+                        _AreThereNearbyPlayers = packet.ReadBool();
                     }
 
                     if (packet.Message == Packet.MessageType.DetailAudio)

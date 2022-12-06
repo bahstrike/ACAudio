@@ -3,7 +3,6 @@
   <control progid="DecalControls.Notebook" name="nbMain">
     <page label="Main">
       <control progid="DecalControls.FixedLayout" clipped="">
-        <control progid="DecalControls.CheckBox" name="PluginEnable" left="10" top="10" width="140" height="20" text="Enable Plugin" checked="True"/>
         <control progid="DecalControls.PushButton" name="Defaults" left="160" top="10" width="70" height="20" text="Defaults"/>
 
         <control progid="DecalControls.CheckBox" name="Enable" left="10" top="40" width="70" height="20" text="Enable" checked="True"/>
@@ -23,9 +22,18 @@
 
     <page label="VoiceChat">
       <control progid="DecalControls.FixedLayout" clipped="">
-        <control progid="DecalControls.Choice" name="RecordDevice" left="10" top="10" width="320" height="20" />
-        <control progid="DecalControls.CheckBox" name="MicLoopback" left="10" top="40" width="120" height="20" text="Loopback" checked="False"/>
-        <control progid="DecalControls.CheckBox" name="Mic3D" left="10" top="70" width="120" height="20" text="3D" checked="True"/>
+        <control progid="DecalControls.CheckBox" name="VCServerAutoCheck" left="10" top="10" width="80" height="20" text="Automatic" checked="True"/>
+        <control progid="DecalControls.StaticText" name="VCServerAutoHost" left="110" top="10" width="120" height="18" text=""/>
+        
+        <control progid="DecalControls.CheckBox" name="VCServerCustomCheck" left="10" top="30" width="80" height="20" text="Custom" checked="False"/>
+        <control progid="DecalControls.Edit" name="VCServerCustomHost" left="110" top="30" width="120" height="18" text=""/>
+        
+        <control progid="DecalControls.StaticText" name="VoiceChatStatus" left="10" top="50" width="400" height="18" text=""/>
+        
+        
+        <control progid="DecalControls.Choice" name="RecordDevice" left="10" top="90" width="320" height="20" />
+        <control progid="DecalControls.CheckBox" name="MicLoopback" left="10" top="110" width="120" height="20" text="Loopback" checked="False"/>
+        <control progid="DecalControls.CheckBox" name="Mic3D" left="10" top="130" width="120" height="20" text="3D" checked="True"/>
       </control>
     </page>
 

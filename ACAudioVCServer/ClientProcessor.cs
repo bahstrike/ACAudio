@@ -240,6 +240,7 @@ namespace ACAudioVCServer
                     }
 
                     Packet p = new Packet(Packet.MessageType.ServerStatus);
+                    p.WriteInt(Players.Count);
                     p.WriteBool(nearbyPlayers.Count > 0);
                     player.Send(p);
 
