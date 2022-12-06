@@ -446,7 +446,7 @@ namespace ACAudio
             }
         }
 
-        public int FellowshipID = 0;
+        public int FellowshipID = StreamInfo.InvalidFellowshipID;
 
         private void _CharacterFilter_ChangeFellowship(object sender, ChangeFellowshipEventArgs e)
         {

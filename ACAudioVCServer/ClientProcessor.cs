@@ -145,7 +145,7 @@ namespace ACAudioVCServer
                         int newFellowID = playerPacket.ReadInt();
 
                         if (newFellowID != player.FellowshipID)
-                            Server.Log($"Updating player fellowship {player}:{player.FellowshipID.ToString("X8")}->{newFellowID.ToString("X8")}");
+                            Server.Log($"Updating player fellowship {player}         changing to: {newFellowID.ToString("X8")}");
 
                         player.FellowshipID = newFellowID;
                         player.Position = Position.FromStream(playerPacket, true);
@@ -211,6 +211,10 @@ namespace ACAudioVCServer
                                 }
                                 else if (speakChannel == StreamInfo.VoiceChannel.Fellowship)
                                 {
+                                    // must skip if either fellowship ID is invalid (two invalids dont make a match)
+                                    if (player.FellowshipID == StreamInfo.InvalidFellowshipID || player2.FellowshipID == StreamInfo.InvalidFellowshipID)
+                                        continue;
+
                                     if (player.FellowshipID != player2.FellowshipID)
                                         continue;
                                 }

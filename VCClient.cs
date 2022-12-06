@@ -107,7 +107,7 @@ namespace ACAudio
         private static DateTime lastSentPlayerStatusTime = new DateTime();
         private static Position lastSentPlayerPosition = Position.Invalid;
         //private static short lastSentPlayerAllegianceID = -1;
-        private static int lastSentPlayerFellowshipID = 0;
+        private static int lastSentPlayerFellowshipID = StreamInfo.InvalidFellowshipID;
 
         // when closing socket, and ensuring gameplay flags are set for next connection to send relevant data
         private static void ServerClose()
@@ -121,7 +121,7 @@ namespace ACAudio
             lastSentPlayerStatusTime = new DateTime();
             lastSentPlayerPosition = Position.Invalid;
             //lastSentPlayerAllegianceID = -1;
-            lastSentPlayerFellowshipID = 0;
+            lastSentPlayerFellowshipID = StreamInfo.InvalidFellowshipID;
         }
 
         private static bool _AreThereNearbyPlayers = false;// flag to prevent sending RawAudio packets if server says nobody is around to hear them
@@ -355,7 +355,12 @@ namespace ACAudio
                         byte[] outBuf = pendingRecordSamples.ToArray();
                         pendingRecordSamples.Clear();
 
-                        if (Loopback || (SpeakChannel != StreamInfo.VoiceChannel.Proximity3D || AreThereNearbyPlayers))// dont send a 3d audio packet unless there are nearby players.  but allow loopback or non-3d
+                        if (
+                            Loopback ||
+                            (SpeakChannel == StreamInfo.VoiceChannel.Proximity3D && AreThereNearbyPlayers) || // dont send a 3d audio packet unless there are nearby players.  but allow loopback or non-3d
+                            (SpeakChannel == StreamInfo.VoiceChannel.Fellowship && PlayerFellowshipID != StreamInfo.InvalidFellowshipID) || //just make sure not invalid?
+                            (SpeakChannel == StreamInfo.VoiceChannel.Allegiance /*&& anything to check?*/)
+                            )
                         {
                             Packet packet = new Packet(Packet.MessageType.RawAudio);
 
@@ -420,7 +425,7 @@ namespace ACAudio
                 return (short)(WeenieID >> 16);
             }
         }
-        public static int PlayerFellowshipID = 0;
+        public static int PlayerFellowshipID = StreamInfo.InvalidFellowshipID;
 
 
         private static CritSect _CurrentStreamInfoCrit = new CritSect();

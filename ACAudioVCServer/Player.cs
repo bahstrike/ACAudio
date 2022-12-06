@@ -21,7 +21,7 @@ namespace ACAudioVCServer
                 return (ushort)(WeenieID >> 16);
             }
         }
-        public int FellowshipID = 0;
+        public int FellowshipID = StreamInfo.InvalidFellowshipID;
         public Position Position = Position.Invalid;
 
         public Player(TcpClient _Client, string _AccountName, string _CharacterName, int _WeenieID)
