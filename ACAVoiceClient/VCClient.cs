@@ -21,8 +21,8 @@ namespace ACAVoiceClient
         }
 
         private static volatile TcpClient server = null;// ehh maybe needs more sync protections than "volatile" but we just prototyping for now
-        private static string ServerIP = null;
-        private static int ServerPort = 0;
+        public static string ServerIP = null;
+        //public static int ServerPort = DefaultServerPort;
         public const int DefaultServerPort = 42420;
 
         private static string AccountName = null;
@@ -45,7 +45,9 @@ namespace ACAVoiceClient
         public static SpeakingIconDelegate CreateSpeakingIcon = null;
         public static SpeakingIconDelegate DestroySpeakingIcon = null;
 
-        public static void Init(string _AccountName, string _CharacterName, int _WeenieID, string _ServerIP, int _ServerPort=DefaultServerPort)
+        private static volatile int CurrentInitNumber = 0;
+
+        public static void Init(string _AccountName, string _CharacterName, int _WeenieID)
         {
             Shutdown();
 
@@ -60,19 +62,18 @@ namespace ACAVoiceClient
             CharacterName = _CharacterName;
             WeenieID = _WeenieID;
 
-            ServerIP = _ServerIP;
-            ServerPort = _ServerPort;
-
             _IsInitialized = true;
-
-
-
-            // connect to server straight away
-            MaintainServer();
         }
 
         public static void Shutdown()
         {
+            CurrentInitNumber++;// invalidate previous connect number in case a connect attempt callback completes during our downtime
+
+
+            // wait until any possible pending connect attempt has completed
+            //while (WaitingForConnect)
+            //System.Threading.Thread.Sleep(10);
+
             // issue disconnect
             if (server != null)
             {
@@ -89,9 +90,8 @@ namespace ACAVoiceClient
             CloseRecordDevice();
 
 
-
             ServerIP = null;
-            ServerPort = 0;
+            //ServerPort = 0;
 
             AccountName = null;
             CharacterName = null;
@@ -358,7 +358,6 @@ namespace ACAVoiceClient
             }
 
         }
-
 
         public static bool IsConnected
         {
@@ -718,19 +717,28 @@ namespace ACAVoiceClient
                 stream.Dispose();
         }
 
-        private static volatile bool WaitingForConnect = false;
+        private static volatile bool _WaitingForConnect = false;
+        public static bool WaitingForConnect
+        {
+            get
+            {
+                return _WaitingForConnect;
+            }
+        }
+
         private static void ConnectCallback(IAsyncResult ar)
         {
             if (!ar.IsCompleted)
                 return;
 
-            TcpClient newServer = ar.AsyncState as TcpClient;
+            ConnectAttempt ca = ar.AsyncState as ConnectAttempt;
             try
             {
-                newServer.EndConnect(ar);
+                ca.Server.EndConnect(ar);
 
                 // looks OK
-                server = newServer;
+                if(ca.InitNumber == CurrentInitNumber)
+                    server = ca.Server;
             }
             catch
             {
@@ -738,13 +746,50 @@ namespace ACAVoiceClient
             }
 
             // regardless.. this attempt is done
-            WaitingForConnect = false;
+            if (ca.InitNumber == CurrentInitNumber)
+                _WaitingForConnect = false;
         }
+
+        private static string currentServerHost = null;
+        //private static int currentServerPort = 0;
 
         private static bool SentServerHandshake = false;
         private static DateTime lastServerConnectAttempt = new DateTime();
         static void MaintainServer()
         {
+            // if we dont have player info, bail now
+            if (string.IsNullOrEmpty(AccountName) || string.IsNullOrEmpty(CharacterName) /*|| WeenieID == 0*/)
+                return;
+
+
+            // if desired target server has changed, kill previous connection
+            if(currentServerHost != ServerIP /*|| currentServerPort != ServerPort*/)
+            {
+                // if we were previously connected, kill it
+                if(server != null)
+                {
+                    if (server.Connected)
+                    {
+                        Packet p = new Packet(Packet.MessageType.Disconnect);
+                        p.WriteString("Changing servers");
+                        SendToServer(p);
+                    }
+
+                    server.Close();
+                    server = null;
+                }
+
+                currentServerHost = ServerIP;
+                //currentServerPort = ServerPort;
+
+
+                // try new connection immediately
+                lastServerConnectAttempt = new DateTime();
+                _WaitingForConnect = false;
+            }
+
+
+
             if (WaitingForConnect)
             {
                 lastServerConnectAttempt = DateTime.Now;//refresh timer while our attempt is active  (ensures our next attempt will only start from desired value w/o tcp timeout)
@@ -783,16 +828,27 @@ namespace ACAVoiceClient
             {
                 TcpClient tryServer = new TcpClient();
 
-                Log($"Attempting connection to {ServerIP}:{ServerPort}");
+                Log($"Attempting connection to {ServerIP}");//:{ServerPort}");
 
-                WaitingForConnect = true;
-                tryServer.BeginConnect(ServerIP, ServerPort, ConnectCallback, tryServer);
+                ConnectAttempt ca = new ConnectAttempt();
+                ca.InitNumber = CurrentInitNumber;
+                ca.Server = tryServer;
+
+                if (tryServer.BeginConnect(ServerIP, DefaultServerPort/*ServerPort*/, ConnectCallback, ca) != null)
+                    _WaitingForConnect = true;
             }
             catch
             {
                 server = null;
             }
 
+        }
+
+
+        private class ConnectAttempt
+        {
+            public int InitNumber;
+            public TcpClient Server;
         }
 
 

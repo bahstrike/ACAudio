@@ -17,7 +17,7 @@ namespace ACAVoiceClient
             }
         }
 
-        public static string DetectServerAddressViaThwargle(string accountName)
+        /*public static string DetectServerAddressViaThwargle(string accountName)
         {
             try
             {
@@ -103,7 +103,7 @@ namespace ACAVoiceClient
             }
 
             return null;
-        }
+        }*/
 
     }
 }

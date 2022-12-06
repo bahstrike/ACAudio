@@ -127,6 +127,8 @@ namespace ACAudio
             return cb.Checked;
         }
 
+        public static string ACServerHost = null;
+
         /// <summary>
         /// This is called when the plugin is started up. This happens only once.
         /// </summary>
@@ -139,7 +141,6 @@ namespace ACAudio
             Smith.Log.WarningCallback = _LogWarning;
             Smith.Log.ErrorCallback = _LogError;
 
-
             try
             {
                 if (File.Exists(FinalLogFilepath))
@@ -148,6 +149,19 @@ namespace ACAudio
                 Log("----------------------------------------------------------------------");
                 Log("                            ACAudio Startup");
                 Log("----------------------------------------------------------------------");
+
+
+                string[] args = Environment.GetCommandLineArgs();
+                for(int x=0; x<args.Length-1; x++)
+                {
+                    if (args[x].Equals("-h", StringComparison.InvariantCultureIgnoreCase))
+                    { 
+                        ACServerHost = args[x + 1];
+                        break;
+                    }
+                }
+
+
 
 
                 //Log("init audio");
@@ -332,7 +346,7 @@ namespace ACAudio
                         (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
                 };
 
-                (View["VCServerAutoHost"] as HudStaticText).Text = Utils.DetectServerAddressViaThwargle(Core.CharacterFilter.AccountName) ?? "-failed to query-";
+                (View["VCServerAutoHost"] as HudStaticText).Text = ACServerHost ?? "-failed to query-";
 
 
                 HudCombo recordDeviceCombo = View["RecordDevice"] as HudCombo;
@@ -1362,8 +1376,18 @@ namespace ACAudio
             PerfTrack.Start("Client.Process");
             try
             {
+                if ((View["VCServerAutoCheck"] as HudCheckBox).Checked)
+                    VCClient.ServerIP = (View["VCServerAutoHost"] as HudStaticText).Text;
+                else
+                    VCClient.ServerIP = (View["VCServerCustomHost"] as HudTextBox).Text;
+                
+
                 if(VCClient.IsConnected)
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Connected   Players: {VCClient.TotalConnectedPlayers}   Nearby: {(VCClient.AreThereNearbyPlayers ? "Yes" : "No")}";
+                else if(VCClient.WaitingForConnect)
+                    (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Attempting to connect to {VCClient.ServerIP}...";
+                /*else if(VCClient.SentServerHandshake)
+                    (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Logging in...";*/
                 else
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Disconnected";
 
@@ -2108,8 +2132,8 @@ namespace ACAudio
                     NeedFirstLoginPlayerWeenie = false;
 
 
-                    Log("TRYING TO CONNECT TO VOICECHAT");
-                    VCClient.Init(Core.CharacterFilter.AccountName, Player.Name, Player.Id, "192.168.5.2");
+                    Log("INITIALIZE VOICECHAT");
+                    VCClient.Init(Core.CharacterFilter.AccountName, Player.Name, Player.Id);
                 }
             }
         }
