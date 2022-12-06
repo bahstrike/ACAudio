@@ -106,7 +106,7 @@ namespace ACAudio
 
         private static DateTime lastSentPlayerStatusTime = new DateTime();
         private static Position lastSentPlayerPosition = Position.Invalid;
-        //private static short lastSentPlayerAllegianceID = -1;
+        private static int lastSentPlayerAllegianceID = StreamInfo.InvalidAllegianceID;
         private static int lastSentPlayerFellowshipID = StreamInfo.InvalidFellowshipID;
 
         // when closing socket, and ensuring gameplay flags are set for next connection to send relevant data
@@ -120,7 +120,7 @@ namespace ACAudio
 
             lastSentPlayerStatusTime = new DateTime();
             lastSentPlayerPosition = Position.Invalid;
-            //lastSentPlayerAllegianceID = -1;
+            lastSentPlayerAllegianceID = StreamInfo.InvalidAllegianceID;
             lastSentPlayerFellowshipID = StreamInfo.InvalidFellowshipID;
         }
 
@@ -165,7 +165,7 @@ namespace ACAudio
                 if (
                     // send immediately if our basic info has sufficiently changed
                     !PlayerPosition.IsCompatibleWith(lastSentPlayerPosition) ||
-                    //PlayerAllegianceID != lastSentPlayerAllegianceID ||
+                    PlayerAllegianceID != lastSentPlayerAllegianceID ||
                     PlayerFellowshipID != lastSentPlayerFellowshipID ||
 
                     // otherwise send periodically if our position has changed
@@ -175,6 +175,7 @@ namespace ACAudio
 
                     Packet p = new Packet(Packet.MessageType.ClientStatus);
 
+                    p.WriteInt(PlayerAllegianceID);
                     p.WriteInt(PlayerFellowshipID);
                     PlayerPosition.ToStream(p, true);
 
@@ -183,7 +184,7 @@ namespace ACAudio
 
                     lastSentPlayerStatusTime = DateTime.Now;
                     lastSentPlayerPosition = PlayerPosition;//struct, its ok: deepcopy
-                    //lastSentPlayerAllegiance = PlayerAllegiance;
+                    lastSentPlayerAllegianceID = PlayerAllegianceID;
                     lastSentPlayerFellowshipID = PlayerFellowshipID;
                 }
 
@@ -418,13 +419,7 @@ namespace ACAudio
         public static bool Loopback = false;
         public static StreamInfo.VoiceChannel SpeakChannel = StreamInfo.VoiceChannel.Proximity3D;
         public static Position PlayerPosition = Position.Invalid;
-        public static short PlayerAllegianceID
-        {
-            get
-            {
-                return (short)(WeenieID >> 16);
-            }
-        }
+        public static int PlayerAllegianceID = StreamInfo.InvalidAllegianceID;
         public static int PlayerFellowshipID = StreamInfo.InvalidFellowshipID;
 
 

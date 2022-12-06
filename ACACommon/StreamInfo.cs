@@ -16,6 +16,7 @@ namespace ACACommon
         public const double PlayerMaxDist = 50.0;
         public const int DesiredAudioChunkMsec = 100;// shrug
 
+        public const int InvalidAllegianceID = 0;
         public const int InvalidFellowshipID = 0;
 
         public enum VoiceChannel

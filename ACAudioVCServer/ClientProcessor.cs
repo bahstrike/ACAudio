@@ -142,11 +142,16 @@ namespace ACAudioVCServer
 
                     if (playerPacket.Message == Packet.MessageType.ClientStatus)
                     {
+                        int newAllegID = playerPacket.ReadInt();
                         int newFellowID = playerPacket.ReadInt();
+
+                        if (newAllegID != player.AllegianceID)
+                            Server.Log($"Updating player allegiance {player}         changing to: {newAllegID.ToString("X8")}");
 
                         if (newFellowID != player.FellowshipID)
                             Server.Log($"Updating player fellowship {player}         changing to: {newFellowID.ToString("X8")}");
 
+                        player.AllegianceID = newAllegID;
                         player.FellowshipID = newFellowID;
                         player.Position = Position.FromStream(playerPacket, true);
 
@@ -206,6 +211,10 @@ namespace ACAudioVCServer
                                 else
                                     if (speakChannel == StreamInfo.VoiceChannel.Allegiance)
                                 {
+                                    // must skip if either allegiance ID is invalid (two invalids dont make a match)
+                                    if (player.AllegianceID == StreamInfo.InvalidAllegianceID || player2.AllegianceID == StreamInfo.InvalidAllegianceID)
+                                        continue;
+
                                     if (player.AllegianceID != player2.AllegianceID)
                                         continue;
                                 }

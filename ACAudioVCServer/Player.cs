@@ -14,13 +14,7 @@ namespace ACAudioVCServer
         public readonly string CharacterName;
         public readonly int WeenieID;
 
-        public ushort AllegianceID
-        {
-            get
-            {
-                return (ushort)(WeenieID >> 16);
-            }
-        }
+        public int AllegianceID = StreamInfo.InvalidAllegianceID;
         public int FellowshipID = StreamInfo.InvalidFellowshipID;
         public Position Position = Position.Invalid;
 
@@ -36,7 +30,7 @@ namespace ACAudioVCServer
 
         public override string ToString()
         {
-            string str = $"[{CharacterName}][{WeenieID.ToString("X8")}][{FellowshipID.ToString("X8")}]";
+            string str = $"[{CharacterName}][{WeenieID.ToString("X8")}][{AllegianceID.ToString("X8")}][{FellowshipID.ToString("X8")}]";
 
             if (Server.ShowPlayerIPAndAccountInLogs)
                 str = $"[{IPAddress}][{AccountName}]{str}";

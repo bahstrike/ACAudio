@@ -214,7 +214,7 @@ namespace ACAudio
                         "flags:{obj.Values(LongValueKey.Flags)}  type:{obj.Values(LongValueKey.Type)}   behavior:{obj.Values(LongValueKey.Behavior)}  category:{obj.Values(LongValueKey.Category)}   longkeys:{longkeys}"
                         */
 
-                        Log($"class:{obj.ObjectClass}   id:{obj.Id}   name:{obj.Object.Name}   stringkeys:{{{stringkeys}}}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.Object.RawCoordinates())}");
+                        Log($"class:{obj.ObjectClass}   id:{obj.Id}   name:{obj.Object.Name}  stringkeys:{{{stringkeys}}}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.Object.RawCoordinates())}");
                     }
 
                 };
@@ -468,6 +468,9 @@ namespace ACAudio
 
         private ShadowObject GetByWorldObject(WorldObject wo)
         {
+            if (wo == null)
+                return null;
+
             return GetByWorldObject(wo.Id);
         }
 
@@ -1428,6 +1431,7 @@ namespace ACAudio
                     else
                         VCClient.PlayerAllegiance = Allegiance.Invalid;
                 }*/
+                VCClient.PlayerAllegianceID = GetByWorldObject(Player)?.Values(LongValueKey.Monarch) ?? StreamInfo.InvalidAllegianceID;
                 VCClient.PlayerFellowshipID = FellowshipID;
 
                 VCClient.PushToTalkEnable = DoesACHaveFocus() && (GetAsyncKeyState((int)' ') & 0x8000) != 0;
