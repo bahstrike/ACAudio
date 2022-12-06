@@ -2338,10 +2338,21 @@ namespace ACAudio
             }
         }
 
+        private static CritSect LogCrit = new CritSect();
         public static void Log(string ln)
         {
-            using (StreamWriter logFile = File.AppendText(FinalLogFilepath))
-                logFile.WriteLine($"{DateTime.Now.ToLongTimeString()}: {ln}");
+            using (LogCrit.Lock)
+            {
+                try
+                {
+                    using (StreamWriter logFile = File.AppendText(FinalLogFilepath))
+                        logFile.WriteLine($"{DateTime.Now.ToLongTimeString()}: {ln}");
+                }
+                catch
+                {
+
+                }
+            }
         }
 
 
