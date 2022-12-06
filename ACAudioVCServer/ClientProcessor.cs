@@ -101,12 +101,12 @@ namespace ACAudioVCServer
 
 
             // process players
-            for (int playerIndex=0; playerIndex<Players.Count; playerIndex++)
+            for (int playerIndex = 0; playerIndex < Players.Count; playerIndex++)
             {
                 Player player = Players[playerIndex];
 
                 // lost connection?
-                if(!player.Connected)
+                if (!player.Connected)
                 {
                     Server.Log($"Lost connection to {player}");
                     player.Disconnect(null);// no need to send disconnected message since connection was lost
@@ -140,8 +140,18 @@ namespace ACAudioVCServer
                         continue;
                     }
 
-                    if(playerPacket.Message == Packet.MessageType.ClientStatus)
+                    if (playerPacket.Message == Packet.MessageType.ClientStatus)
                     {
+                        int newAllegID = playerPacket.ReadInt();
+                        int newFellowID = playerPacket.ReadInt();
+
+                        // just log if IDs have changed, not position lol
+                        if (newAllegID != player.AllegianceID ||
+                            newFellowID != player.FellowshipID)
+                            Server.Log($"Updating player info  allegiance:{player.AllegianceID}->{newAllegID}   fellowship:{player.FellowshipID}->{newFellowID}");
+
+                        player.AllegianceID = newAllegID;
+                        player.FellowshipID = newFellowID;
                         player.Position = Position.FromStream(playerPacket, true);
 
                         // update BVH
@@ -153,7 +163,7 @@ namespace ACAudioVCServer
                     {
                         int magic = playerPacket.ReadInt();
                         bool loopback = playerPacket.ReadBool();
-                        bool speak3d = playerPacket.ReadBool();
+                        StreamInfo.VoiceChannel speakChannel = (StreamInfo.VoiceChannel)playerPacket.ReadInt();
 
                         // if magic doesnt match current server streaminfo (wrong format) then just ignore the rest of this packet
                         if (magic != streamInfo.magic)
@@ -169,7 +179,7 @@ namespace ACAudioVCServer
                         // reconstruct a detailed audio packet that includes the appropriate source information for redistribution
                         Packet detailAudio = new Packet(Packet.MessageType.DetailAudio);
                         detailAudio.WriteInt(streamInfo.magic);
-                        detailAudio.WriteBool(speak3d);
+                        detailAudio.WriteInt((int)speakChannel);
                         detailAudio.WriteInt(player.WeenieID);
                         detailAudio.WriteBuffer(buf);
 
@@ -187,7 +197,7 @@ namespace ACAudioVCServer
                                     continue;
 
                                 // perform proximity logic if 3d
-                                if (speak3d)
+                                if (speakChannel == StreamInfo.VoiceChannel.Proximity3D)
                                 {
                                     // skip if incompatible landblocks
                                     if (!player.Position.IsCompatibleWith(player2.Position))
@@ -197,6 +207,20 @@ namespace ACAudioVCServer
                                     if ((player.Position.Global - player2.Position.Global).Magnitude > StreamInfo.PlayerMaxDist)
                                         continue;
                                 }
+                                else
+                                    if (speakChannel == StreamInfo.VoiceChannel.Allegiance)
+                                {
+                                    if (player.AllegianceID != player2.AllegianceID)
+                                        continue;
+                                }
+                                else if (speakChannel == StreamInfo.VoiceChannel.Fellowship)
+                                {
+                                    if (player.FellowshipID != player2.FellowshipID)
+                                        continue;
+                                }
+                                else
+                                    // unrecognized channel type
+                                    continue;
 
                                 player2.Send(detailAudio);
                             }
@@ -213,11 +237,11 @@ namespace ACAudioVCServer
 
 
                 // check if we should send the client some info about their surroundings
-                if(player.Position.IsValid && DateTime.Now.Subtract(player.LastServerStatusTime).TotalMilliseconds > 250)
+                if (player.Position.IsValid && DateTime.Now.Subtract(player.LastServerStatusTime).TotalMilliseconds > 250)
                 {
                     // replace with BVH
                     List<Player> nearbyPlayers = new List<Player>();
-                    foreach(Player player2 in Players)
+                    foreach (Player player2 in Players)
                     {
                         if (object.ReferenceEquals(player, player2))
                             continue;

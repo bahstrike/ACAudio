@@ -33,7 +33,7 @@
         
         <control progid="DecalControls.Choice" name="RecordDevice" left="10" top="90" width="320" height="20" />
         <control progid="DecalControls.CheckBox" name="MicLoopback" left="10" top="110" width="120" height="20" text="Loopback" checked="False"/>
-        <control progid="DecalControls.CheckBox" name="Mic3D" left="10" top="130" width="120" height="20" text="3D" checked="True"/>
+        <control progid="DecalControls.Choice" name="MicChannel" left="10" top="130" width="120" height="20"/>
       </control>
     </page>
 

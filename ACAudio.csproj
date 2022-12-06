@@ -63,6 +63,8 @@
     <Compile Include="ShadowObject.cs" />
     <Compile Include="SmithInterop.cs" />
     <Compile Include="UtilityBelt.cs" />
+    <Compile Include="Utils.cs" />
+    <Compile Include="VCClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="mainView.xml">
@@ -87,10 +89,6 @@
     <ProjectReference Include="ACACommon\ACACommon.csproj">
       <Project>{47b5de5e-7019-484d-b107-e99bb7d5c8be}</Project>
       <Name>ACACommon</Name>
-    </ProjectReference>
-    <ProjectReference Include="ACAVoiceClient\ACAVoiceClient.csproj">
-      <Project>{a03dca0d-da6c-4df1-bf6e-de1ebfd775c1}</Project>
-      <Name>ACAVoiceClient</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

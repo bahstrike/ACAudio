@@ -16,6 +16,13 @@ namespace ACACommon
         public const double PlayerMaxDist = 50.0;
         public const int DesiredAudioChunkMsec = 100;// shrug
 
+        public enum VoiceChannel
+        {
+            Proximity3D,
+            Allegiance,
+            Fellowship
+        }
+
         private static Random random = new Random((int)DateTime.Now.ToBinary());
 
         private StreamInfo()

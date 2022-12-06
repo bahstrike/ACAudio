@@ -1,114 +1,12 @@
-﻿using System;
+﻿// THIS FILE FOR µ-law compression IS FROM:  https://www.codeproject.com/Articles/482735/TCP-Audio-Streamer-and-Player-Voice-Chat-over-IP
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Xml;
 
-namespace ACAVoiceClient
-{
-    public static class Utils
-    {
-        private class SortNewest : IComparer<DateTime>
-        {
-            public int Compare(DateTime x, DateTime y)
-            {
-                return y.CompareTo(x);
-            }
-        }
-
-        /*public static string DetectServerAddressViaThwargle(string accountName)
-        {
-            try
-            {
-                string thwargPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ThwargLauncher");
-                if (!Directory.Exists(thwargPath))
-                    return null;
-
-                // check "Running" logs for most recent that matches provided account name
-                SortedList<DateTime, string> newestGames = new SortedList<DateTime, string>(new SortNewest());
-                foreach (string gameFile in Directory.GetFiles(Path.Combine(thwargPath, "Running"), "*.txt"))
-                {
-                    DateTime fileTime = new FileInfo(gameFile).LastWriteTime;
-
-                    // skip if not today
-                    if (DateTime.Now.Subtract(fileTime).TotalDays > 1)
-                        continue;
-
-                    newestGames.Add(fileTime, gameFile);
-                }
-
-                // scan most recent files for matching account name and try to scrape server name
-                string serverName = null;
-                foreach (DateTime fileTime in newestGames.Keys)
-                {
-                    string gameFile = newestGames[fileTime];
-
-                    using (StreamReader sr = File.OpenText(gameFile))
-                    {
-                        string fileAccountName = null;
-                        string fileServerName = null;
-                        while (!sr.EndOfStream && (fileAccountName == null || fileServerName == null))
-                        {
-                            string ln = sr.ReadLine();
-                            if (ln.StartsWith("AccountName:"))
-                                fileAccountName = ln.Substring(ln.IndexOf(':') + 1);
-                            else if (ln.StartsWith("ServerName:"))
-                                fileServerName = ln.Substring(ln.IndexOf(':') + 1);
-                        }
-
-                        if (fileAccountName == null || fileAccountName != accountName)
-                            continue;
-
-                        serverName = fileServerName;
-                        break;
-                    }
-                }
-
-                if (string.IsNullOrEmpty(serverName))
-                    return null;
-
-                // now we need to load all the server XMLs and try to find a match that includes a host address
-                foreach (string xmlFile in Directory.GetFiles(Path.Combine(thwargPath, "Servers"), "*.xml"))
-                {
-                    XmlDocument xmlDoc = new XmlDocument();
-                    xmlDoc.Load(xmlFile);
-
-                    foreach (XmlNode serverNode in xmlDoc.DocumentElement.SelectNodes("ServerItem"))
-                    {
-                        XmlNode node;
-
-                        node = serverNode.SelectSingleNode("name");
-                        if (node == null || node.InnerText != serverName)
-                            continue;
-
-                        node = serverNode.SelectSingleNode("connect_string");
-                        if (node == null)
-                            continue;
-
-                        // strip port out
-                        string connectString = node.InnerText;
-                        int i = connectString.IndexOf(':');
-                        if (i != -1)
-                            connectString = connectString.Substring(0, i);
-
-                        // we found it
-                        return connectString;
-                    }
-                }
-            }
-            catch
-            {
-                // it failed for some dumb reason. oh well.
-            }
-
-            return null;
-        }*/
-
-    }
-}
-
-// THE WinSound NAMESPACE IS FROM: https://www.codeproject.com/Articles/482735/TCP-Audio-Streamer-and-Player-Voice-Chat-over-IP
 namespace WinSound
 {
     /// <summary>

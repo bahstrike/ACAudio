@@ -50,7 +50,6 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /y "$(TargetPath)" "$(SolutionDir)\DEPLOY\$(TargetFileName)"
-copy /y "$(TargetPath)" "$(SolutionDir)\VOICESERVER\$(TargetFileName)"
-copy /y "$(TargetPath)" "$(SolutionDir)\VOICESERVER\TestClient\$(TargetFileName)"</PostBuildEvent>
+copy /y "$(TargetPath)" "$(SolutionDir)\VOICESERVER\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
 </Project>

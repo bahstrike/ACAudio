@@ -14,7 +14,6 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 
 using ACACommon;
-using ACAVoiceClient;
 
 namespace ACAudio
 {
@@ -366,6 +365,12 @@ namespace ACAudio
                 }
 
 
+                HudCombo channelCombo = (View["MicChannel"] as HudCombo);
+                channelCombo.Clear();
+                channelCombo.AddItem("Proximity 3D", null);
+                channelCombo.AddItem("Allegiance", null);
+                channelCombo.AddItem("Fellowship", null);
+                channelCombo.Current = 0;
 
 
                 using (INIFile ini = INIFile)
@@ -422,6 +427,7 @@ namespace ACAudio
                 Core.WorldFilter.ReleaseObject += _ReleaseObject;
                 Core.CharacterFilter.Logoff += _CharacterFilter_Logoff;
                 Core.ChatBoxMessage += _ChatBoxMessage;
+                Core.CharacterFilter.ChangeFellowship += _CharacterFilter_ChangeFellowship;
 
 
                 Music.Init();
@@ -438,6 +444,13 @@ namespace ACAudio
             {
                 Log($"Startup exception: {ex.Message}");
             }
+        }
+
+        public int FellowshipID = -1;
+
+        private void _CharacterFilter_ChangeFellowship(object sender, ChangeFellowshipEventArgs e)
+        {
+            FellowshipID = e.Id;
         }
 
         bool ForcePerfDump = false;
@@ -1397,7 +1410,8 @@ namespace ACAudio
 
                 // update parameters
                 VCClient.Loopback = (View["MicLoopback"] as HudCheckBox).Checked;
-                VCClient.Speak3D = (View["Mic3D"] as HudCheckBox).Checked;
+                //VCClient.Speak3D = (View["Mic3D"] as HudCheckBox).Checked;
+                VCClient.SpeakChannel = (StreamInfo.VoiceChannel)(View["MicChannel"] as HudCombo).Current;
 
                 int recordDeviceIndex = (View["RecordDevice"] as HudCombo).Current;
                 if (recordDeviceIndex < 0 || recordDeviceIndex >= AvailableRecordDevices.Length)
@@ -1406,6 +1420,9 @@ namespace ACAudio
                     VCClient.CurrentRecordDevice = AvailableRecordDevices[recordDeviceIndex];
 
                 VCClient.PlayerPosition = playerPos.ObjectPos;
+                if(!NeedFirstLoginPlayerWeenie)// core.characterfilter.allegiance is probably dead until we finish logging in
+                    VCClient.PlayerAllegianceID = Core.CharacterFilter.Allegiance?.Id ?? -1;
+                VCClient.PlayerFellowshipID = FellowshipID;
 
                 VCClient.PushToTalkEnable = DoesACHaveFocus() && (GetAsyncKeyState((int)' ') & 0x8000) != 0;
 
@@ -2265,6 +2282,7 @@ namespace ACAudio
             //Log("unhook stuff");
             Core.ChatBoxMessage -= _ChatBoxMessage;
             Core.CharacterFilter.Logoff -= _CharacterFilter_Logoff;
+            Core.CharacterFilter.ChangeFellowship -= _CharacterFilter_ChangeFellowship;
             Core.RenderFrame -= _Process;
 
 

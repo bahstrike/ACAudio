@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using ACACommon;
 using Smith;
 
-namespace ACAVoiceClient
+namespace ACAudio
 {
     public static class VCClient
     {
@@ -107,6 +107,8 @@ namespace ACAVoiceClient
 
         private static DateTime lastSentPlayerStatusTime = new DateTime();
         private static Position lastSentPlayerPosition = Position.Invalid;
+        private static int lastSentPlayerAllegianceID = -1;
+        private static int lastSentPlayerFellowshipID = -1;
 
         private static bool _AreThereNearbyPlayers = false;// flag to prevent sending RawAudio packets if server says nobody is around to hear them
         public static bool AreThereNearbyPlayers
@@ -148,19 +150,29 @@ namespace ACAVoiceClient
             {
                 // check if we need to send new player status
                 if (
-                    !PlayerPosition.IsCompatibleWith(lastSentPlayerPosition) ||  // always send immediately if our landblocks have sufficiently changed
+                    // send immediately if our basic info has sufficiently changed
+                    !PlayerPosition.IsCompatibleWith(lastSentPlayerPosition) ||
+                    PlayerAllegianceID != lastSentPlayerAllegianceID ||
+                    PlayerFellowshipID != lastSentPlayerFellowshipID ||
+
+                    // otherwise send periodically if our position has changed
                     (!PlayerPosition.Equals(lastSentPlayerPosition) && DateTime.Now.Subtract(lastSentPlayerStatusTime).TotalMilliseconds > 250)  // send periodically if we're moving
                     )
                 {
 
                     Packet p = new Packet(Packet.MessageType.ClientStatus);
 
+                    p.WriteInt(PlayerAllegianceID);
+                    p.WriteInt(PlayerFellowshipID);
                     PlayerPosition.ToStream(p, true);
 
                     SendToServer(p);
 
 
                     lastSentPlayerStatusTime = DateTime.Now;
+                    lastSentPlayerPosition = PlayerPosition;//struct, its ok: deepcopy
+                    lastSentPlayerAllegianceID = PlayerAllegianceID;
+                    lastSentPlayerFellowshipID = PlayerFellowshipID;
                 }
 
                 // try to receive stuff
@@ -193,7 +205,7 @@ namespace ACAVoiceClient
 
                         ReceiveStreamID id = new ReceiveStreamID();
                         id.StreamInfoMagic = packet.ReadInt();
-                        id.Speak3D = packet.ReadBool();
+                        id.Channel = (StreamInfo.VoiceChannel)packet.ReadInt();
                         id.WeenieID = packet.ReadInt();
 
 
@@ -205,7 +217,7 @@ namespace ACAVoiceClient
                             foreach (ReceiveStreamID checkID in ReceiveStreams.Keys)
                                 if (checkID.WeenieID == id.WeenieID && 
                                     (checkID.StreamInfoMagic != id.StreamInfoMagic ||
-                                     checkID.Speak3D != id.Speak3D)
+                                     checkID.Channel != id.Channel)
                                     )
                                     destroyStreams.Add(checkID);
 
@@ -332,13 +344,13 @@ namespace ACAVoiceClient
                         byte[] outBuf = pendingRecordSamples.ToArray();
                         pendingRecordSamples.Clear();
 
-                        if (Loopback || !Speak3D || AreThereNearbyPlayers)// dont send a 3d audio packet unless there are nearby players.  but allow loopback or non-3d
+                        if (Loopback || (SpeakChannel != StreamInfo.VoiceChannel.Proximity3D || AreThereNearbyPlayers))// dont send a 3d audio packet unless there are nearby players.  but allow loopback or non-3d
                         {
                             Packet packet = new Packet(Packet.MessageType.RawAudio);
 
                             packet.WriteInt(currentRecordStreamInfo.magic);//embed id of known current format
                             packet.WriteBool(Loopback);
-                            packet.WriteBool(Speak3D);
+                            packet.WriteInt((int)SpeakChannel);
 
                             if (currentRecordStreamInfo.ulaw)
                                 packet.WriteBuffer(WinSound.Utils.LinearToMulaw(outBuf, currentRecordStreamInfo.bitDepth, 1));
@@ -347,11 +359,11 @@ namespace ACAVoiceClient
 
                             SendToServer(packet);
 
-                            //Log("Sent RawAudio packet");
+                            Log("Sent RawAudio packet");
                         }
                         else
                         {
-                            //Log("Didn't send RawAudio; nobody to hear");
+                            Log("Didn't send RawAudio; nobody to hear");
                         }
                     }
                 }
@@ -388,8 +400,10 @@ namespace ACAVoiceClient
         public static bool PushToTalkEnable = false;
         public static RecordDeviceEntry CurrentRecordDevice = null;
         public static bool Loopback = false;
-        public static bool Speak3D = false;
+        public static StreamInfo.VoiceChannel SpeakChannel = StreamInfo.VoiceChannel.Proximity3D;
         public static Position PlayerPosition = Position.Invalid;
+        public static int PlayerAllegianceID = -1;
+        public static int PlayerFellowshipID = -1;
 
 
         private static CritSect _CurrentStreamInfoCrit = new CritSect();
@@ -510,7 +524,7 @@ namespace ACAVoiceClient
                     wantDestroy = true;
 
                 // if 3d positional, keep updating position
-                if (Channel != null && ID.Speak3D)
+                if (Channel != null && ID.Channel == StreamInfo.VoiceChannel.Proximity3D)
                 {
                     Vec3? pos = null;
 
@@ -564,13 +578,13 @@ namespace ACAVoiceClient
 
                         //LogMsg("Create/play receive stream");
 
-                        Stream = CreatePlaybackStream(StreamInfo, ID.Speak3D, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
+                        Stream = CreatePlaybackStream(StreamInfo, ID.Channel == StreamInfo.VoiceChannel.Proximity3D, ClientBufferMsec/*playback delay*/, ClientPacketMsec/*match client's mic sampling frequency / expected packet size?*/, ID_Unmanaged);
 
                         Stream.set3DMinMaxDistance((float)StreamInfo.PlayerMinDist, (float)StreamInfo.PlayerMaxDist);//5.0f, 35.0f);
 
                         // playing with smith audio so the master volume can work (when alt-tabbed out).. could be risky given the "smartness" acaudio does with channels. need to incorporate properly.
                         // technically we should pause to ensure position (and maybe other) properties are set first.. but since stream will be silence until PCM sample callback, then Process should have enough time to sync info
-                        Channel = Audio.PlaySound(Stream, ID.Speak3D ? Audio.DimensionMode._3DPositional : Audio.DimensionMode._2D, true);
+                        Channel = Audio.PlaySound(Stream, ID.Channel == StreamInfo.VoiceChannel.Proximity3D ? Audio.DimensionMode._3DPositional : Audio.DimensionMode._2D, true);
 
                         // maybe wait until pcm callback flags as being called for first time
                         //if (VCClient.CreateSpeakingIcon != null)
@@ -635,7 +649,7 @@ namespace ACAVoiceClient
         public struct ReceiveStreamID
         {
             public int StreamInfoMagic;
-            public bool Speak3D;
+            public StreamInfo.VoiceChannel Channel;
             public int WeenieID;
 
             public override string ToString()
