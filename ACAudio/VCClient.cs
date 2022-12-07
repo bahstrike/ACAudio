@@ -264,8 +264,8 @@ namespace ACAudio
                     // send periodic heartbeat
                     if (DateTime.Now.Subtract(lastHeartbeat).TotalMilliseconds >= Packet.HeartbeatMsec)
                         SendToServer(new Packet(Packet.MessageType.Heartbeat));
+                    }
                 }
-            }
 
 
             // process receive streams
