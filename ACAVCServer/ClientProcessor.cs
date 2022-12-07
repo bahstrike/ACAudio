@@ -7,9 +7,9 @@ using System.Net.Sockets;
 using ACACommon;
 using Smith;
 
-namespace ACAudioVCServer
+namespace ACAVCServer
 {
-    public class ClientProcessor : WorkerThread
+    internal class ClientProcessor : WorkerThread
     {
         private ListenServer listener;
 

@@ -7,7 +7,7 @@ using System.Net;
 using ACACommon;
 using Smith;
 
-namespace ACAudioVCServer
+namespace ACAVCServer
 {
     public static class Server
     {

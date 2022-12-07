@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACAudioVCServer", "ACAudioV
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACACommon", "ACACommon\ACACommon.csproj", "{47B5DE5E-7019-484D-B107-E99BB7D5C8BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACAVCServer", "ACAVCServer\ACAVCServer.csproj", "{222990B1-0238-4CCC-BC87-1A1041AF28CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{47B5DE5E-7019-484D-B107-E99BB7D5C8BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{47B5DE5E-7019-484D-B107-E99BB7D5C8BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{47B5DE5E-7019-484D-B107-E99BB7D5C8BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{222990B1-0238-4CCC-BC87-1A1041AF28CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{222990B1-0238-4CCC-BC87-1A1041AF28CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{222990B1-0238-4CCC-BC87-1A1041AF28CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{222990B1-0238-4CCC-BC87-1A1041AF28CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

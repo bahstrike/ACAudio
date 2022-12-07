@@ -10,9 +10,9 @@ using System.Net.Sockets;
 using ACACommon;
 using Smith;
 
-namespace ACAudioVCServer
+namespace ACAVCServer
 {
-    public class ListenServer : WorkerThread
+    internal class ListenServer : WorkerThread
     {
         public readonly IPAddress IPAddress;
         public readonly int Port;

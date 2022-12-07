@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using ACACommon;
+using ACAVCServer;
 using Smith;
 
 namespace ACAudioVCServer
