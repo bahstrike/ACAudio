@@ -72,7 +72,7 @@ namespace ACACommon
                 MessageType message = (MessageType)br.ReadInt32();
 
                 int len = br.ReadInt32();
-                if (len <= 0 || len > MAX_BYTES)
+                if (len < 0 || len > MAX_BYTES)
                     return null;
 
 
