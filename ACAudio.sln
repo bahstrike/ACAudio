@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.1913
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACAudio", "ACAudio.csproj", "{DCCF58A6-A37A-4FEA-ADCC-488CE2D51883}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACAudio", "ACAudio/ACAudio.csproj", "{DCCF58A6-A37A-4FEA-ADCC-488CE2D51883}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACAudioVCServer", "ACAudioVCServer\ACAudioVCServer.csproj", "{8CA2F1D2-7403-47AB-A555-75969EB8AACA}"
 EndProject

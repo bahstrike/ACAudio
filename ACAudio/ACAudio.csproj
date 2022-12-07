@@ -37,19 +37,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Decal.Adapter">
-      <HintPath>..\Program Files (x86)\Decal 3.0\Decal.Adapter.dll</HintPath>
+      <HintPath>..\..\Program Files (x86)\Decal 3.0\Decal.Adapter.dll</HintPath>
     </Reference>
     <Reference Include="SmithAudio">
-      <HintPath>DEPLOY\SmithAudio.dll</HintPath>
+      <HintPath>..\DEPLOY\SmithAudio.dll</HintPath>
     </Reference>
     <Reference Include="SmithCore">
-      <HintPath>DEPLOY\SmithCore.dll</HintPath>
+      <HintPath>..\DEPLOY\SmithCore.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
     <Reference Include="VirindiViewService">
-      <HintPath>..\Games\VirindiPlugins\VirindiViewService\VirindiViewService.dll</HintPath>
+      <HintPath>..\..\Games\VirindiPlugins\VirindiViewService\VirindiViewService.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -86,7 +86,7 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="ACACommon\ACACommon.csproj">
+    <ProjectReference Include="..\ACACommon\ACACommon.csproj">
       <Project>{47b5de5e-7019-484d-b107-e99bb7d5c8be}</Project>
       <Name>ACACommon</Name>
     </ProjectReference>
