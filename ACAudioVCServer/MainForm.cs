@@ -86,7 +86,61 @@ namespace ACAudioVCServer
 
 
             UpdateStreamInfo();//in case we dont have a indexchanged or something
+
+
+
+
+            Player[] players = Server.GetPlayers();
+
+            // remove players that no longer exist
+            for (int x = 0; x < playersList.Items.Count; x++)
+            {
+                Player player = playersList.Items[x] as Player;
+
+                bool exist = false;
+                foreach (Player p2 in players)
+                    if (player.AccountName == p2.AccountName &&
+                        player.CharacterName == p2.CharacterName)
+                    {
+                        exist = true;
+                        break;
+                    }
+
+                if (!exist)
+                    playersList.Items.RemoveAt(x--);
+            }
+
+            // add players we dont have
+            foreach(Player player in players)
+            {
+                bool exist = false;
+                foreach(Player p2 in playersList.Items)
+                    if(player.AccountName == p2.AccountName &&
+                        player.CharacterName == p2.CharacterName)
+                    {
+                        exist = true;
+                        break;
+                    }
+
+                if (!exist)
+                    playersList.Items.Add(player);
+            }
+
+            playerHeadingLabel.Text = $"Connected Players: {playersList.Items.Count}";
+
+
+
+            sentBytes += Server.PacketsSentBytes;
+            Server.PacketsSentBytes = 0;
+
+            receivedBytes += Server.PacketsReceivedBytes;
+            Server.PacketsReceivedBytes = 0;
+
+            generalInfo.Text = $"TotalConnectAttempts:{Server.IncomingConnectionsCount}   PacketsSent:{Server.PacketsSentCount} ({sentBytes/1024}kb)  PacketsReceived:{Server.PacketsReceivedCount} ({receivedBytes/1024}kb)";
         }
+
+        ulong receivedBytes = 0;
+        ulong sentBytes = 0;
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {

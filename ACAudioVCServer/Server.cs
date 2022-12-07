@@ -19,6 +19,12 @@ namespace ACAudioVCServer
 
         public static volatile bool ShowPlayerIPAndAccountInLogs = false;
 
+        public static volatile int IncomingConnectionsCount = 0;
+        public static volatile int PacketsReceivedCount = 0;
+        public static volatile uint PacketsReceivedBytes = 0;//should be reset to 0 by whoever is scraping the value to prevent overflow
+        public static volatile int PacketsSentCount = 0;
+        public static volatile uint PacketsSentBytes = 0;//should be reset to 0 by whoever is scraping the value to prevent overflow
+
         public static void Log(string s)
         {
             if (LogCallback != null)
@@ -50,6 +56,12 @@ namespace ACAudioVCServer
                 clientProcessor.Stop();
                 clientProcessor = null;
             }
+
+            IncomingConnectionsCount = 0;
+            PacketsReceivedCount = 0;
+            PacketsReceivedBytes = 0;
+            PacketsSentCount = 0;
+            PacketsSentBytes = 0;
         }
 
         private static CritSect _CurrentStreamInfoCrit = new CritSect();
@@ -73,6 +85,14 @@ namespace ACAudioVCServer
                     _CurrentStreamInfo = value;
                 }
             }
+        }
+
+        public static Player[] GetPlayers()
+        {
+            if (clientProcessor == null)
+                return new Player[0];
+
+            return clientProcessor.GetPlayers();
         }
     }
 }

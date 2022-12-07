@@ -36,6 +36,9 @@
             this.sampleRateCombo = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.bitDepthCombo = new System.Windows.Forms.ComboBox();
+            this.playersList = new System.Windows.Forms.ListBox();
+            this.playerHeadingLabel = new System.Windows.Forms.Label();
+            this.generalInfo = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -45,9 +48,9 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.logLB.FormattingEnabled = true;
-            this.logLB.Location = new System.Drawing.Point(12, 12);
+            this.logLB.Location = new System.Drawing.Point(12, 25);
             this.logLB.Name = "logLB";
-            this.logLB.Size = new System.Drawing.Size(621, 498);
+            this.logLB.Size = new System.Drawing.Size(621, 485);
             this.logLB.TabIndex = 0;
             // 
             // timer1
@@ -65,7 +68,7 @@
             this.groupBox1.Controls.Add(this.bitDepthCombo);
             this.groupBox1.Location = new System.Drawing.Point(639, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(234, 220);
+            this.groupBox1.Size = new System.Drawing.Size(234, 152);
             this.groupBox1.TabIndex = 1;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Stream Info";
@@ -120,11 +123,43 @@
             this.bitDepthCombo.Size = new System.Drawing.Size(121, 21);
             this.bitDepthCombo.TabIndex = 0;
             // 
+            // playersList
+            // 
+            this.playersList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.playersList.FormattingEnabled = true;
+            this.playersList.Location = new System.Drawing.Point(639, 264);
+            this.playersList.Name = "playersList";
+            this.playersList.Size = new System.Drawing.Size(234, 238);
+            this.playersList.TabIndex = 2;
+            // 
+            // playerHeadingLabel
+            // 
+            this.playerHeadingLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.playerHeadingLabel.AutoSize = true;
+            this.playerHeadingLabel.Location = new System.Drawing.Point(639, 248);
+            this.playerHeadingLabel.Name = "playerHeadingLabel";
+            this.playerHeadingLabel.Size = new System.Drawing.Size(35, 13);
+            this.playerHeadingLabel.TabIndex = 3;
+            this.playerHeadingLabel.Text = "label3";
+            // 
+            // generalInfo
+            // 
+            this.generalInfo.AutoSize = true;
+            this.generalInfo.Location = new System.Drawing.Point(12, 9);
+            this.generalInfo.Name = "generalInfo";
+            this.generalInfo.Size = new System.Drawing.Size(35, 13);
+            this.generalInfo.TabIndex = 4;
+            this.generalInfo.Text = "label3";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(885, 513);
+            this.Controls.Add(this.generalInfo);
+            this.Controls.Add(this.playerHeadingLabel);
+            this.Controls.Add(this.playersList);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.logLB);
             this.Name = "MainForm";
@@ -134,6 +169,7 @@
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -146,6 +182,9 @@
         private System.Windows.Forms.ComboBox bitDepthCombo;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ComboBox sampleRateCombo;
+        private System.Windows.Forms.ListBox playersList;
+        private System.Windows.Forms.Label playerHeadingLabel;
+        private System.Windows.Forms.Label generalInfo;
     }
 }
 

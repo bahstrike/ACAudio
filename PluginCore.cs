@@ -450,7 +450,36 @@ namespace ACAudio
 
         private void _CharacterFilter_ChangeFellowship(object sender, ChangeFellowshipEventArgs e)
         {
-            FellowshipID = e.Id;
+            Log($"FELLOWSHIP MESSAGE:    type:{e.Type}   id:{e.Id.ToString("X8")}");
+
+            int? targetFellowship = null;
+
+            switch(e.Type)
+            {
+                case FellowshipEventType.Recruit:
+                    // if recruiting a player, the ID is just weenieID of the player recruited. we dont need that. we'll get a Create message when we join one
+                    break;
+
+                case FellowshipEventType.Create:
+                    targetFellowship = e.Id;// we're in this one now
+                    break;
+
+                case FellowshipEventType.Disband:
+                    targetFellowship = e.Id;// should be 0.. same as InvalidFellowshipID
+                    break;
+
+                case FellowshipEventType.Quit:
+                case FellowshipEventType.Dismiss:
+                    // if it was us, then clear our target fellowship
+                    if (e.Id == Player.Id)
+                        targetFellowship = StreamInfo.InvalidFellowshipID;
+
+                    break;
+            }
+            
+            // assign new value if we have one
+            if(targetFellowship.HasValue)
+                FellowshipID = targetFellowship.Value;
         }
 
         bool ForcePerfDump = false;

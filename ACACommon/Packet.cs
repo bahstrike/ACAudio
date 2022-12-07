@@ -19,6 +19,16 @@ namespace ACACommon
 
         public const int HeartbeatMsec = 1000;
 
+        // determined upon read or send
+        private int _FinalSizeBytes = 0;
+        public int FinalSizeBytes
+        {
+            get
+            {
+                return _FinalSizeBytes;
+            }
+        }
+
         public enum MessageType
         {
             Heartbeat,                      // any                  no info; just a keep-alive if nothing else has been sent  (so lost sockets can be detected)
@@ -88,7 +98,9 @@ namespace ACACommon
                 if (version != ProtocolVersion)
                     return null;
 
-                return new Packet(message, buf);
+                Packet p = new Packet(message, buf);
+                p._FinalSizeBytes = 16 + buf.Length;
+                return p;
             }
             catch
             {
@@ -126,6 +138,7 @@ namespace ACACommon
                 bw.Flush();
 
                 //client.GetStream().Flush();// supposedly does nothing for network stream
+                _FinalSizeBytes = 16 + buf.Length;
             }
             catch
             {

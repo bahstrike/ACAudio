@@ -69,6 +69,8 @@ namespace ACAudioVCServer
                     Server.Log($"Listening on {IPAddress}:{Port}");
                 }
 
+
+                Server.IncomingConnectionsCount++;
                     
                 TcpClient client = listener.AcceptTcpClient();
                 client.NoDelay = true;

@@ -94,11 +94,21 @@ namespace ACAudioVCServer
 
             LastHeartbeat = DateTime.Now;
             p.InternalSend(Client);
+
+            Server.PacketsSentCount++;
+            Server.PacketsSentBytes += (uint)p.FinalSizeBytes;// requires Send before FinalSizeBytes is valid
         }
 
         public Packet Receive(int headerTimeoutMsec = Packet.DefaultTimeoutMsec, int dataTimeoutMsec = Packet.DefaultTimeoutMsec)
         {
-            return Packet.InternalReceive(Client, headerTimeoutMsec, dataTimeoutMsec);
+            Packet p = Packet.InternalReceive(Client, headerTimeoutMsec, dataTimeoutMsec);
+            if (p != null)
+            {
+                Server.PacketsReceivedCount++;
+                Server.PacketsReceivedBytes += (uint)p.FinalSizeBytes;
+            }
+
+            return p;
         }
 
         // specify reason:null to skip sending a disconnect packet and just close the socket
