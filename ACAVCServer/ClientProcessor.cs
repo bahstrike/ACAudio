@@ -186,6 +186,8 @@ namespace ACAVCServer
                         int magic = playerPacket.ReadInt();
                         bool loopback = playerPacket.ReadBool();
                         StreamInfo.VoiceChannel speakChannel = (StreamInfo.VoiceChannel)playerPacket.ReadInt();
+                        if (speakChannel == StreamInfo.VoiceChannel.Invalid)
+                            continue;
 
                         // if magic doesnt match current server streaminfo (wrong format) then just ignore the rest of this packet
                         if (magic != streamInfo.magic)

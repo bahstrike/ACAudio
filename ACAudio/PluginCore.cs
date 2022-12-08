@@ -7,6 +7,7 @@ using System.Reflection;
 using Smith;
 using Decal.Adapter;
 using Decal.Adapter.Wrappers;
+using VirindiHotkeySystem;
 using VirindiViewService.Controls;
 using System.Runtime.InteropServices;
 using System.Drawing;
@@ -19,7 +20,7 @@ namespace ACAudio
 {
     [WireUpBaseEvents]
     [FriendlyName(PluginName)]
-    public class PluginCore : PluginBase
+    public class PluginCore : Decal.Adapter.PluginBase
     {
         public const string PluginName = "ACAudio";//needs to match namespace or "embedded resources" wont work
 
@@ -151,10 +152,10 @@ namespace ACAudio
 
 
                 string[] args = Environment.GetCommandLineArgs();
-                for(int x=0; x<args.Length-1; x++)
+                for (int x = 0; x < args.Length - 1; x++)
                 {
                     if (args[x].Equals("-h", StringComparison.InvariantCultureIgnoreCase))
-                    { 
+                    {
                         ACServerHost = args[x + 1];
                         break;
                     }
@@ -198,9 +199,9 @@ namespace ACAudio
                         string stringkeys = string.Empty;
                         foreach (int i in obj.StringKeys)
                             stringkeys += $"{(StringValueKey)i}=\"{obj.Values((StringValueKey)i)}\", ";
-                        
+
                         string longkeys = string.Empty;
-                        foreach(int i in obj.LongKeys)
+                        foreach (int i in obj.LongKeys)
                             longkeys += $"{(LongValueKey)i}={obj.Values((LongValueKey)i)}, ";
 
                         /*
@@ -235,10 +236,10 @@ namespace ACAudio
                 View["Reload"].Hit += delegate (object sender, EventArgs e)
                 {
                     // kill ambients; let reloaded config generate them again
-                    foreach(Ambient amb in ActiveAmbients)
+                    foreach (Ambient amb in ActiveAmbients)
                         amb.Stop();
                     ActiveAmbients.Clear();
-                    
+
                     ReloadConfig();
                 };
 
@@ -258,20 +259,20 @@ namespace ACAudio
                     List<StaticPosition> list = LoadStaticPositions(true);
 
                     Position? pos = SmithInterop.Position(Player);
-                    if(pos.HasValue)
+                    if (pos.HasValue)
                     {
                         List<uint> nearDIDs = new List<uint>();
 
                         double nearestDist = MathLib.Infinity;
                         uint nearestDid = 0;
 
-                        foreach(StaticPosition sp in list)
+                        foreach (StaticPosition sp in list)
                         {
                             if (!sp.Position.IsCompatibleWith(pos.Value))
                                 continue;
 
                             double dist = (sp.Position.Global - pos.Value.Global).Magnitude;
-                            if(dist < nearestDist)
+                            if (dist < nearestDist)
                             {
                                 nearestDist = dist;
                                 nearestDid = sp.ID;
@@ -286,7 +287,7 @@ namespace ACAudio
 
 
                         string nearbytxt = string.Empty;
-                        for(int x=0; x<nearDIDs.Count; x++)
+                        for (int x = 0; x < nearDIDs.Count; x++)
                         {
                             // we'll list nearest one seperately
                             if (nearDIDs[x] == nearestDid)
@@ -326,7 +327,7 @@ namespace ACAudio
 
 
 
-
+#region VoiceChat stuff
                 VCClient.LogCallback = VCClientLog;
                 VCClient.GetWeeniePosition = VCClientGetWeeniePosition;
                 VCClient.CreateSpeakingIcon = VCClientCreateSpeakingIcon;
@@ -403,7 +404,7 @@ namespace ACAudio
                     {
                         VCClient.RecordDeviceEntry rde = AvailableRecordDevices[x];
 
-                        if(rde.Name.Trim() == preferredMic)
+                        if (rde.Name.Trim() == preferredMic)
                         {
                             defaultIndex = x;
                             break;
@@ -414,7 +415,7 @@ namespace ACAudio
 
 
                 recordDeviceCombo.Current = defaultIndex;// set microphone input
-
+#endregion
 
 
                 //Log("regen logos");
@@ -454,7 +455,7 @@ namespace ACAudio
 
             int? targetFellowship = null;
 
-            switch(e.Type)
+            switch (e.Type)
             {
                 case FellowshipEventType.Recruit:
                     // if recruiting a player, the ID is just weenieID of the player recruited. we dont need that. we'll get a Create message when we join one
@@ -476,9 +477,9 @@ namespace ACAudio
 
                     break;
             }
-            
+
             // assign new value if we have one
-            if(targetFellowship.HasValue)
+            if (targetFellowship.HasValue)
                 FellowshipID = targetFellowship.Value;
         }
 
@@ -521,7 +522,7 @@ namespace ACAudio
             //Log($"CHAT: {e.Text}");
 
             Config.SoundSource snd = Config.FindSoundSourceText(e.Text);
-            if(snd != null)
+            if (snd != null)
             {
                 // we have no position data.. its a 2d effect
                 Log($"wanna play something from text: {e.Text}");
@@ -661,7 +662,7 @@ namespace ACAudio
             }
             finally
             {
-                if(zip != null)
+                if (zip != null)
                     zip.Close();
             }
 
@@ -702,6 +703,9 @@ namespace ACAudio
 
                 ini.WriteKey(Core.CharacterFilter.AccountName, "RecordDevice", VCClient.CurrentRecordDevice == null ? string.Empty : VCClient.CurrentRecordDevice.Name.Trim());
             }
+
+
+            //VHotkeySystem.InstanceReal.RemoveHotkey(Hotkey_PTT_P);
         }
 
         public WorldObject Player
@@ -737,7 +741,7 @@ namespace ACAudio
         {
             get
             {
-                if(LoginCompleteTimestamp == 0)
+                if (LoginCompleteTimestamp == 0)
                 {
                     //Log("logincompletetimestamp is 0 so the answer is no");
                     return 0.0;
@@ -811,7 +815,7 @@ namespace ACAudio
                 return;
 
             QueryIdAttempt q;
-            if(!queryAttempts.TryGetValue(obj.Id, out q))
+            if (!queryAttempts.TryGetValue(obj.Id, out q))
             {
                 q = new QueryIdAttempt();
                 queryAttempts.Add(obj.Id, q);
@@ -839,11 +843,6 @@ namespace ACAudio
             q.tries++;
             q.lastTryWorldTime = WorldTime;
         }
-
-
-        // maybe remove if we use decal/virindi hotkey system
-        [DllImport("User32.dll")]
-        public static extern short GetAsyncKeyState(int vKey);
 
 
         double sayStuff = 0.0;
@@ -1185,7 +1184,7 @@ namespace ACAudio
 
                 }
 
-                if(discardReason == null)
+                if (discardReason == null)
                 {
                     // cull incompatible dungeon id
                     if (!playerPos.Position(a.Source).IsCompatibleWith(a.Position))
@@ -1217,10 +1216,10 @@ namespace ACAudio
                 }
 
 
-                if(discardReason == null)
+                if (discardReason == null)
                 {
                     ObjectAmbient oa = a as ObjectAmbient;
-                    if(oa != null)
+                    if (oa != null)
                     {
                         WorldObject wo = oa.WorldObject;
                         if (wo == null)
@@ -1302,7 +1301,7 @@ namespace ACAudio
                         maxDistAdjust = 0.5;
                     }
 
-                    foreach(Ambient a in clusterAmbients)
+                    foreach (Ambient a in clusterAmbients)
                     {
                         a.VolScale = volAdjust;
                         a.MinDistScale = minDistAdjust;
@@ -1316,7 +1315,7 @@ namespace ACAudio
 
                     // lets also sync timestamps
                     uint timestamp = uint.MaxValue;
-                    foreach(Ambient a in clusterAmbients)
+                    foreach (Ambient a in clusterAmbients)
                     {
                         if (!a.IsPlaying)
                             continue;
@@ -1371,7 +1370,7 @@ namespace ACAudio
 
                 // check all loaded sounds to see if they should be unloaded
                 List<Audio.Sound> soundsToUnload = new List<Audio.Sound>();
-                foreach(Audio.Sound snd in Audio.GetAllSounds())
+                foreach (Audio.Sound snd in Audio.GetAllSounds())
                 {
                     // if active, skip logic
                     if (activeSounds.Contains(snd))
@@ -1386,7 +1385,7 @@ namespace ACAudio
 
                     // if we want perma-cached then skip
                     //if (sce.Cache < 0.0)
-                        //continue;
+                    //continue;
 
                     // if we havent been requested past our desired cache time then add to unload list
                     double timeSincePlay = WorldTime - sce.RequestTime;
@@ -1395,7 +1394,7 @@ namespace ACAudio
                 }
 
                 // wipe out old sounds
-                foreach(Audio.Sound snd in soundsToUnload)
+                foreach (Audio.Sound snd in soundsToUnload)
                 {
                     Audio.CleanupSound(snd);
                     SoundCache.Remove(snd);
@@ -1425,11 +1424,11 @@ namespace ACAudio
                     VCClient.ServerIP = (View["VCServerAutoHost"] as HudStaticText).Text;
                 else
                     VCClient.ServerIP = (View["VCServerCustomHost"] as HudTextBox).Text;
-                
 
-                if(VCClient.IsConnected)
+
+                if (VCClient.IsConnected)
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Connected   Players: {VCClient.TotalConnectedPlayers}   Nearby: {(VCClient.AreThereNearbyPlayers ? "Yes" : "No")}";
-                else if(VCClient.WaitingForConnect)
+                else if (VCClient.WaitingForConnect)
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Attempting to connect to {VCClient.ServerIP}...";
                 /*else if(VCClient.SentServerHandshake)
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Logging in...";*/
@@ -1443,7 +1442,7 @@ namespace ACAudio
                 // update parameters
                 VCClient.Loopback = (View["MicLoopback"] as HudCheckBox).Checked;
                 //VCClient.Speak3D = (View["Mic3D"] as HudCheckBox).Checked;
-                VCClient.SpeakChannel = (StreamInfo.VoiceChannel)(View["MicChannel"] as HudCombo).Current;
+//                VCClient.SpeakChannel = (StreamInfo.VoiceChannel)(View["MicChannel"] as HudCombo).Current;
 
                 int recordDeviceIndex = (View["RecordDevice"] as HudCombo).Current;
                 if (recordDeviceIndex < 0 || recordDeviceIndex >= AvailableRecordDevices.Length)
@@ -1463,13 +1462,27 @@ namespace ACAudio
                 VCClient.PlayerAllegianceID = GetByWorldObject(Player)?.Values(LongValueKey.Monarch) ?? StreamInfo.InvalidAllegianceID;
                 VCClient.PlayerFellowshipID = FellowshipID;
 
-                VCClient.PushToTalkEnable = DoesACHaveFocus() && (GetAsyncKeyState((int)' ') & 0x8000) != 0;
+
+                StreamInfo.VoiceChannel currentVoice = StreamInfo.VoiceChannel.Invalid;
+                if (DoesACHaveFocus())
+                {
+                    if (IsHotkeyHeld(HotkeyName_PTT_Allegiance))
+                        currentVoice = StreamInfo.VoiceChannel.Allegiance;
+                    else if (IsHotkeyHeld(HotkeyName_PTT_Fellowship))
+                        currentVoice = StreamInfo.VoiceChannel.Fellowship;
+                    else if (IsHotkeyHeld(HotkeyName_PTT))
+                    {
+                        currentVoice = (StreamInfo.VoiceChannel)(View["MicChannel"] as HudCombo).Current;
+                        //currentVoice = StreamInfo.VoiceChannel.Proximity3D;
+                    }
+                }
+                VCClient.CurrentVoice = currentVoice;
 
 
                 // do whatever we gotta do
                 VCClient.Process(dt);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log($"VCClient.Process exception: {ex.Message}");
             }
@@ -1482,7 +1495,7 @@ namespace ACAudio
                 {
                     Audio.Process(dt, truedt, playerPos.CameraPos.Global, Vec3.Zero, playerPos.CameraMat.Up, playerPos.CameraMat.Forward);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Log($"Audio process exception: {ex.Message}");
                 }
@@ -1505,7 +1518,7 @@ namespace ACAudio
 
             // anything that decreases frames below XX should be reported
             double fps = (1.0 / lastProcessTime);
-            if(fps < 20.0 || ForcePerfDump)
+            if (fps < 20.0 || ForcePerfDump)
             {
                 string title;
                 if (ForcePerfDump)
@@ -1528,7 +1541,7 @@ namespace ACAudio
                     for (int x = 0; x < step.Level; x++)
                         str += "--";
 
-                    str += $" {step.Name}: {(step.Duration*1000.0).ToString("#0.00")}msec";
+                    str += $" {step.Name}: {(step.Duration * 1000.0).ToString("#0.00")}msec";
 
                     Log(str);
                 }
@@ -1553,7 +1566,7 @@ namespace ACAudio
                 PerfTrack.Start("prefilter objects");
                 List<ShadowObject> objects = new List<ShadowObject>();
                 //foreach (ShadowObject obj in WorldObjects)
-                for(int x=0; x<numToCheck; x++)
+                for (int x = 0; x < numToCheck; x++)
                 {
                     ShadowObject obj = WorldObjects[(int)unchecked(_dynamicObjectIndex++) % objectCount];
 
@@ -1639,7 +1652,7 @@ namespace ACAudio
                     }
 
                     pt.Stop();
-                    Log($"loading took {(pt.Duration*1000.0).ToString("#0.0")}msec");
+                    Log($"loading took {(pt.Duration * 1000.0).ToString("#0.0")}msec");
                 }
                 catch (Exception ex)
                 {
@@ -1653,7 +1666,7 @@ namespace ACAudio
                 return null;
 
             SoundCacheEntry sce;
-            if(!SoundCache.TryGetValue(snd, out sce))
+            if (!SoundCache.TryGetValue(snd, out sce))
             {
                 sce = new SoundCacheEntry();
                 SoundCache.Add(snd, sce);
@@ -1767,7 +1780,7 @@ namespace ACAudio
             protected void Play()
             {
                 // if we are song, this is handled elsewhere. just track if we WANT to be playing
-                if(IsSong)
+                if (IsSong)
                 {
                     if (!_WantSongPlay)
                     {
@@ -1805,7 +1818,7 @@ namespace ACAudio
                         return;
 
                     Channel = Audio.PlaySound(snd, true);
-                        
+
                     Channel.Volume = 0.0;
                     Channel.SetTargetVolume(FinalVolume, Source.Sound.fade);
 
@@ -1829,7 +1842,7 @@ namespace ACAudio
             public void Stop()
             {
                 // if we are song, this is handled elsewhere. just track if we WANT to be playing
-                if(IsSong)
+                if (IsSong)
                 {
                     if (_WantSongPlay)
                     {
@@ -1894,7 +1907,7 @@ namespace ACAudio
 
 
                 // if playing, update values
-                if(Channel != null)
+                if (Channel != null)
                 {
                     Channel.SetTargetVolume(FinalVolume, Source.Sound.fade);
 
@@ -2166,14 +2179,15 @@ namespace ACAudio
         [BaseEvent("ChangePortalMode", "CharacterFilter")]
         private void CharacterFilter_ChangePortalMode(object sender, ChangePortalModeEventArgs e)
         {
-            if(e.Type == PortalEventType.EnterPortal)
+            if (e.Type == PortalEventType.EnterPortal)
             {
                 // start sound
                 Log("changeportalmode START");
 
                 IsPortaling = true;
                 StartPortalSong();
-            } else
+            }
+            else
             {
                 Log("changeportalmode DONE");
 
@@ -2186,7 +2200,6 @@ namespace ACAudio
                 if (NeedFirstLoginPlayerWeenie)
                 {
                     NeedFirstLoginPlayerWeenie = false;
-
 
                     Log("INITIALIZE VOICECHAT");
                     VCClient.Init(Core.CharacterFilter.AccountName, Player.Name, Player.Id);
@@ -2223,7 +2236,7 @@ namespace ACAudio
 
                     double dist = (a.Position.Global - camPos.Global).Magnitude;
 
-                    if(dist < closestDist)
+                    if (dist < closestDist)
                     {
                         closestDist = dist;
                         closestAmb = a;
@@ -2271,7 +2284,7 @@ namespace ACAudio
 
 
                 // if we found something to use, fire it off
-                if(musicSound != null)
+                if (musicSound != null)
                 {
                     Music.Play(musicSound, false);
                     return true;
@@ -2301,8 +2314,56 @@ namespace ACAudio
             NeedFirstLoginPlayerWeenie = true;
 
 
+
+            //Log($"hotkeysystem     running:{VHotkeySystem.Running}    realinstance:{VHotkeySystem.InstanceReal}");
+
+            VHotkeySystem hksys = VHotkeySystem.InstanceReal;
+            if (hksys != null)
+            {
+                VHotkeySystem.InstanceReal.AddHotkey(new VHotkeyInfo(HotkeyName_PTT, "Push-to-talk key", ' ', false, false, false));
+                VHotkeySystem.InstanceReal.AddHotkey(new VHotkeyInfo(HotkeyName_PTT_Allegiance, "Push-to-talk key (allegiance only)", 0, false, false, false));
+                VHotkeySystem.InstanceReal.AddHotkey(new VHotkeyInfo(HotkeyName_PTT_Fellowship, "Push-to-talk key (fellowship only)", 0, false, false, false));
+            }
+
+
             // start our world timer
             LoginCompleteTimestamp = PerfTimer.Timestamp;
+        }
+
+        const string HotkeyName_PTT = "PushToTalk";
+        const string HotkeyName_PTT_Allegiance = "PushToTalk_Allegiance";
+        const string HotkeyName_PTT_Fellowship = "PushToTalk_Fellowship";
+
+
+        // maybe remove if we use decal/virindi hotkey system
+        [DllImport("User32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+        private static bool IsVirtualKeyHeld(int vKey)
+        {
+            return (GetAsyncKeyState(vKey) & 0x8000) != 0;
+        }
+
+        bool IsHotkeyHeld(string name)
+        {
+            VHotkeySystem hksys = VHotkeySystem.InstanceReal;
+            if (hksys == null)
+                return false;
+
+            VHotkeyInfo hotkey = hksys.GetHotkeyByName(name);
+            if (hotkey == null || !hotkey.Enabled || hotkey.VirtualKey == 0)
+                return false;
+
+            if (
+                hotkey.ShiftState != (IsVirtualKeyHeld(16/*shift*/) || IsVirtualKeyHeld(160/*left shift*/) || IsVirtualKeyHeld(161/*right shift*/)) ||
+                hotkey.ControlState != (IsVirtualKeyHeld(17/*control*/) || IsVirtualKeyHeld(162/*left control*/) || IsVirtualKeyHeld(163/*right control*/)) ||
+                hotkey.AltState != (IsVirtualKeyHeld(18/*alt/menu*/) || IsVirtualKeyHeld(164/*left alt/menu*/) || IsVirtualKeyHeld(165/*right alt/menu*/))
+                )
+                return false;
+
+            if (!IsVirtualKeyHeld(hotkey.VirtualKey))
+                return false;
+
+            return true;
         }
 
         /// <summary>

@@ -48,6 +48,9 @@
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
+    <Reference Include="VirindiHotkeySystem">
+      <HintPath>..\..\Games\VirindiPlugins\VirindiHotkeySystem\VirindiHotkeySystem.dll</HintPath>
+    </Reference>
     <Reference Include="VirindiViewService">
       <HintPath>..\..\Games\VirindiPlugins\VirindiViewService\VirindiViewService.dll</HintPath>
     </Reference>

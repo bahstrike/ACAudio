@@ -69,6 +69,8 @@ namespace ACAudio
         {
             CurrentInitNumber++;// invalidate previous connect number in case a connect attempt callback completes during our downtime
 
+            CurrentVoice = StreamInfo.VoiceChannel.Invalid;// we arent talking anymore
+
 
             // wait until any possible pending connect attempt has completed
             //while (WaitingForConnect)
@@ -291,7 +293,7 @@ namespace ACAudio
                 CloseRecordDevice();//nobody wants previous quality samples so flag for re-open, to force new settings
 
 
-            if (PushToTalkEnable)
+            if (CurrentVoice != StreamInfo.VoiceChannel.Invalid)
             {
                 if (recordTimestamp == new DateTime())
                     OpenRecordDevice(streamInfo);
@@ -358,16 +360,16 @@ namespace ACAudio
 
                         if (
                             Loopback ||
-                            (SpeakChannel == StreamInfo.VoiceChannel.Proximity3D && AreThereNearbyPlayers) || // dont send a 3d audio packet unless there are nearby players.  but allow loopback or non-3d
-                            (SpeakChannel == StreamInfo.VoiceChannel.Fellowship && PlayerFellowshipID != StreamInfo.InvalidFellowshipID) || //just make sure not invalid?
-                            (SpeakChannel == StreamInfo.VoiceChannel.Allegiance /*&& anything to check?*/)
+                            (CurrentVoice == StreamInfo.VoiceChannel.Proximity3D && AreThereNearbyPlayers) || // dont send a 3d audio packet unless there are nearby players.  but allow loopback or non-3d
+                            (CurrentVoice == StreamInfo.VoiceChannel.Fellowship && PlayerFellowshipID != StreamInfo.InvalidFellowshipID) || //just make sure not invalid?
+                            (CurrentVoice == StreamInfo.VoiceChannel.Allegiance && PlayerAllegianceID != StreamInfo.InvalidAllegianceID)
                             )
                         {
                             Packet packet = new Packet(Packet.MessageType.RawAudio);
 
                             packet.WriteInt(currentRecordStreamInfo.magic);//embed id of known current format
                             packet.WriteBool(Loopback);
-                            packet.WriteInt((int)SpeakChannel);
+                            packet.WriteInt((int)CurrentVoice);
 
                             if (currentRecordStreamInfo.ulaw)
                                 packet.WriteBuffer(WinSound.Utils.LinearToMulaw(outBuf, currentRecordStreamInfo.bitDepth, 1));
@@ -414,10 +416,9 @@ namespace ACAudio
         }
 
 
-        public static bool PushToTalkEnable = false;
         public static RecordDeviceEntry CurrentRecordDevice = null;
         public static bool Loopback = false;
-        public static StreamInfo.VoiceChannel SpeakChannel = StreamInfo.VoiceChannel.Proximity3D;
+        public static StreamInfo.VoiceChannel CurrentVoice = StreamInfo.VoiceChannel.Invalid;
         public static Position PlayerPosition = Position.Invalid;
         public static int PlayerAllegianceID = StreamInfo.InvalidAllegianceID;
         public static int PlayerFellowshipID = StreamInfo.InvalidFellowshipID;

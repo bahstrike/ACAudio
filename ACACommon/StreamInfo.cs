@@ -21,6 +21,7 @@ namespace ACACommon
 
         public enum VoiceChannel
         {
+            Invalid = -1,
             Proximity3D,
             Allegiance,
             Fellowship
