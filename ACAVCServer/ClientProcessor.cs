@@ -41,6 +41,9 @@ namespace ACAVCServer
 
         protected sealed override void _Run()
         {
+            PerfTimer pt_run = new PerfTimer();
+            pt_run.Start();
+
             StreamInfo streamInfo = Server.CurrentStreamInfo;//preache;  internal sync
 
             TcpClient[] clients = listener.CollectClients();
@@ -309,6 +312,28 @@ namespace ACAVCServer
 
                 // do other internal stuff like send heartbeat or watever
                 player.Process();
+            }
+
+            pt_run.Stop();
+            using (RunTimesCrit.Lock)
+            {
+                while (RunTimes.Count > 10000)
+                    RunTimes.RemoveAt(0);
+
+                RunTimes.Add(pt_run.Duration);
+            }
+        }
+
+        private CritSect RunTimesCrit = new CritSect();
+        private List<double> RunTimes = new List<double>();
+
+        public double[] CollectRunTimes()
+        {
+            using (RunTimesCrit.Lock)
+            {
+                double[] ret = RunTimes.ToArray();
+                RunTimes.Clear();
+                return ret;
             }
         }
     }

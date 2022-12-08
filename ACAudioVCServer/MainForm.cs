@@ -137,11 +137,34 @@ namespace ACAudioVCServer
             receivedBytes += Server.PacketsReceivedBytes;
             Server.PacketsReceivedBytes = 0;
 
-            generalInfo.Text = $"TotalConnectAttempts:{Server.IncomingConnectionsCount}   PacketsSent:{Server.PacketsSentCount} ({sentBytes/1024}kb)  PacketsReceived:{Server.PacketsReceivedCount} ({receivedBytes/1024}kb)";
+            double[] runTimes = Server.CollectRunTimes();
+            if(runTimes.Length > 0)
+            {
+                numRuns += (ulong)runTimes.Length;
+
+                double avg = 0.0;
+                foreach(double tm in runTimes)
+                {
+                    maxRunTime = Math.Max(maxRunTime, tm);
+                    avg += tm;
+
+                    if (tm > 0.01)
+                        Log($"Yikes, clientprocessor run took {tm.ToString("#0.000")}sec");
+                }
+                avg /= (double)runTimes.Length;
+
+                avgRunTime = (avgRunTime + avg) / 2.0;
+            }
+            
+            generalInfo.Text = $"TotalConnectAttempts:{Server.IncomingConnectionsCount}   PacketsSent:{Server.PacketsSentCount} ({sentBytes/1024}kb)  PacketsReceived:{Server.PacketsReceivedCount} ({receivedBytes/1024}kb)   numRums:{numRuns}   maxRun:{maxRunTime.ToString("#0.000")}  avgRun:{avgRunTime.ToString("#0.000")}";
         }
 
         ulong receivedBytes = 0;
         ulong sentBytes = 0;
+
+        ulong numRuns = 0;
+        double maxRunTime = 0.0;
+        double avgRunTime = 0.0;
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {

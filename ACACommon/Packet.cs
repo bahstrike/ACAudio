@@ -76,23 +76,29 @@ namespace ACACommon
                     return null;
 
 
-                start = DateTime.Now;
-                for (; ; )
-                {
-                    if (client.Available >= len)
-                        break;
+                byte[] buf;
+                if (len == 0)
+                    buf = new byte[0];
+                else
+                { 
+                    start = DateTime.Now;
+                    for (; ; )
+                    {
+                        if (client.Available >= len)
+                            break;
 
-                    System.Threading.Thread.Sleep(1);
+                        System.Threading.Thread.Sleep(1);
 
-                    if (DateTime.Now.Subtract(start).TotalMilliseconds >= dataTimeoutMsec)
+                        if (DateTime.Now.Subtract(start).TotalMilliseconds >= dataTimeoutMsec)
+                            return null;
+                    }
+
+
+                    buf = br.ReadBytes(len);
+
+                    if (buf.Length != len)
                         return null;
                 }
-
-
-                byte[] buf = br.ReadBytes(len);
-
-                if (buf.Length != len)
-                    return null;
 
                 // after we've read/skipped past the remainder of the message, check protocol version to see if we even care
                 if (version != ProtocolVersion)

@@ -31,9 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ACACommon">
-      <HintPath>..\DEPLOY\ACACommon.dll</HintPath>
-    </Reference>
     <Reference Include="SmithCore">
       <HintPath>..\DEPLOY\SmithCore.dll</HintPath>
     </Reference>
@@ -48,6 +45,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="WorkerThread.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ACACommon\ACACommon.csproj">
+      <Project>{47b5de5e-7019-484d-b107-e99bb7d5c8be}</Project>
+      <Name>ACACommon</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

@@ -94,5 +94,13 @@ namespace ACAVCServer
 
             return clientProcessor.GetPlayers();
         }
+
+        public static double[] CollectRunTimes()
+        {
+            if (clientProcessor == null)
+                return new double[0];
+
+            return clientProcessor.CollectRunTimes();
+        }
     }
 }
