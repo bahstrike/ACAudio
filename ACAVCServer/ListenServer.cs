@@ -37,25 +37,25 @@ namespace ACAVCServer
             base._Stop_Post();
         
             // kill off any potential pending clients that weren't picked up by other logic
-            TcpClient[] pendingClients = CollectClients();
-                foreach (TcpClient client in pendingClients)
-                    client.Close();
+            Player[] pendingPlayers = CollectPlayers();
+            foreach (Player player in pendingPlayers)
+                player.Disconnect("Listen server shutdown");
         }
 
-        public TcpClient[] CollectClients()
+        public Player[] CollectPlayers()
         {
-            TcpClient[] ret;
-            using (clientsLock.Lock)
+            Player[] ret;
+            using (playersLock.Lock)
             {
-                ret = clients.ToArray();
-                clients.Clear();
+                ret = players.ToArray();
+                players.Clear();
             }
             return ret;
         }
 
         private TcpListener listener = null;
-        private List<TcpClient> clients = new List<TcpClient>();
-        private CritSect clientsLock = new CritSect();
+        private List<Player> players = new List<Player>();
+        private CritSect playersLock = new CritSect();
 
         protected sealed override void _Run()
         {
@@ -75,8 +75,34 @@ namespace ACAVCServer
                 TcpClient client = listener.AcceptTcpClient();
                 client.NoDelay = true;
 
-                using (clientsLock.Lock)
-                    clients.Add(client);
+
+
+                // wait for client config
+                Packet clientInfo = Packet.InternalReceive(client);//raw packet receive since we have no player entry yet
+                if (clientInfo != null)
+                {
+                    Server.PacketsReceivedCount++;
+                    Server.PacketsReceivedBytes += (uint)clientInfo.FinalSizeBytes;
+                }
+
+                if (clientInfo == null || clientInfo.Message != Packet.MessageType.PlayerConnect)
+                {
+                    // didnt reply in proper fashion?  goodbye
+                    client.Close();
+                    return;
+                }
+
+
+                // try to accept client into system
+                string accountName = clientInfo.ReadString();
+                string characterName = clientInfo.ReadString();
+                int weenieID = clientInfo.ReadInt();
+
+                Player player = new Player(client, accountName, characterName, weenieID);
+
+
+                using (playersLock.Lock)
+                    players.Add(player);
             }
             catch
             {

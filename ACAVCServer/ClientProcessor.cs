@@ -46,31 +46,10 @@ namespace ACAVCServer
 
             StreamInfo streamInfo = Server.CurrentStreamInfo;//preache;  internal sync
 
-            TcpClient[] clients = listener.CollectClients();
-            foreach (TcpClient client in clients)
+            Player[] newPlayers = listener.CollectPlayers();
+            foreach (Player player in newPlayers)
             {
-                // wait for client config
-                Packet clientInfo = Packet.InternalReceive(client);//raw packet receive since we have no player entry yet
-                if (clientInfo != null)
-                {
-                    Server.PacketsReceivedCount++;
-                    Server.PacketsReceivedBytes += (uint)clientInfo.FinalSizeBytes;
-                }
 
-                if (clientInfo == null || clientInfo.Message != Packet.MessageType.PlayerConnect)
-                {
-                    // didnt reply in proper fashion?  goodbye
-                    client.Close();
-                    continue;
-                }
-
-
-                // try to accept client into system
-                string accountName = clientInfo.ReadString();
-                string characterName = clientInfo.ReadString();
-                int weenieID = clientInfo.ReadInt();
-
-                Player player = new Player(client, accountName, characterName, weenieID);
 
 
                 // check for ban / already connected / etc?
