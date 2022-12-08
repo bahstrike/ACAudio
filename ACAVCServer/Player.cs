@@ -99,9 +99,10 @@ namespace ACAVCServer
             Server.PacketsSentBytes += (uint)p.FinalSizeBytes;// requires Send before FinalSizeBytes is valid
         }
 
-        public Packet Receive(int headerTimeoutMsec = Packet.DefaultTimeoutMsec, int dataTimeoutMsec = Packet.DefaultTimeoutMsec)
+        private Packet.StagedInfo stagedInfo = null;
+        public Packet Receive()
         {
-            Packet p = Packet.InternalReceive(Client, headerTimeoutMsec, dataTimeoutMsec);
+            Packet p = Packet.InternalReceive(Client, ref stagedInfo);
             if (p != null)
             {
                 Server.PacketsReceivedCount++;

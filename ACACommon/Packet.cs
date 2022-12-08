@@ -114,6 +114,82 @@ namespace ACACommon
             }
         }
 
+        public class StagedInfo
+        {
+            public int Version;
+            public MessageType Message;
+            public int Length;
+        }
+
+        // alternative that will never wait.  rather, if a packet header is received but payload is not ready, then stagedInfo will be populated
+        // with the "in progress" packet which you must pass in again on next receive attempt.
+        // set your stagedInfo to null upon startup or connection termination,  but otherwise never use or manipulate it.
+        public static Packet InternalReceive(TcpClient client, ref StagedInfo stagedInfo)
+        {
+            try
+            {
+                // if we have no staged packet, attempt to construct one if we have enough data available for a header
+                if(stagedInfo == null)
+                {
+                    if (client.Available < 16)
+                        return null;
+
+                    BinaryReader br = new BinaryReader(client.GetStream());
+                    if (br.ReadInt32() != MAGIC)
+                        return null;
+
+                    stagedInfo = new StagedInfo();
+
+                    stagedInfo.Version = br.ReadInt32();
+                    stagedInfo.Message = (MessageType)br.ReadInt32();
+                    stagedInfo.Length = br.ReadInt32();
+
+                    if (stagedInfo.Length < 0 || stagedInfo.Length > MAX_BYTES)
+                    {
+                        stagedInfo = null;// yuck.  reject this attempt
+                        return null;
+                    }
+                }
+
+
+                // now that we have a staged packet, attempt to complete it if we have enough data available to finish out its payload
+                if (client.Available < stagedInfo.Length)
+                    return null;
+
+
+
+                byte[] buf;
+                if (stagedInfo.Length == 0)
+                    buf = new byte[0];
+                else
+                {
+                    buf = new BinaryReader(client.GetStream()).ReadBytes(stagedInfo.Length);
+
+                    if (buf.Length != stagedInfo.Length)
+                    {
+                        stagedInfo = null;// shrug.. i guess whole packet is bad
+                        return null;
+                    }
+                }
+
+                // after we've read/skipped past the remainder of the message, check protocol version to see if we even care
+                if (stagedInfo.Version != ProtocolVersion)
+                    return null;
+
+                // ok we've received all data for this packet. promote the staged packet to final
+                Packet p = new Packet(stagedInfo.Message, buf);
+                p._FinalSizeBytes = 16 + buf.Length;
+
+                stagedInfo = null;
+
+                return p;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private Packet(MessageType _Message, byte[] buf)
             : base(new MemoryStream(buf))
         {

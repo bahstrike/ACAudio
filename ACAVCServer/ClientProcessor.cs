@@ -124,7 +124,7 @@ namespace ACAVCServer
                 for (; ; )
                 {
                     // dont wait for client unless we at least have a header
-                    Packet playerPacket = player.Receive(0);
+                    Packet playerPacket = player.Receive();
                     if (playerPacket == null)
                         break;
 
