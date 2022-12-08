@@ -120,6 +120,8 @@ namespace ACAudio
                 server = null;
             }
 
+            stagedInfo = null;// dont retain any possible staged packet info from previous connection!!
+
             lastSentPlayerStatusTime = new DateTime();
             lastSentPlayerPosition = Position.Invalid;
             lastSentPlayerAllegianceID = StreamInfo.InvalidAllegianceID;
@@ -193,7 +195,7 @@ namespace ACAudio
                 // try to receive stuff
                 for (; ; )
                 {
-                    Packet packet = ReceiveFromServer(0);
+                    Packet packet = ReceiveFromServer();
                     if (packet == null)
                         break;
 
@@ -871,6 +873,7 @@ namespace ACAudio
             catch
             {
                 server = null;
+                stagedInfo = null;
             }
 
         }
@@ -900,12 +903,13 @@ namespace ACAudio
             p.InternalSend(server);
         }
 
-        private static Packet ReceiveFromServer(int headerTimeoutMsec = Packet.DefaultTimeoutMsec, int dataTimeoutMsec = Packet.DefaultTimeoutMsec)
+        private static Packet.StagedInfo stagedInfo = null;
+        private static Packet ReceiveFromServer()
         {
             if (server == null)
                 return null;
 
-            return Packet.InternalReceive(server, headerTimeoutMsec, dataTimeoutMsec);
+            return Packet.InternalReceive(server, ref stagedInfo);
         }
 
 

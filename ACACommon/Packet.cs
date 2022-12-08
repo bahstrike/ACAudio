@@ -43,70 +43,27 @@ namespace ACACommon
 
         public readonly MessageType Message;
 
-        public static Packet InternalReceive(TcpClient client, int headerTimeoutMsec=DefaultTimeoutMsec, int dataTimeoutMsec=DefaultTimeoutMsec)
+        public static Packet InternalReceive(TcpClient client, int timeoutMsec=DefaultTimeoutMsec, bool allowTimeoutToCancelPartial=false)
         {
             try
             {
                 DateTime start;
+                StagedInfo stagedInfo = null;
                 
                 
                 start = DateTime.Now;
                 for (; ; )
                 {
-                    // need 16 bytes:  magic, version, messagetype and packet len
-                    if (client.Available >= 16)
-                        break;
+                    Packet p = InternalReceive(client, ref stagedInfo);
+                    if (p != null)
+                        return p;
 
                     System.Threading.Thread.Sleep(1);
 
-                    if (DateTime.Now.Subtract(start).TotalMilliseconds >= headerTimeoutMsec)
+                    // we can only honor the timeout during the initial header stage.  once we have gotten a header then we cant skip the rest without corrupting tcp stream
+                    if ((allowTimeoutToCancelPartial || stagedInfo == null) && DateTime.Now.Subtract(start).TotalMilliseconds >= timeoutMsec)
                         return null;
                 }
-
-                BinaryReader br = new BinaryReader(client.GetStream());
-                if (br.ReadInt32() != MAGIC)
-                    return null;
-
-                int version = br.ReadInt32();
-
-                MessageType message = (MessageType)br.ReadInt32();
-
-                int len = br.ReadInt32();
-                if (len < 0 || len > MAX_BYTES)
-                    return null;
-
-
-                byte[] buf;
-                if (len == 0)
-                    buf = new byte[0];
-                else
-                { 
-                    start = DateTime.Now;
-                    for (; ; )
-                    {
-                        if (client.Available >= len)
-                            break;
-
-                        System.Threading.Thread.Sleep(1);
-
-                        if (DateTime.Now.Subtract(start).TotalMilliseconds >= dataTimeoutMsec)
-                            return null;
-                    }
-
-
-                    buf = br.ReadBytes(len);
-
-                    if (buf.Length != len)
-                        return null;
-                }
-
-                // after we've read/skipped past the remainder of the message, check protocol version to see if we even care
-                if (version != ProtocolVersion)
-                    return null;
-
-                Packet p = new Packet(message, buf);
-                p._FinalSizeBytes = 16 + buf.Length;
-                return p;
             }
             catch
             {

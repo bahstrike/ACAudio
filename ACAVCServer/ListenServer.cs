@@ -78,7 +78,7 @@ namespace ACAVCServer
 
 
                 // wait for client config
-                Packet clientInfo = Packet.InternalReceive(client);//raw packet receive since we have no player entry yet
+                Packet clientInfo = Packet.InternalReceive(client, allowTimeoutToCancelPartial:true/*this is safe because if we get no complete packet then we close connection anyway*/);//raw packet receive since we have no player entry yet
                 if (clientInfo != null)
                 {
                     Server.PacketsReceivedCount++;
