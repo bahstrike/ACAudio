@@ -28,10 +28,22 @@ namespace ACAudioVCServer
 
         CritSect pendingLogMessagesCrit = new CritSect();
         List<string> pendingLogMessages = new List<string>();
+
+        // callback is issued from threads
         void LogCallback(string s)
         {
             using (pendingLogMessagesCrit.Lock)
                 pendingLogMessages.Add(s);
+        }
+
+        // callback is issued from threads
+        string CheckPlayer(ACAVCServer.Player player)
+        {
+            if (player.AccountName.StartsWith("STRESSTEST"))
+                return "Reject bots";
+
+            // allow all players by specifying no reject reason
+            return null;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -43,8 +55,8 @@ namespace ACAudioVCServer
             UpdateStreamInfo();//dont wait for after thread started & timer to update thread info
 
             Server.LogCallback = LogCallback;
+            Server.CheckPlayerCallback = CheckPlayer;
             Server.Init();
-
         }
 
         void UpdateStreamInfo()
@@ -129,14 +141,8 @@ namespace ACAudioVCServer
 
             playerHeadingLabel.Text = $"Connected Players: {playersList.Items.Count}";
 
-
-
-            sentBytes += Server.PacketsSentBytes;
-            Server.PacketsSentBytes = 0;
-
-            receivedBytes += Server.PacketsReceivedBytes;
-            Server.PacketsReceivedBytes = 0;
-
+            metrics += Server.CollectCurrentPerformanceMetrics();
+            
             double[] runTimes = Server.CollectRunTimes();
             if(runTimes.Length > 0)
             {
@@ -156,11 +162,10 @@ namespace ACAudioVCServer
                 avgRunTime = (avgRunTime + avg) / 2.0;
             }
             
-            generalInfo.Text = $"TotalConnectAttempts:{Server.IncomingConnectionsCount}   PacketsSent:{Server.PacketsSentCount} ({sentBytes/1024}kb)  PacketsReceived:{Server.PacketsReceivedCount} ({receivedBytes/1024}kb)   numRums:{numRuns}   maxRun:{maxRunTime.ToString("#0.000")}  avgRun:{avgRunTime.ToString("#0.000")}";
+            generalInfo.Text = $"TotalConnectAttempts:{metrics.IncomingConnectionsCount}   PacketsSent:{metrics.PacketsSentCount} ({metrics.PacketsSentBytes/ 1024}kb)  PacketsReceived:{metrics.PacketsReceivedCount} ({metrics.PacketsReceivedBytes/ 1024}kb)   numRums:{numRuns}   maxRun:{maxRunTime.ToString("#0.000")}  avgRun:{avgRunTime.ToString("#0.000")}";
         }
 
-        ulong receivedBytes = 0;
-        ulong sentBytes = 0;
+        Server.PerformanceMetrics metrics = Server.PerformanceMetrics.Zero;
 
         ulong numRuns = 0;
         double maxRunTime = 0.0;

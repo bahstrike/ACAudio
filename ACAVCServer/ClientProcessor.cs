@@ -51,13 +51,17 @@ namespace ACAVCServer
             {
 
 
-
-                // check for ban / already connected / etc?
-                /*if (false)
+                // allow hosting server to validate a real connected player, or if they are offline or banned, etc
+                if(Server.CheckPlayerCallback != null)
                 {
-                    player.Disconnect("banned or something lol");
-                    continue;
-                }*/
+                    string reason = Server.CheckPlayerCallback(player);
+
+                    if(reason != null)
+                    {
+                        player.Disconnect(reason);
+                        continue;
+                    }
+                }
 
 
 
@@ -290,7 +294,13 @@ namespace ACAVCServer
 
 
                 // do other internal stuff like send heartbeat or watever
-                player.Process();
+                string disconnectReason = player.Process();
+                if (!string.IsNullOrEmpty(disconnectReason))
+                    using (PlayersCrit.Lock)
+                    {
+                        player.Disconnect(disconnectReason);
+                        Players.Remove(player);// remove from our real list but i guess let the shadowcopy pretend
+                    }
             }
 
             pt_run.Stop();

@@ -14,11 +14,70 @@ namespace ACAVCServer
         public readonly string CharacterName;
         public readonly int WeenieID;
 
-        public int AllegianceID = StreamInfo.InvalidAllegianceID;
-        public int FellowshipID = StreamInfo.InvalidFellowshipID;
-        public Position Position = Position.Invalid;
+        private volatile int _AllegianceID = StreamInfo.InvalidAllegianceID;
+        public int AllegianceID
+        {
+            get
+            {
+                return _AllegianceID;
+            }
 
-        public Player(TcpClient _Client, string _AccountName, string _CharacterName, int _WeenieID)
+            internal set
+            {
+                _AllegianceID = value;
+            }
+        }
+
+        private volatile int _FellowshipID = StreamInfo.InvalidFellowshipID;
+        public int FellowshipID
+        {
+            get
+            {
+                return _FellowshipID;
+            }
+
+            internal set
+            {
+                _FellowshipID = value;
+            }
+        }
+
+        private Smith.CritSect _PositionCrit = new Smith.CritSect();
+        private Position _Position = Position.Invalid;
+        public Position Position
+        {
+            get
+            {
+                using (_PositionCrit.Lock)
+                    return _Position;
+            }
+
+            internal set
+            {
+                using (_PositionCrit.Lock)
+                    _Position = value;
+            }
+        }
+
+        private volatile string _WantDisconnectReason = null;
+        /// <summary>
+        /// cant clear once issued:  but give a reason string and this player socket will be disconnected.
+        /// </summary>
+        public string WantDisconnectReason
+        {
+            internal get
+            {
+                return _WantDisconnectReason;
+            }
+
+            set
+            {
+                _WantDisconnectReason = value;
+            }
+        }
+
+
+        internal Player(TcpClient _Client, string _AccountName, string _CharacterName, int _WeenieID)
         {
             Client = _Client;
             AccountName = _AccountName;
@@ -54,17 +113,34 @@ namespace ACAVCServer
             }
         }
 
-        public DateTime LastServerStatusTime = new DateTime();
-
-        public void Process()
+        private DateTime _LastServerStatusTime = new DateTime();
+        public DateTime LastServerStatusTime
         {
+            get
+            {
+                return _LastServerStatusTime;
+            }
+
+            internal set
+            {
+                _LastServerStatusTime = value;
+            }
+        }
+
+        internal string Process()
+        {
+            if (!string.IsNullOrEmpty(WantDisconnectReason))
+                return WantDisconnectReason;
+
             // send periodic heartbeat if necessary
             if (DateTime.Now.Subtract(LastHeartbeat).TotalMilliseconds >= Packet.HeartbeatMsec)
                 Send(new Packet(Packet.MessageType.Heartbeat));
+
+            return null;//still good
         }
 
         private StreamInfo lastStreamInfo = null;
-        public void SetCurrentStreamInfo(StreamInfo streamInfo)
+        internal void SetCurrentStreamInfo(StreamInfo streamInfo)
         {
             // if incoming is invalid then bust
             if (streamInfo == null)
@@ -88,7 +164,7 @@ namespace ACAVCServer
             lastStreamInfo = streamInfo;
         }
 
-        public void Send(Packet p)
+        internal void Send(Packet p)
         {
             //Server.Log($"SEND {p.Message} TO {this}");
 
@@ -100,7 +176,7 @@ namespace ACAVCServer
         }
 
         private Packet.StagedInfo stagedInfo = null;
-        public Packet Receive()
+        internal Packet Receive()
         {
             Packet p = Packet.InternalReceive(Client, ref stagedInfo);
             if (p != null)
@@ -113,7 +189,7 @@ namespace ACAVCServer
         }
 
         // specify reason:null to skip sending a disconnect packet and just close the socket
-        public void Disconnect(string reason)
+        internal void Disconnect(string reason)
         {
             if (reason != null)
             {

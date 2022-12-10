@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace ACAVCServer
 {
-    public abstract class WorkerThread
+    internal abstract class WorkerThread
     {
         private enum ThreadStateValue
         {
