@@ -213,6 +213,9 @@ vol 0.65
 file kegpour.mp3
 text "You tap some beer from the keg."
 
+file crying_female.mp3
+text "Xsao Lann begins to sob quietly"
+
 
 pop // end text triggers
 

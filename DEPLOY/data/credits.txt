@@ -24,6 +24,7 @@ fart				https://freesound.org/people/kuchtaa/sounds/555418/
 anvil				https://freesound.org/people/kyles/sounds/452584/
 kegpour				https://freesound.org/people/euphorix/sounds/474245/
 bedtime				https://freesound.org/people/kgatto/sounds/240271/
+crying_female			https://freesound.org/people/Idalize/sounds/408211/
 towncrier_f_unwanteditems	https://ttsreader.com/
 towncrier_m_unwanteditems	https://ttsreader.com/
 collector_f_creatureparts	https://ttsreader.com/
