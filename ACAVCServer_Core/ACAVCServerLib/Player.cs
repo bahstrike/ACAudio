@@ -4,14 +4,32 @@ using System.Net.Sockets;
 
 namespace ACAVCServerLib
 {
+    /// <summary>
+    /// Contains information about a connected client.
+    /// </summary>
     public class Player
     {
         private readonly TcpClient Client;
+
+        /// <summary>
+        /// The name of the player's account used when connecting to the Asheron's Call server.
+        /// </summary>
         public readonly string AccountName;
+
+        /// <summary>
+        /// The in-game name of the player's character.
+        /// </summary>
         public readonly string CharacterName;
+
+        /// <summary>
+        /// The in-game unique ID of the player's world object ("weenie").
+        /// </summary>
         public readonly int WeenieID;
 
-        private volatile int _AllegianceID = StreamInfo.InvalidAllegianceID;
+        private volatile int _AllegianceID = 0;
+        /// <summary>
+        /// The ID of the in-game monarch the player is in, or 0 otherwise. May not be available until a short while after the player connects.
+        /// </summary>
         public int AllegianceID
         {
             get
@@ -25,7 +43,10 @@ namespace ACAVCServerLib
             }
         }
 
-        private volatile int _FellowshipID = StreamInfo.InvalidFellowshipID;
+        private volatile int _FellowshipID = 0;
+        /// <summary>
+        /// The ID of the in-game fellowship the player is in, or 0 otherwise.
+        /// </summary>
         public int FellowshipID
         {
             get
@@ -58,7 +79,7 @@ namespace ACAVCServerLib
 
         private volatile string _WantDisconnectReason = null;
         /// <summary>
-        /// cant clear once issued:  but give a reason string and this player socket will be disconnected.
+        /// Set to any non-null string to kick the player. Cannot be undone once set!
         /// </summary>
         public string WantDisconnectReason
         {
@@ -94,6 +115,9 @@ namespace ACAVCServerLib
             return str;
         }
 
+        /// <summary>
+        /// IP address of the connected player.
+        /// </summary>
         public IPAddress IPAddress
         {
             get
@@ -102,6 +126,9 @@ namespace ACAVCServerLib
             }
         }
 
+        /// <summary>
+        /// Whether or not the player is still connected.
+        /// </summary>
         public bool Connected
         {
             get
@@ -111,14 +138,14 @@ namespace ACAVCServerLib
         }
 
         private DateTime _LastServerStatusTime = new DateTime();
-        public DateTime LastServerStatusTime
+        internal DateTime LastServerStatusTime
         {
             get
             {
                 return _LastServerStatusTime;
             }
 
-            internal set
+            set
             {
                 _LastServerStatusTime = value;
             }

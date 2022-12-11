@@ -146,10 +146,10 @@ namespace ACAVCServerLib
                         int newFellowID = playerPacket.ReadInt();
 
                         if (newAllegID != player.AllegianceID)
-                            Server.Log($"Updating player allegiance {player}         changing to: {newAllegID.ToString("X8")}");
+                            Server.Log($"Updating player allegiance {player} --> {newAllegID.ToString("X8")}");
 
                         if (newFellowID != player.FellowshipID)
-                            Server.Log($"Updating player fellowship {player}         changing to: {newFellowID.ToString("X8")}");
+                            Server.Log($"Updating player fellowship {player} --> {newFellowID.ToString("X8")}");
 
                         player.AllegianceID = newAllegID;
                         player.FellowshipID = newFellowID;
@@ -214,7 +214,7 @@ namespace ACAVCServerLib
                                     if (speakChannel == StreamInfo.VoiceChannel.Allegiance)
                                 {
                                     // must skip if either allegiance ID is invalid (two invalids dont make a match)
-                                    if (player.AllegianceID == StreamInfo.InvalidAllegianceID || player2.AllegianceID == StreamInfo.InvalidAllegianceID)
+                                    if (player.AllegianceID == 0 || player2.AllegianceID == 0)
                                         continue;
 
                                     if (player.AllegianceID != player2.AllegianceID)
@@ -223,7 +223,7 @@ namespace ACAVCServerLib
                                 else if (speakChannel == StreamInfo.VoiceChannel.Fellowship)
                                 {
                                     // must skip if either fellowship ID is invalid (two invalids dont make a match)
-                                    if (player.FellowshipID == StreamInfo.InvalidFellowshipID || player2.FellowshipID == StreamInfo.InvalidFellowshipID)
+                                    if (player.FellowshipID == 0 || player2.FellowshipID == 0)
                                         continue;
 
                                     if (player.FellowshipID != player2.FellowshipID)

@@ -1,56 +1,67 @@
-﻿// main server.  all logic is handled via child threads.
-//
-// all public API of this module should be thread-safe.
-// however, the Server.xxxxxCallback  events typically require caller to synchronize their own data.
-
-using System.Net;
+﻿using System.Net;
 
 namespace ACAVCServerLib
 {
+    /// <summary>
+    /// Main server module. All operation is handled in internal threads. All methods are thread-safe except where noted (such as Callbacks).
+    /// </summary>
     public static class Server
     {
         private static ListenServer listener = null;
         private static ClientProcessor clientProcessor = null;
 
-        // NOTE: LogCallback is called from threads; you must handle syncronization yourself!
+        /// <summary>
+        /// Delegate declaration for <see cref="LogCallback"/>.
+        /// </summary>
+        /// <param name="s">Log message string</param>
         public delegate void LogDelegate(string s);
+
+        /// <summary>
+        /// Optional callback to receive log messages. Invoked by threads; you must handle synchronization yourself.
+        /// </summary>
         public static LogDelegate LogCallback = null;//optional
 
-        // WHEN INTEGRATED WITH A REAL AC SERVER:
-        // it is recommended you handle CheckPlayer to determine if said account/character/weenie is
-        // a legitimate online player who is actually in-game and deserves to join voicechat server.
-        //
-        // PARAMETER:
-        // ONLY the following fields are valid  (other items like allegiance/fellowship come in packets later):
-        //    Player.IPAddress
-        //    Player.AccountName
-        //    Player.CharacterName
-        //    Player.WeenieID
-        //
-        // Player objects are inherently thread-safe.   you may retain Player objects for future use/query.
-        // you may arbitrarily kick a Player by setting Player.WantDisconnectReason to any string other than null.
-        //
-        //
-        // RETURN:
-        // string return value should be NULL to accept player.
-        // any other string will be the "reason" sent with the Disconnect packet to the rejected player.
-        //
-        // NOTE:
-        // if returning NULL to allow player, there is still an internal check for same account/character names.
-        // the previous player entry's socket will be disconnected and allow this new IPAddress and WeenieID
-        //
-        // WARNING:
-        // CheckPlayerCallback is called from threads; you must handle syncronization yourself!
+        /// <summary>
+        /// Delegate declaration for <see cref="CheckPlayerCallback"/>
+        /// </summary>
+        /// <param name="player">Incoming player connection</param>
+        /// <returns>Reason to reject player, or null to accept</returns>
         public delegate string CheckPlayerDelegate(Player player);
+
+        /// <summary>
+        /// Optional callback to check incoming player connections and reject if desired. Return null to accept, or return a reject reason string. Only IPAddress/AccountName/CharacterName/WeenieID are valid. Invoked by threads; you must handle synchronization yourself.
+        /// </summary>
         public static CheckPlayerDelegate CheckPlayerCallback = null;//optional; null allows all player connections
 
-        public static volatile bool ShowPlayerIPAndAccountInLogs = false;
+        /// <summary>
+        /// Whether log messages should contain player IP addresses and account names.
+        /// </summary>
+        public static volatile bool ShowPlayerIPAndAccountInLogs = true;
 
+        /// <summary>
+        /// Total number of raw TCP connection attempts to listen port. You can reset to 0 if you wish to maintain your own running total.
+        /// </summary>
         public static volatile int IncomingConnectionsCount = 0;
+
+        /// <summary>
+        /// Total number of TCP packets successfully received. You can reset to 0 if you wish to maintain your own running total.
+        /// </summary>
         public static volatile int PacketsReceivedCount = 0;
+
+        /// <summary>
+        /// Total number of bytes received via successful packets. You can reset to 0 if you wish to maintain your own running total.
+        /// </summary>
         public static volatile uint PacketsReceivedBytes = 0;//should be reset to 0 by whoever is scraping the value to prevent overflow
+
+        /// <summary>
+        /// Total number of TCP packets sent to clients. You can reset to 0 if you wish to maintain your own running total.
+        /// </summary>
         public static volatile int PacketsSentCount = 0;
-        public static uint PacketsSentBytes = 0;//should be reset to 0 by whoever is scraping the value to prevent overflow
+
+        /// <summary>
+        /// Total number of bytes sent to clients via packets. You can reset to 0 if you wish to maintain your own running total.
+        /// </summary>
+        public static uint PacketsSentBytes = 0;
 
         internal static void Log(string s)
         {
@@ -58,18 +69,36 @@ namespace ACAVCServerLib
                 LogCallback(s);
         }
 
-        public static void Init()
+        /// <summary>
+        /// Determines if the server is currently running.
+        /// </summary>
+        public static bool IsRunning
         {
-            Shutdown();
+            get
+            {
+                return (listener != null && clientProcessor != null);
+            }
+        }
 
-            listener = new ListenServer(IPAddress.Any, 42420);
+        /// <summary>
+        /// Start the server by spinning up internal threads. If server was already running, it is stopped before starting again.
+        /// </summary>
+        /// <param name="serverIP">Optional override to force hosting on a particular adapter. Pass null for implicit IPAddress.Any</param>
+        public static void Start(IPAddress serverIP=null)
+        {
+            Stop();
+
+            listener = new ListenServer(serverIP ?? IPAddress.Any, 42420);
             listener.Start();
 
             clientProcessor = new ClientProcessor(listener);
             clientProcessor.Start();
         }
 
-        public static void Shutdown()
+        /// <summary>
+        /// Gracefully shuts down server by issuing disconnect message to all players and tearing down internal threads.
+        /// </summary>
+        public static void Stop()
         {
             // tear down listener first just in case someones trying to connect while we are shutting down
             if (listener != null)
@@ -84,6 +113,7 @@ namespace ACAVCServerLib
                 clientProcessor = null;
             }
 
+            // reset metrics
             IncomingConnectionsCount = 0;
             PacketsReceivedCount = 0;
             PacketsReceivedBytes = 0;
@@ -93,6 +123,7 @@ namespace ACAVCServerLib
 
         private static CritSect _CurrentStreamInfoCrit = new CritSect();
         private static StreamInfo _CurrentStreamInfo = new StreamInfo(true, 16, 8000);
+
         /// <summary>
         /// Gets/sets the current voice codec. This may be updated at any time and will automatically synchronize to clients.
         /// </summary>
@@ -117,6 +148,10 @@ namespace ACAVCServerLib
             }
         }
 
+        /// <summary>
+        /// Gets a list of all currently connected players.
+        /// </summary>
+        /// <returns>Array of players</returns>
         public static Player[] GetPlayers()
         {
             if (clientProcessor == null)
@@ -125,6 +160,10 @@ namespace ACAVCServerLib
             return clientProcessor.GetPlayers();
         }
 
+        /// <summary>
+        /// Retrieves the count/durations of recent client processing runs. Internal buffer is cleared with each call. Optional; will only maintain several thousand of the most recent values.
+        /// </summary>
+        /// <returns>Array of durations, in seconds</returns>
         public static double[] CollectRunTimes()
         {
             if (clientProcessor == null)

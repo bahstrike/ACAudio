@@ -4,8 +4,8 @@
 // This code really doesn't do much other than display real-time server metrics.
 //
 //
-// In fact, all you need to host the server from ANY codebase is call Server.Init()
-// and Server.Shutdown(). The server operates via two internal threads.
+// In fact, all you need to host the server from ANY codebase is call Server.Start()
+// and Server.Stop(). The server operates via two internal threads.
 //
 //
 // You may wish to set Server.CurrentStreamInfo to adjust bandwidth VS quality.
@@ -104,7 +104,7 @@ namespace ACAVCServer
 
         static void Main(string[] args)
         {
-#if true
+#if false
             while (!Console.KeyAvailable) ;
             Console.ReadKey();
 #endif
@@ -133,11 +133,21 @@ namespace ACAVCServer
             Server.CheckPlayerCallback = CheckPlayerCallback;
 
             // start the server!
-            Server.Init();
+            Server.Start();
 
             // loop until we want quit
-            while (!Console.KeyAvailable)
+            for(bool running=true; running; )
             {
+                // check for quit
+                while(Console.KeyAvailable)
+                {
+                    if(Console.ReadKey(true).Key == ConsoleKey.Escape)
+                    {
+                        running = false;
+                        break;
+                    }
+                }
+
                 // clear screen if changing sizes to eliminate leftover characters
                 if(lastWidth != Console.WindowWidth || lastHeight != Console.WindowHeight)
                 {
@@ -159,7 +169,7 @@ namespace ACAVCServer
 
 
                 // retrieve / preprocess performance metrics
-                double slowRunTime = ((double)StreamInfo.DesiredAudioChunkMsec / 1000.0) * 0.2/*lets set our bar lower than bare minimum that client might expect*/;
+                double slowRunTime = ((double)100/*anticipate 100msec for an audio chunk?*/ / 1000.0) * 0.2/*lets set our bar lower than bare minimum that client might expect*/;
                 totalIncomingConnectionsCount += (uint)Server.IncomingConnectionsCount;
                 totalPacketsReceivedCount += (uint)Server.PacketsReceivedCount;
                 totalPacketsReceivedBytes += Server.PacketsReceivedBytes;
@@ -226,7 +236,7 @@ namespace ACAVCServer
 
                 // menu
                 WriteLine();
-                WriteLine("<Press any key to stop server>");
+                WriteLine("<Press ESCAPE to stop server>");
 
 
 
@@ -243,13 +253,13 @@ namespace ACAVCServer
 
 
             // disconnect clients and stop threads for a clean exit
-            Server.Shutdown();
+            Server.Stop();
         }
 
         private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             // try to perform a proper shutdown even if we were manually closed
-            Server.Shutdown();
+            Server.Stop();
         }
     }
 }

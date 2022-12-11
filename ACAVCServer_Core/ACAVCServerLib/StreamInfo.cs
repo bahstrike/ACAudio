@@ -2,22 +2,33 @@
 
 namespace ACAVCServerLib
 {
+    /// <summary>
+    /// Represents a voice codec.
+    /// </summary>
     public class StreamInfo
     {
         internal readonly int magic;
+
+        /// <summary>
+        /// Whether to use µ-law compression. Cuts bandwidth in half for 16-bit. Do not use for 8-bit (results in no savings).
+        /// </summary>
         public readonly bool ulaw;
+
+        /// <summary>
+        /// Sample bit depth;  either 8 or 16.
+        /// </summary>
         public readonly int bitDepth;
+
+        /// <summary>
+        /// Sample rate; typical values are 8000, 11025, 22050, 44100.
+        /// </summary>
         public readonly int sampleRate;
 
         // could be incorporated to protocol but we're just sticking some common constants here
-        public const double PlayerMinDist = 15.0;
-        public const double PlayerMaxDist = 50.0;
-        public const int DesiredAudioChunkMsec = 100;// shrug
+        internal const double PlayerMinDist = 15.0;
+        internal const double PlayerMaxDist = 50.0;
 
-        public const int InvalidAllegianceID = 0;
-        public const int InvalidFellowshipID = 0;
-
-        public enum VoiceChannel
+        internal enum VoiceChannel
         {
             Invalid = -1,
             Proximity3D,
@@ -41,9 +52,9 @@ namespace ACAVCServerLib
         }
 
         /// <summary>
-        /// Defines the voice codec. Note that an internal unique ID is generated so specifying the same values will still be recognized as a new codec.
+        /// Defines the a voice codec.
         /// </summary>
-        /// <param name="_ulaw">Whether to use µ-law compression (cuts bandwidth in half)</param>
+        /// <param name="_ulaw">Whether to use µ-law compression (only for 16-bit; cuts bandwidth in half)</param>
         /// <param name="_bitDepth">Either 8 or 16</param>
         /// <param name="_sampleRate">Typical values are 8000, 11025, 22050, 44100</param>
         public StreamInfo(bool _ulaw, int _bitDepth, int _sampleRate)
@@ -54,9 +65,14 @@ namespace ACAVCServerLib
             sampleRate = _sampleRate;
         }
 
-        public int DetermineExpectedBytes(int msec= DesiredAudioChunkMsec)
+        /// <summary>
+        /// Calculate how many bytes this voice codec will require for a particular length audio fragment.
+        /// </summary>
+        /// <param name="msec">Length of audio fragment, in milliseconds</param>
+        /// <returns></returns>
+        public int DetermineExpectedBytes(int msec)
         {
-            return (bitDepth / 8 * msec * sampleRate / (ulaw ? 2 : 1))/1000;
+            return (bitDepth / 8 * msec * sampleRate / ((ulaw&bitDepth==16) ? 2 : 1))/1000;
         }
 
         internal static StreamInfo FromPacket(Packet p)
@@ -74,7 +90,7 @@ namespace ACAVCServerLib
             return $"[{magic.ToString("X8")}]   ulaw:{ulaw}   bitDepth:{bitDepth}   sampleRate:{sampleRate}";
         }
 
-        public static bool CompareProperties(StreamInfo a, StreamInfo b)
+        internal static bool CompareProperties(StreamInfo a, StreamInfo b)
         {
             // cant match if one is null
             if (a == null || b == null)
