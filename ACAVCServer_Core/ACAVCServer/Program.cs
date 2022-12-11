@@ -6,8 +6,10 @@ namespace ACAVCServer
     {
         static void Main(string[] args)
         {
+#if false
             while (!Console.KeyAvailable) ;
             Console.ReadKey();
+#endif
 
 
 
