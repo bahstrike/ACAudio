@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ACAVCServerLib
+﻿namespace ACAVCServerLib
 {
-    public struct Vec2
+    internal struct Vec2
     {
         public double x, y;
 

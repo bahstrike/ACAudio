@@ -26,6 +26,8 @@
 // The remaining members of Server are mainly about performance metrics and serve
 // no functional purpose.
 
+using System;
+using System.Collections.Generic;
 using ACAVCServerLib;
 
 namespace ACAVCServer
@@ -75,12 +77,11 @@ namespace ACAVCServer
                 return $"{((double)bytes / (double)gb).ToString("#0.0")}gb";
         }
 
-        static CritSect PendingLogMessagesCrit = new CritSect();
         static List<string> PendingLogMessages = new List<string>();
 
         static void LogCallback(string s)
         {
-            using (PendingLogMessagesCrit.Lock)
+            lock(PendingLogMessages)
                 PendingLogMessages.Add(s);
         }
 
@@ -147,7 +148,7 @@ namespace ACAVCServer
                 }
 
                 // grab pending log messages into local buffer and maintain size
-                using (PendingLogMessagesCrit.Lock)
+                lock(PendingLogMessages)
                 {
                     LogMessages.AddRange(PendingLogMessages);
                     PendingLogMessages.Clear();
@@ -245,7 +246,7 @@ namespace ACAVCServer
             Server.Shutdown();
         }
 
-        private static void CurrentDomain_ProcessExit(object? sender, EventArgs e)
+        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             // try to perform a proper shutdown even if we were manually closed
             Server.Shutdown();

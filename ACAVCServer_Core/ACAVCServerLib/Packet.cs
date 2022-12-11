@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Net.Sockets;
 
 namespace ACAVCServerLib
 {
-    public class Packet
+    internal class Packet
     {
         private const int MAGIC = 0x0ACA6D10;//never change magic unless this internal packet structure changes
 

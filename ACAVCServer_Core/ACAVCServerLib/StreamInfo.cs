@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ACAVCServerLib
 {
@@ -61,7 +59,7 @@ namespace ACAVCServerLib
             return (bitDepth / 8 * msec * sampleRate / (ulaw ? 2 : 1))/1000;
         }
 
-        public static StreamInfo FromPacket(Packet p)
+        internal static StreamInfo FromPacket(Packet p)
         {
             int magic = p.ReadInt();
             bool ulaw = p.ReadBool();

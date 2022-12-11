@@ -5,7 +5,7 @@ VisualStudioVersion = 17.2.32616.157
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ACAVCServerLib", "ACAVCServerLib\ACAVCServerLib.csproj", "{9780A149-7C32-4627-B3E8-E4C15254BE24}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACAVCServer", "ACAVCServer\ACAVCServer.csproj", "{499ABF67-3774-43AA-B904-194EE7CEC859}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ACAVCServer", "ACAVCServer\ACAVCServer.csproj", "{499ABF67-3774-43AA-B904-194EE7CEC859}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

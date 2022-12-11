@@ -3,9 +3,6 @@
 // all public API of this module should be thread-safe.
 // however, the Server.xxxxxCallback  events typically require caller to synchronize their own data.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net;
 
 namespace ACAVCServerLib

@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.IO;
 
 namespace ACAVCServerLib
 {
-    public struct Position
+    internal struct Position
     {
         public uint Landblock;
         public Vec3 Local;

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net;
 using System.Net.Sockets;
 
@@ -43,7 +41,7 @@ namespace ACAVCServerLib
 
         private CritSect _PositionCrit = new CritSect();
         private Position _Position = Position.Invalid;
-        public Position Position
+        internal Position Position
         {
             get
             {
@@ -51,7 +49,7 @@ namespace ACAVCServerLib
                     return _Position;
             }
 
-            internal set
+            set
             {
                 using (_PositionCrit.Lock)
                     _Position = value;

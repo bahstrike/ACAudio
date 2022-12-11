@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ACAVCServerLib
 {
-    public struct Vec3
+    internal struct Vec3
     {
         public double x, y, z;
 
@@ -41,6 +38,16 @@ namespace ACAVCServerLib
             return (a.x != b.x ||
                 a.y != b.y ||
                 a.z != b.z);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return (this == (Vec3)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return unchecked((int)x + (int)y + (int)z);
         }
 
         public static Vec3 operator +(Vec3 a, Vec3 b)

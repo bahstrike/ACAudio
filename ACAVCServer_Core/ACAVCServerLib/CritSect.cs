@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Threading;
 
 namespace ACAVCServerLib
 {
-    public class CritSect : IDisposable
+    internal class CritSect : IDisposable
     {
         private Mutex Mutex;
 
