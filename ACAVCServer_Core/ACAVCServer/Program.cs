@@ -1,4 +1,6 @@
-﻿namespace ACAVCServer_Core
+﻿using ACAVCServerLib;
+
+namespace ACAVCServer
 {
     internal class Program
     {

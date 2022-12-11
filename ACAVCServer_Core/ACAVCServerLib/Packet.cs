@@ -4,7 +4,7 @@ using System.Text;
 using System.IO;
 using System.Net.Sockets;
 
-namespace ACAVCServer_Core
+namespace ACAVCServerLib
 {
     public class Packet
     {

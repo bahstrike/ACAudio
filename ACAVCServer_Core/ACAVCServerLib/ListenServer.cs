@@ -8,7 +8,7 @@ using System.Threading;
 using System.Net;
 using System.Net.Sockets;
 
-namespace ACAVCServer_Core
+namespace ACAVCServerLib
 {
     internal class ListenServer : WorkerThread
     {

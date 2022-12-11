@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace ACAVCServer_Core
+namespace ACAVCServerLib
 {
     internal abstract class WorkerThread
     {

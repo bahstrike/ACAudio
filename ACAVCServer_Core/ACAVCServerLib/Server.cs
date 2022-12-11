@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 
-namespace ACAVCServer_Core
+namespace ACAVCServerLib
 {
     public static class Server
     {

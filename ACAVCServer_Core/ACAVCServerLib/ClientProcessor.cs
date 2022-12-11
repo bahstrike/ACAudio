@@ -5,7 +5,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
-namespace ACAVCServer_Core
+namespace ACAVCServerLib
 {
     internal class ClientProcessor : WorkerThread
     {

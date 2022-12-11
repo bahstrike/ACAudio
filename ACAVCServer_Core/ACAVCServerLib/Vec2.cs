@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ACAVCServer_Core
+namespace ACAVCServerLib
 {
     public struct Vec2
     {

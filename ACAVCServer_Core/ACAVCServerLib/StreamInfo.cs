@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ACAVCServer_Core
+namespace ACAVCServerLib
 {
     public class StreamInfo
     {
