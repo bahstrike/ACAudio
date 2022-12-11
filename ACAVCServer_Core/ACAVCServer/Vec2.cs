@@ -1,4 +1,4 @@
-﻿namespace ACAVCServerLib
+﻿namespace ACAVCServer
 {
     internal struct Vec2
     {

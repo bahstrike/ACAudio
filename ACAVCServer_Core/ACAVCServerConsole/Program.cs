@@ -28,9 +28,9 @@
 
 using System;
 using System.Collections.Generic;
-using ACAVCServerLib;
+using ACAVCServer;
 
-namespace ACAVCServer
+namespace ACAVCServerConsole
 {
     internal class Program
     {
@@ -48,10 +48,10 @@ namespace ACAVCServer
         }
         static void WriteLine(string s)
         {
-            if (s.Length > Console.WindowWidth)
-                s = s.Substring(0, Console.WindowWidth);
+            if (s.Length >= Console.WindowWidth)
+                s = s.Substring(0, Console.WindowWidth-1);
 
-            Console.WriteLine(s + genchars(' ', Console.WindowWidth - s.Length));
+            Console.WriteLine(s + genchars(' ', Console.WindowWidth - s.Length-1));
         }
 
         static void bargraph(string label, double v, string valMax, int barWidthChars = 30)
@@ -109,6 +109,8 @@ namespace ACAVCServer
             Console.ReadKey();
 #endif
 
+            Console.Title = "ACAudio Voice Chat Server";
+
             // hook process exit so we can try a proper shutdown if console window is manually closed
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
 
@@ -131,6 +133,7 @@ namespace ACAVCServer
             // assign optional server callbacks
             Server.LogCallback = LogCallback;
             Server.CheckPlayerCallback = CheckPlayerCallback;
+            Server.ShowPlayerIPAndAccountInLogs = false;
 
             // start the server!
             Server.Start();
@@ -201,7 +204,7 @@ namespace ACAVCServer
                 // draw info at top of screen
                 Console.SetCursorPosition(0, 0);
                 WriteLine("ACAudio Voice Chat Server 1.0 - BAH 2022");
-                WriteLine(genchars('-', Console.WindowWidth));
+                WriteLine(genchars('-', Console.WindowWidth-1));
                 WriteLine();
 
                 WriteLine($"Players:{Server.GetPlayers().Length}  TotalConnectAttempts:{totalIncomingConnectionsCount}");

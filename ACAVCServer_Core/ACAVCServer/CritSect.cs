@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace ACAVCServerLib
+namespace ACAVCServer
 {
     internal class CritSect : IDisposable
     {

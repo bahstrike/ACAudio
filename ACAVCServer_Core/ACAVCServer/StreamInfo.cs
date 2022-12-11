@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ACAVCServerLib
+namespace ACAVCServer
 {
     /// <summary>
     /// Represents a voice codec.

@@ -2,7 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace ACAVCServerLib
+namespace ACAVCServer
 {
     /// <summary>
     /// Contains information about a connected client.

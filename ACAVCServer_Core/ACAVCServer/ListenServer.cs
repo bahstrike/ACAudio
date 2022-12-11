@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
-namespace ACAVCServerLib
+namespace ACAVCServer
 {
     internal class ListenServer : WorkerThread
     {

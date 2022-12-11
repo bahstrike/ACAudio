@@ -3,7 +3,7 @@ using System.Text;
 using System.IO;
 using System.Net.Sockets;
 
-namespace ACAVCServerLib
+namespace ACAVCServer
 {
     internal class Packet
     {

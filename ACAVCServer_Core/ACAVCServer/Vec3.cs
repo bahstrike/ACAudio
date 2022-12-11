@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace ACAVCServerLib
+namespace ACAVCServer
 {
     internal struct Vec3
     {

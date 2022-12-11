@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ACAVCServerLib
+namespace ACAVCServer
 {
     internal class ClientProcessor : WorkerThread
     {

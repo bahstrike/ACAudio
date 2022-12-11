@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace ACAVCServerLib
+namespace ACAVCServer
 {
     /// <summary>
     /// Main server module. All operation is handled in internal threads. All methods are thread-safe except where noted (such as Callbacks).

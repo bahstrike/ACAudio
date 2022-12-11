@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace ACAVCServerLib
+namespace ACAVCServer
 {
     internal abstract class WorkerThread
     {
