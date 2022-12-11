@@ -6,10 +6,10 @@ namespace ACAVCServerLib
 {
     public class StreamInfo
     {
-        public readonly int magic;
-        public bool ulaw;
-        public int bitDepth;
-        public int sampleRate;
+        internal readonly int magic;
+        public readonly bool ulaw;
+        public readonly int bitDepth;
+        public readonly int sampleRate;
 
         // could be incorporated to protocol but we're just sticking some common constants here
         public const double PlayerMinDist = 15.0;
@@ -34,7 +34,7 @@ namespace ACAVCServerLib
             
         }
 
-        public StreamInfo(int _magic, bool _ulaw, int _bitDepth, int _sampleRate)
+        internal StreamInfo(int _magic, bool _ulaw, int _bitDepth, int _sampleRate)
         {
             magic = _magic;
             ulaw = _ulaw;
@@ -42,12 +42,23 @@ namespace ACAVCServerLib
             sampleRate = _sampleRate;
         }
 
+        /// <summary>
+        /// Defines the voice codec. Note that an internal unique ID is generated so specifying the same values will still be recognized as a new codec.
+        /// </summary>
+        /// <param name="_ulaw">Whether to use µ-law compression (cuts bandwidth in half)</param>
+        /// <param name="_bitDepth">Either 8 or 16</param>
+        /// <param name="_sampleRate">Typical values are 8000, 11025, 22050, 44100</param>
         public StreamInfo(bool _ulaw, int _bitDepth, int _sampleRate)
         {
             magic = random.Next();
             ulaw = _ulaw;
             bitDepth = _bitDepth;
             sampleRate = _sampleRate;
+        }
+
+        public int DetermineExpectedBytes(int msec= DesiredAudioChunkMsec)
+        {
+            return (bitDepth / 8 * msec * sampleRate / (ulaw ? 2 : 1))/1000;
         }
 
         public static StreamInfo FromPacket(Packet p)

@@ -96,6 +96,9 @@ namespace ACAVCServerLib
 
         private static CritSect _CurrentStreamInfoCrit = new CritSect();
         private static StreamInfo _CurrentStreamInfo = new StreamInfo(true, 16, 8000);
+        /// <summary>
+        /// Gets/sets the current voice codec. This may be updated at any time and will automatically synchronize to clients.
+        /// </summary>
         public static StreamInfo CurrentStreamInfo
         {
             get
