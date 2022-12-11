@@ -49,67 +49,11 @@ namespace ACAVCServerLib
 
         public static volatile bool ShowPlayerIPAndAccountInLogs = false;
 
-        public struct PerformanceMetrics
-        {
-            public readonly ulong IncomingConnectionsCount;
-            public readonly ulong PacketsReceivedCount;
-            public readonly ulong PacketsReceivedBytes;
-            public readonly ulong PacketsSentCount;
-            public readonly ulong PacketsSentBytes;
-
-            public PerformanceMetrics(ulong _IncomingConnectionsCount,
-                                        ulong _PacketsReceivedCount,
-                                        ulong _PacketsReceivedBytes,
-                                        ulong _PacketsSentCount,
-                                        ulong _PacketsSentBytes)
-            {
-                IncomingConnectionsCount = _IncomingConnectionsCount;
-                PacketsReceivedCount = _PacketsReceivedCount;
-                PacketsReceivedBytes = _PacketsReceivedBytes;
-                PacketsSentCount = _PacketsSentCount;
-                PacketsSentBytes = _PacketsSentBytes;
-            }
-
-            public static PerformanceMetrics operator +(PerformanceMetrics a, PerformanceMetrics b)
-            {
-                return new PerformanceMetrics(
-                    a.IncomingConnectionsCount + b.IncomingConnectionsCount,
-                    a.PacketsReceivedCount + b.PacketsReceivedCount,
-                    a.PacketsReceivedBytes + b.PacketsReceivedBytes,
-                    a.PacketsSentCount + b.PacketsSentCount,
-                    a.PacketsSentBytes + b.PacketsSentBytes);
-            }
-
-            public static PerformanceMetrics Zero
-            {
-                get
-                {
-                    return new PerformanceMetrics(0, 0, 0, 0, 0);
-                }
-            }
-        }
-
-        public static PerformanceMetrics CollectCurrentPerformanceMetrics()
-        {
-            // snag values
-            PerformanceMetrics perf = new PerformanceMetrics((ulong)IncomingConnectionsCount, (ulong)PacketsReceivedCount, (ulong)PacketsReceivedBytes, (ulong)PacketsSentCount, (ulong)PacketsSentBytes);
-
-            // reset
-            IncomingConnectionsCount = 0;
-            PacketsReceivedCount = 0;
-            PacketsReceivedBytes = 0;
-            PacketsSentCount = 0;
-            PacketsSentBytes = 0;
-
-            // return
-            return perf;
-        }
-
-        internal static volatile int IncomingConnectionsCount = 0;
-        internal static volatile int PacketsReceivedCount = 0;
-        internal static volatile uint PacketsReceivedBytes = 0;//should be reset to 0 by whoever is scraping the value to prevent overflow
-        internal static volatile int PacketsSentCount = 0;
-        internal static volatile uint PacketsSentBytes = 0;//should be reset to 0 by whoever is scraping the value to prevent overflow
+        public static volatile int IncomingConnectionsCount = 0;
+        public static volatile int PacketsReceivedCount = 0;
+        public static volatile uint PacketsReceivedBytes = 0;//should be reset to 0 by whoever is scraping the value to prevent overflow
+        public static volatile int PacketsSentCount = 0;
+        public static uint PacketsSentBytes = 0;//should be reset to 0 by whoever is scraping the value to prevent overflow
 
         internal static void Log(string s)
         {
