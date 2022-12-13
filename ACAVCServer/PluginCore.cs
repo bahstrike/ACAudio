@@ -115,19 +115,11 @@ namespace ACAVCServer
 
 
 
-
             }
             catch (Exception ex)
             {
                 Log($"Startup exception: {ex.Message}");
             }
-        }
-
-        private void _ChatBoxMessage(object sender, ChatTextInterceptEventArgs e)
-        {
-            //Log($"CHAT: {e.Text}");
-
-
         }
 
 
@@ -209,11 +201,120 @@ namespace ACAVCServer
             }
         }
 
-        static void BotChat(string s)
+        private void _ChatBoxMessage(object sender, ChatTextInterceptEventArgs e)
         {
-            CoreManager.Current.Actions.InvokeChatParser($"/e says, \"{s}\" -b-");
+            //Log($"RAWCHAT ({e.Target}): |{e.Text}|");
+
+
+            // filter out emote and quest spam
+            if (e.Text.StartsWith("[") || e.Text.StartsWith("<"))
+            {
+                string ln = e.Text;
+                int i;
+
+                //Log($"RAW ({e.Target}): {ln}");
+
+                string channel = "Global";
+                if (ln.StartsWith("["))
+                {
+                    ln = ln.Substring(1);
+                    i = ln.IndexOf(']');
+
+                    channel = ln.Substring(0, i);
+
+                    ln = ln.Substring(i + 1/*end bracket*/ + 1/*space*/);
+                }
+
+                const string prefix = "<Tell:IIDString:";
+                if (ln.StartsWith(prefix))
+                {
+                    ln = ln.Substring(prefix.Length);
+                    i = ln.IndexOf(':');
+
+                    string sID = ln.Substring(0, i);
+                    ln = ln.Substring(i + 1);
+
+                    int id = int.Parse(sID);
+
+                    i = ln.IndexOf('>');
+                    string playerName = ln.Substring(0, i);
+                    ln = ln.Substring(i + 1);
+
+
+                    // skip rest of garbage
+
+
+                    const string endTag = "<\\Tell>";
+                    i = ln.IndexOf(endTag);
+                    ln = ln.Substring(i + endTag.Length);
+
+
+                    ln = ln.Substring(1);// skip extra space
+                    i = ln.IndexOf(',');
+                    string mode = ln.Substring(0, i);
+                    ln = ln.Substring(i + 1/*comma*/ + 1/*space*/ + 1/*openquote*/);
+
+                    string content = ln.Substring(0, ln.Length - 1/*closequote*/ - 1/*uhh donno.. newline?*/);
+
+
+
+                    Log($"CHAT ({e.Target}): [{channel}][{id.ToString("X8")}][{playerName}][{mode}]:[{content}]");//   leftover({ln.Length}):{ln}");
+
+
+
+                    if (content.Equals("help", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        BotTell(playerName, "I am an ACAudio Voice Chat Server.");
+                        BotTell(playerName, "Put my name as \"Bot\" into the VoiceChat tab of ACAudio.");
+                        BotTell(playerName, "The ACAudio Decal plugin is available here:");
+                        BotTell(playerName, "https://blahblah");
+
+                    }
+                }
+            }
         }
 
+        static void BotChat(string s)
+        {
+            _QueueChat($"/e says, \"{s}\" -b-");
+        }
+
+        static void BotTell(string targetName, string s)
+        {
+            _QueueChat($"/tell {targetName},{s}");
+        }
+
+
+        static CritSect PendingChatsCrit = new CritSect();
+        static List<string> PendingChats = new List<string>();
+
+        static void _QueueChat(string s)
+        {
+            using (PendingChatsCrit.Lock)
+            {
+                while (PendingChats.Count > 100)
+                    PendingChats.RemoveAt(0);
+
+                PendingChats.Add(s);
+            }
+        }
+
+        static void _DispatchChatSingle()
+        {
+            string outgoing = null;
+            using (PendingChatsCrit.Lock)
+            {
+                if (PendingChats.Count > 0)
+                {
+                    outgoing = PendingChats[0];
+                    PendingChats.RemoveAt(0);
+                }
+            }
+            lastDispatchChat = DateTime.Now;
+            CoreManager.Current.Actions.InvokeChatParser(outgoing);
+        }
+
+        public bool EnableAvertisement = false;
         private DateTime lastAdvertisement = new DateTime();
 
         private void Process(double dt, double truedt)
@@ -222,22 +323,31 @@ namespace ACAVCServer
             {
                 // ok we're actually logged in. lets determine if we should chat spam
 
-                if(lastAdvertisement == new DateTime())
+                if (EnableAvertisement)
                 {
-                    BotChat("ACAudio Voice Chat Server is Online!");
+                    if (lastAdvertisement == new DateTime())
+                    {
+                        BotChat("ACAudio Voice Chat Server is Online!");
 
-                    lastAdvertisement = DateTime.Now;
-                } else if(DateTime.Now.Subtract(lastAdvertisement).TotalMinutes >= 5.0)
-                {
-                    BotChat("I am an ACAudio Voice Chat Server. Tell me 'help' to learn more.");
+                        lastAdvertisement = DateTime.Now;
+                    }
+                    else if (DateTime.Now.Subtract(lastAdvertisement).TotalMinutes >= 5.0)
+                    {
+                        BotChat("I am an ACAudio Voice Chat Server. Tell me 'help' to learn more.");
 
-                    lastAdvertisement = DateTime.Now;
+                        lastAdvertisement = DateTime.Now;
+                    }
                 }
             }
 
 
             (View["Status"] as HudStaticText).Text = $"Players:{Server.GetPlayers().Length}";
+
+            if(DateTime.Now.Subtract(lastDispatchChat).TotalMilliseconds > 250)
+                _DispatchChatSingle();
         }
+
+        private static DateTime lastDispatchChat = new DateTime();
 
         public bool NeedFirstLoginPlayerWeenie = true;
 
