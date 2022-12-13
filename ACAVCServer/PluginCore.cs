@@ -163,6 +163,21 @@ namespace ACAVCServer
             }
         }
 
+        private long LoginCompleteTimestamp = 0;
+        public double WorldTime
+        {
+            get
+            {
+                if (LoginCompleteTimestamp == 0)
+                {
+                    //Log("logincompletetimestamp is 0 so the answer is no");
+                    return 0.0;
+                }
+
+                return PerfTimer.TimeBetween(LoginCompleteTimestamp, PerfTimer.Timestamp);
+            }
+        }
+
         long lastTimestamp = 0;
         private void _Process(object sender, EventArgs e)
         {
@@ -194,19 +209,65 @@ namespace ACAVCServer
             }
         }
 
+        static void BotChat(string s)
+        {
+            CoreManager.Current.Actions.InvokeChatParser($"/e says, \"{s}\" -b-");
+        }
+
+        private DateTime lastAdvertisement = new DateTime();
 
         private void Process(double dt, double truedt)
         {
+            if(!NeedFirstLoginPlayerWeenie)
+            {
+                // ok we're actually logged in. lets determine if we should chat spam
+
+                if(lastAdvertisement == new DateTime())
+                {
+                    BotChat("ACAudio Voice Chat Server is Online!");
+
+                    lastAdvertisement = DateTime.Now;
+                } else if(DateTime.Now.Subtract(lastAdvertisement).TotalMinutes >= 5.0)
+                {
+                    BotChat("I am an ACAudio Voice Chat Server. Tell me 'help' to learn more.");
+
+                    lastAdvertisement = DateTime.Now;
+                }
+            }
+
+
             (View["Status"] as HudStaticText).Text = $"Players:{Server.GetPlayers().Length}";
         }
-       
+
+        public bool NeedFirstLoginPlayerWeenie = true;
 
         [BaseEvent("LoginComplete", "CharacterFilter")]
         private void CharacterFilter_LoginComplete(object sender, EventArgs e)
         {
             WriteToChat($"Startup");
 
+            // even though we're logged in, we havent spawned in-game yet.  set flag to do logic upon first gamespawn
+            NeedFirstLoginPlayerWeenie = true;
 
+
+            // start our world timer
+            LoginCompleteTimestamp = PerfTimer.Timestamp;
+        }
+
+        [BaseEvent("ChangePortalMode", "CharacterFilter")]
+        private void CharacterFilter_ChangePortalMode(object sender, ChangePortalModeEventArgs e)
+        {
+            if (e.Type == PortalEventType.ExitPortal)
+            {
+                
+
+                if (NeedFirstLoginPlayerWeenie)
+                {
+                    NeedFirstLoginPlayerWeenie = false;
+
+
+                }
+            }
         }
 
 
