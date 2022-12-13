@@ -6,13 +6,6 @@ DEVELOPMENT (Server)
 Code				Strike
 
 
-DEVELOPMENT (TestClient)
---------------------------------------------------------------------------------------------
-Code				Strike
-Audio Engine			FMOD (Firelight Technologies Pty Ltd.)
-μ-law Voice Compression		https://www.codeproject.com/Articles/482735/TCP-Audio-Streamer-and-Player-Voice-Chat-over-IP
-
-
 ADVICE and DISCUSSION
 --------------------------------------------------------------------------------------------
 Advan
@@ -22,7 +15,7 @@ RF
 trevis
 
 
-Smith Libraries  (SmithCore.dll, SmithAudio.dll)
+Smith Libraries  (SmithCore.dll)
 --------------------------------------------------------------------------------------------
 Smith Libraries are a math and utilities library written by Strike (Bad Ass Hackers) for a proprietary game engine called Smith (https://smith.bah.wtf).
 

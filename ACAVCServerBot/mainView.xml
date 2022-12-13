@@ -1,0 +1,12 @@
+﻿<?xml version="1.0"?>
+<view icon="28059" title="ACAVCServerBot" width="420" height="300">
+  <control progid="DecalControls.Notebook" name="nbMain">
+    <page label="Main">
+      <control progid="DecalControls.FixedLayout" clipped="">
+        <control progid="DecalControls.StaticText" name="Status" left="10" top="10" width="400" height="130" text=""/>
+
+      </control>
+    </page>
+
+  </control>
+</view>

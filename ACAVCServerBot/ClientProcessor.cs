@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using ACACommon;
 using Smith;
 
-namespace ACAVCServer
+namespace ACAVCServerBot
 {
     internal class ClientProcessor : WorkerThread
     {
@@ -169,79 +169,86 @@ namespace ACAVCServer
 
                     if (playerPacket.Message == Packet.MessageType.RawAudio)
                     {
-                        int magic = playerPacket.ReadInt();
-                        bool loopback = playerPacket.ReadBool();
-                        StreamInfo.VoiceChannel speakChannel = (StreamInfo.VoiceChannel)playerPacket.ReadInt();
-                        if (speakChannel == StreamInfo.VoiceChannel.Invalid)
-                            continue;
-
-                        // if magic doesnt match current server streaminfo (wrong format) then just ignore the rest of this packet
-                        if (magic != streamInfo.magic)
-                            continue;
-
-                        // extract data from raw audio packet
-                        byte[] buf = playerPacket.ReadBuffer();
-                        if (buf == null || buf.Length == 0)
-                            continue;
-
-
-
-                        // reconstruct a detailed audio packet that includes the appropriate source information for redistribution
-                        Packet detailAudio = new Packet(Packet.MessageType.DetailAudio);
-                        detailAudio.WriteInt(streamInfo.magic);
-                        detailAudio.WriteInt((int)speakChannel);
-                        detailAudio.WriteInt(player.WeenieID);
-                        detailAudio.WriteBuffer(buf);
-
-
-                        // if loopback, just send back to player
-                        if (loopback)
-                            player.Send(detailAudio);
-                        else
+                        try
                         {
-                            // relay audio packet to anyone who should hear it   (implement BVH??)
-                            foreach (Player player2 in currentPlayers)
+                            int magic = playerPacket.ReadInt();
+                            bool loopback = playerPacket.ReadBool();
+                            StreamInfo.VoiceChannel speakChannel = (StreamInfo.VoiceChannel)playerPacket.ReadInt();
+                            if (speakChannel == StreamInfo.VoiceChannel.Invalid)
+                                continue;
+
+                            // if magic doesnt match current server streaminfo (wrong format) then just ignore the rest of this packet
+                            if (magic != streamInfo.magic)
+                                continue;
+
+                            // extract data from raw audio packet
+                            byte[] buf = playerPacket.ReadBuffer();
+                            if (buf == null || buf.Length == 0)
+                                continue;
+
+
+
+                            // reconstruct a detailed audio packet that includes the appropriate source information for redistribution
+                            Packet detailAudio = new Packet(Packet.MessageType.DetailAudio);
+                            detailAudio.WriteInt(streamInfo.magic);
+                            detailAudio.WriteInt((int)speakChannel);
+                            detailAudio.WriteInt(player.WeenieID);
+                            detailAudio.WriteBuffer(buf);
+
+
+                            // if loopback, just send back to player
+                            if (loopback)
+                                player.Send(detailAudio);
+                            else
                             {
-                                // dont perform loopback
-                                if (object.ReferenceEquals(player, player2))
-                                    continue;
-
-                                // perform proximity logic if 3d
-                                if (speakChannel == StreamInfo.VoiceChannel.Proximity3D)
+                                // relay audio packet to anyone who should hear it   (implement BVH??)
+                                foreach (Player player2 in currentPlayers)
                                 {
-                                    // skip if incompatible landblocks
-                                    if (!player.Position.IsCompatibleWith(player2.Position))
+                                    // dont perform loopback
+                                    if (object.ReferenceEquals(player, player2))
                                         continue;
 
-                                    // skip if too far apart
-                                    if ((player.Position.Global - player2.Position.Global).Magnitude > StreamInfo.PlayerMaxDist)
+                                    // perform proximity logic if 3d
+                                    if (speakChannel == StreamInfo.VoiceChannel.Proximity3D)
+                                    {
+                                        // skip if incompatible landblocks
+                                        if (!player.Position.IsCompatibleWith(player2.Position))
+                                            continue;
+
+                                        // skip if too far apart
+                                        if ((player.Position.Global - player2.Position.Global).Magnitude > StreamInfo.PlayerMaxDist)
+                                            continue;
+                                    }
+                                    else
+                                        if (speakChannel == StreamInfo.VoiceChannel.Allegiance)
+                                    {
+                                        // must skip if either allegiance ID is invalid (two invalids dont make a match)
+                                        if (player.AllegianceID == StreamInfo.InvalidAllegianceID || player2.AllegianceID == StreamInfo.InvalidAllegianceID)
+                                            continue;
+
+                                        if (player.AllegianceID != player2.AllegianceID)
+                                            continue;
+                                    }
+                                    else if (speakChannel == StreamInfo.VoiceChannel.Fellowship)
+                                    {
+                                        // must skip if either fellowship ID is invalid (two invalids dont make a match)
+                                        if (player.FellowshipID == StreamInfo.InvalidFellowshipID || player2.FellowshipID == StreamInfo.InvalidFellowshipID)
+                                            continue;
+
+                                        if (player.FellowshipID != player2.FellowshipID)
+                                            continue;
+                                    }
+                                    else
+                                        // unrecognized channel type
                                         continue;
+
+                                    player2.Send(detailAudio);
                                 }
-                                else
-                                    if (speakChannel == StreamInfo.VoiceChannel.Allegiance)
-                                {
-                                    // must skip if either allegiance ID is invalid (two invalids dont make a match)
-                                    if (player.AllegianceID == StreamInfo.InvalidAllegianceID || player2.AllegianceID == StreamInfo.InvalidAllegianceID)
-                                        continue;
-
-                                    if (player.AllegianceID != player2.AllegianceID)
-                                        continue;
-                                }
-                                else if (speakChannel == StreamInfo.VoiceChannel.Fellowship)
-                                {
-                                    // must skip if either fellowship ID is invalid (two invalids dont make a match)
-                                    if (player.FellowshipID == StreamInfo.InvalidFellowshipID || player2.FellowshipID == StreamInfo.InvalidFellowshipID)
-                                        continue;
-
-                                    if (player.FellowshipID != player2.FellowshipID)
-                                        continue;
-                                }
-                                else
-                                    // unrecognized channel type
-                                    continue;
-
-                                player2.Send(detailAudio);
                             }
+                        }
+                        catch(Exception ex)
+                        {
+                            Server.Log($"rawaudio exception: {ex.Message}");
                         }
 
                     }

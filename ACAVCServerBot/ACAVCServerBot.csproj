@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{222990B1-0238-4CCC-BC87-1A1041AF28CA}</ProjectGuid>
+    <ProjectGuid>{3A47B37F-C57B-4560-BC17-1BC2FA995388}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ACAVCServer</RootNamespace>
-    <AssemblyName>ACAVCServer</AssemblyName>
+    <RootNamespace>ACAVCServerBot</RootNamespace>
+    <AssemblyName>ACAVCServerBot</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,22 +30,33 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Decal.Adapter">
+      <HintPath>..\..\Program Files (x86)\Decal 3.0\Decal.Adapter.dll</HintPath>
+    </Reference>
     <Reference Include="SmithCore">
       <HintPath>..\DEPLOY\SmithCore.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="VirindiViewService">
+      <HintPath>..\..\Games\VirindiPlugins\VirindiViewService\VirindiViewService.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientProcessor.cs" />
     <Compile Include="ListenServer.cs" />
     <Compile Include="Player.cs" />
+    <Compile Include="PluginCore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="WorkerThread.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="mainView.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ACACommon\ACACommon.csproj">
@@ -54,6 +66,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y "$(TargetPath)" "$(SolutionDir)\VOICESERVER\$(TargetFileName)"</PostBuildEvent>
+    <PostBuildEvent>copy /y "$(TargetPath)" "$(SolutionDir)\DEPLOYBOT\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
 </Project>

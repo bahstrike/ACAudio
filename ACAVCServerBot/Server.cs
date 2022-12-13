@@ -10,7 +10,7 @@ using System.Net;
 using ACACommon;
 using Smith;
 
-namespace ACAVCServer
+namespace ACAVCServerBot
 {
     public static class Server
     {
@@ -153,7 +153,7 @@ namespace ACAVCServer
         }
 
         private static CritSect _CurrentStreamInfoCrit = new CritSect();
-        private static StreamInfo _CurrentStreamInfo = null;
+        private static StreamInfo _CurrentStreamInfo = new StreamInfo(true, 16, 8000);
         public static StreamInfo CurrentStreamInfo
         {
             get

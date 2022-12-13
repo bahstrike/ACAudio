@@ -5,7 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using ACACommon;
 
-namespace ACAVCServer
+namespace ACAVCServerBot
 {
     public class Player
     {

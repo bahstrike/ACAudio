@@ -10,7 +10,7 @@ using System.Net.Sockets;
 using ACACommon;
 using Smith;
 
-namespace ACAVCServer
+namespace ACAVCServerBot
 {
     internal class ListenServer : WorkerThread
     {
