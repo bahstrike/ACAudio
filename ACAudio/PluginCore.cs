@@ -337,13 +337,28 @@ namespace ACAudio
                 (View["VCServerAutoCheck"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
                 {
                     if ((sender as HudCheckBox).Checked)
+                    {
                         (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
+                        (View["VCServerBotCheck"] as HudCheckBox).Checked = false;
+                    }
                 };
 
                 (View["VCServerCustomCheck"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
                 {
                     if ((sender as HudCheckBox).Checked)
+                    {
                         (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
+                        (View["VCServerBotCheck"] as HudCheckBox).Checked = false;
+                    }
+                };
+
+                (View["VCServerBotCheck"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
+                {
+                    if ((sender as HudCheckBox).Checked)
+                    {
+                        (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
+                        (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
+                    }
                 };
 
                 (View["VCServerAutoHost"] as HudStaticText).Text = ACServerHost ?? "-failed to query-";
@@ -385,18 +400,32 @@ namespace ACAudio
                     (View["PortalMusicEnable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "PortalMusicEnable", "1") != "0";
 
 
-                    if (ini.GetKeyString(Core.CharacterFilter.AccountName, "VCServerAutoCheck", "1") != "0")
+                    int i;
+                    if (!int.TryParse(ini.GetKeyString(Core.CharacterFilter.AccountName, "VCServer", "0"), out i))
+                        i = 0;
+                    switch(i)
                     {
-                        (View["VCServerAutoCheck"] as HudCheckBox).Checked = true;
-                        (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
-                    }
-                    else
-                    {
-                        (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
-                        (View["VCServerCustomCheck"] as HudCheckBox).Checked = true;
+                        case 0://auto
+                            (View["VCServerAutoCheck"] as HudCheckBox).Checked = true;
+                            (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
+                            (View["VCServerBotCheck"] as HudCheckBox).Checked = false;
+                            break;
+
+                        case 1://custom
+                            (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
+                            (View["VCServerCustomCheck"] as HudCheckBox).Checked = true;
+                            (View["VCServerBotCheck"] as HudCheckBox).Checked = false;
+                            break;
+
+                        case 2://bot
+                            (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
+                            (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
+                            (View["VCServerBotCheck"] as HudCheckBox).Checked = true;
+                            break;
                     }
 
                     (View["VCServerCustomHost"] as HudTextBox).Text = ini.GetKeyString(Core.CharacterFilter.AccountName, "VCServerCustomHost", string.Empty);
+                    (View["VCServerBotHost"] as HudTextBox).Text = ini.GetKeyString(Core.CharacterFilter.AccountName, "VCServerBotHost", string.Empty);
 
 
                     string preferredMic = ini.GetKeyString(Core.CharacterFilter.AccountName, "RecordDevice", string.Empty);
@@ -698,8 +727,17 @@ namespace ACAudio
                 ini.WriteKey(Core.CharacterFilter.AccountName, "PortalMusicEnable", (View["PortalMusicEnable"] as HudCheckBox).Checked ? "1" : "0");
 
 
-                ini.WriteKey(Core.CharacterFilter.AccountName, "VCServerAutoCheck", (View["VCServerAutoCheck"] as HudCheckBox).Checked ? "1" : "0");
+                int i;
+                if ((View["VCServerBotCheck"] as HudCheckBox).Checked)
+                    i = 2;
+                else if ((View["VCServerCustomCheck"] as HudCheckBox).Checked)
+                    i = 1;
+                else
+                    i = 0;
+
+                ini.WriteKey(Core.CharacterFilter.AccountName, "VCServer", i.ToString());
                 ini.WriteKey(Core.CharacterFilter.AccountName, "VCServerCustomHost", (View["VCServerCustomHost"] as HudTextBox).Text);
+                ini.WriteKey(Core.CharacterFilter.AccountName, "VCServerBotHost", (View["VCServerBotHost"] as HudTextBox).Text);
 
                 ini.WriteKey(Core.CharacterFilter.AccountName, "RecordDevice", VCClient.CurrentRecordDevice == null ? string.Empty : VCClient.CurrentRecordDevice.Name.Trim());
             }

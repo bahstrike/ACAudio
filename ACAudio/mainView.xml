@@ -27,13 +27,16 @@
         
         <control progid="DecalControls.CheckBox" name="VCServerCustomCheck" left="10" top="30" width="80" height="20" text="Custom" checked="False"/>
         <control progid="DecalControls.Edit" name="VCServerCustomHost" left="110" top="30" width="120" height="18" text=""/>
+
+        <control progid="DecalControls.CheckBox" name="VCServerBotCheck" left="10" top="50" width="80" height="20" text="Bot" checked="False"/>
+        <control progid="DecalControls.Edit" name="VCServerBotHost" left="110" top="50" width="120" height="18" text=""/>
         
-        <control progid="DecalControls.StaticText" name="VoiceChatStatus" left="10" top="50" width="400" height="18" text=""/>
+        <control progid="DecalControls.StaticText" name="VoiceChatStatus" left="10" top="70" width="400" height="18" text=""/>
         
         
-        <control progid="DecalControls.Choice" name="RecordDevice" left="10" top="90" width="320" height="20" />
-        <control progid="DecalControls.CheckBox" name="MicLoopback" left="10" top="110" width="120" height="20" text="Loopback" checked="False"/>
-        <control progid="DecalControls.Choice" name="MicChannel" left="10" top="130" width="120" height="20"/>
+        <control progid="DecalControls.Choice" name="RecordDevice" left="10" top="110" width="320" height="20" />
+        <control progid="DecalControls.CheckBox" name="MicLoopback" left="10" top="130" width="120" height="20" text="Loopback" checked="False"/>
+        <control progid="DecalControls.Choice" name="MicChannel" left="10" top="150" width="120" height="20"/>
       </control>
     </page>
 

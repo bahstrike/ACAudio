@@ -197,7 +197,7 @@ namespace ACAVCServer
 
         private void Process(double dt, double truedt)
         {
-            //(View["Status"] as HudStaticText).Text = $"Players:{Server.GetPlayers()?.Length ?? 0}";
+            (View["Status"] as HudStaticText).Text = $"Players:{Server.GetPlayers().Length}";
         }
        
 
