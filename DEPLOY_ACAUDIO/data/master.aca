@@ -143,6 +143,15 @@ push
 pop
 
 
+// marketplace
+push
+	vol 0.6//good town music volume?
+
+	file wtctest.mp3
+	dungeon 016C // marketplace
+pop
+
+
 //dungeon 002E // i donno what this was
 
 // town songs
