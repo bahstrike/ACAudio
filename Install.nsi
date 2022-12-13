@@ -7,7 +7,7 @@
 !define ASSEMBLY "ACAudio.dll"
 !define CLASSNAME "ACAudio.PluginCore"
 
-!define BUILDPATH "C:\ACAudio\DEPLOY"
+!define BUILDPATH "C:\ACAudio\DEPLOY_ACAUDIO"
 
 ; Main Install settings
 ; compressor goes first

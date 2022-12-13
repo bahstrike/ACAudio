@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACACommon", "ACACommon\ACAC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VCStressTest", "VCStressTest\VCStressTest.csproj", "{83B07330-8CED-43DD-A75E-3B4F52608CE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACAVCServerBot", "ACAVCServerBot\ACAVCServerBot.csproj", "{3A47B37F-C57B-4560-BC17-1BC2FA995388}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACAVCServer", "ACAVCServer\ACAVCServer.csproj", "{3A47B37F-C57B-4560-BC17-1BC2FA995388}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

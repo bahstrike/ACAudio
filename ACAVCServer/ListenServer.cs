@@ -2,8 +2,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
+using System.IO;
+using System.Threading;
 using System.Net;
 using System.Net.Sockets;
+using ACACommon;
+using Smith;
 
 namespace ACAVCServer
 {
@@ -64,6 +69,7 @@ namespace ACAVCServer
                     Server.Log($"Listening on {IPAddress}:{Port}");
                 }
 
+
                 Server.IncomingConnectionsCount++;
                     
                 TcpClient client = listener.AcceptTcpClient();
@@ -85,6 +91,7 @@ namespace ACAVCServer
                     client.Close();
                     return;
                 }
+
 
                 // try to accept client into system
                 string accountName = clientInfo.ReadString();

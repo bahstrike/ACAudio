@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using ACACommon;
 using Smith;
 
-namespace ACAVCServerBot
+namespace ACAVCServer
 {
     internal class ClientProcessor : WorkerThread
     {

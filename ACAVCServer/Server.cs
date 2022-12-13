@@ -10,7 +10,7 @@ using System.Net;
 using ACACommon;
 using Smith;
 
-namespace ACAVCServerBot
+namespace ACAVCServer
 {
     public static class Server
     {

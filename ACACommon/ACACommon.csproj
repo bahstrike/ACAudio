@@ -35,7 +35,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="SmithCore">
-      <HintPath>..\DEPLOY\SmithCore.dll</HintPath>
+      <HintPath>..\DEPLOY_ACAUDIO\SmithCore.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -49,7 +49,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y "$(TargetPath)" "$(SolutionDir)\DEPLOY\$(TargetFileName)"
-copy /y "$(TargetPath)" "$(SolutionDir)\DEPLOYBOT\$(TargetFileName)"</PostBuildEvent>
+    <PostBuildEvent>copy /y "$(TargetPath)" "$(SolutionDir)\DEPLOY_ACAUDIO\$(TargetFileName)"
+copy /y "$(TargetPath)" "$(SolutionDir)\DEPLOY_ACAVCSERVER\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
 </Project>

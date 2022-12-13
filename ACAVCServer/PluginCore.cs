@@ -14,13 +14,13 @@ using System.Diagnostics;
 
 using ACACommon;
 
-namespace ACAVCServerBot
+namespace ACAVCServer
 {
     [WireUpBaseEvents]
     [FriendlyName(PluginName)]
     public class PluginCore : Decal.Adapter.PluginBase
     {
-        public const string PluginName = "ACAVCServerBot";//needs to match namespace or "embedded resources" wont work
+        public const string PluginName = "ACAVCServer";//needs to match namespace or "embedded resources" wont work
 
         private static PluginCore _Instance = null;
         public static PluginCore Instance { get { return _Instance; } }
@@ -80,7 +80,7 @@ namespace ACAVCServerBot
                     File.Delete(FinalLogFilepath);
 
                 Log("----------------------------------------------------------------------");
-                Log("                       ACAVCServerBot Startup");
+                Log("                       ACAVCServer Startup");
                 Log("----------------------------------------------------------------------");
 
 
@@ -159,7 +159,7 @@ namespace ACAVCServerBot
         {
             get
             {
-                return new INIFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ACAVCServerBot.ini"));
+                return new INIFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ACAVCServer.ini"));
             }
         }
 
@@ -225,7 +225,7 @@ namespace ACAVCServerBot
 
 
             Log("----------------------------------------------------------------------");
-            Log("                       ACAVCServerBot Shutdown");
+            Log("                       ACAVCServer Shutdown");
             Log("----------------------------------------------------------------------");
         }
 

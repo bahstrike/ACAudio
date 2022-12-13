@@ -1,35 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using ACACommon;
 
 namespace ACAVCServer
 {
-    /// <summary>
-    /// Contains information about a connected client.
-    /// </summary>
     public class Player
     {
         private readonly TcpClient Client;
-
-        /// <summary>
-        /// The name of the player's account used when connecting to the Asheron's Call server.
-        /// </summary>
         public readonly string AccountName;
-
-        /// <summary>
-        /// The in-game name of the player's character.
-        /// </summary>
         public readonly string CharacterName;
-
-        /// <summary>
-        /// The in-game unique ID of the player's world object ("weenie").
-        /// </summary>
         public readonly int WeenieID;
 
-        private volatile int _AllegianceID = 0;
-        /// <summary>
-        /// The ID of the in-game monarch the player is in, or 0 otherwise. May not be available until a short while after the player connects.
-        /// </summary>
+        private volatile int _AllegianceID = StreamInfo.InvalidAllegianceID;
         public int AllegianceID
         {
             get
@@ -43,10 +28,7 @@ namespace ACAVCServer
             }
         }
 
-        private volatile int _FellowshipID = 0;
-        /// <summary>
-        /// The ID of the in-game fellowship the player is in, or 0 otherwise.
-        /// </summary>
+        private volatile int _FellowshipID = StreamInfo.InvalidFellowshipID;
         public int FellowshipID
         {
             get
@@ -60,9 +42,9 @@ namespace ACAVCServer
             }
         }
 
-        private CritSect _PositionCrit = new CritSect();
+        private Smith.CritSect _PositionCrit = new Smith.CritSect();
         private Position _Position = Position.Invalid;
-        internal Position Position
+        public Position Position
         {
             get
             {
@@ -70,7 +52,7 @@ namespace ACAVCServer
                     return _Position;
             }
 
-            set
+            internal set
             {
                 using (_PositionCrit.Lock)
                     _Position = value;
@@ -79,7 +61,7 @@ namespace ACAVCServer
 
         private volatile string _WantDisconnectReason = null;
         /// <summary>
-        /// Set to any non-null string to kick the player. Cannot be undone once set!
+        /// cant clear once issued:  but give a reason string and this player socket will be disconnected.
         /// </summary>
         public string WantDisconnectReason
         {
@@ -115,9 +97,6 @@ namespace ACAVCServer
             return str;
         }
 
-        /// <summary>
-        /// IP address of the connected player.
-        /// </summary>
         public IPAddress IPAddress
         {
             get
@@ -126,9 +105,6 @@ namespace ACAVCServer
             }
         }
 
-        /// <summary>
-        /// Whether or not the player is still connected.
-        /// </summary>
         public bool Connected
         {
             get
@@ -138,14 +114,14 @@ namespace ACAVCServer
         }
 
         private DateTime _LastServerStatusTime = new DateTime();
-        internal DateTime LastServerStatusTime
+        public DateTime LastServerStatusTime
         {
             get
             {
                 return _LastServerStatusTime;
             }
 
-            set
+            internal set
             {
                 _LastServerStatusTime = value;
             }
