@@ -310,8 +310,12 @@ namespace ACAVCServer
                     PendingChats.RemoveAt(0);
                 }
             }
-            lastDispatchChat = DateTime.Now;
-            CoreManager.Current.Actions.InvokeChatParser(outgoing);
+
+            if (!string.IsNullOrEmpty(outgoing))
+            {
+                lastDispatchChat = DateTime.Now;
+                CoreManager.Current.Actions.InvokeChatParser(outgoing);
+            }
         }
 
         public bool EnableAvertisement = false;
