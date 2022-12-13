@@ -101,7 +101,7 @@ namespace ACAVCServer
 
                     Server.Init();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Log($"server init exception: {ex.Message}");
                 }
@@ -205,101 +205,44 @@ namespace ACAVCServer
         {
             //Log($"RAWCHAT ({e.Target}): |{e.Text}|");
 
+            ACAUtils.ChatMessage cm = ACAUtils.InterpretChatMessage(e.Text);
+            if (cm == null)
+                return;
 
-            // filter out emote and quest spam
-            if (e.Text.StartsWith("[") || e.Text.StartsWith("<"))
+
+            Log($"CHAT ({e.Target}): [{cm.Channel}][{cm.PlayerWeenieID.ToString("X8")}][{cm.PlayerName}][{cm.Mode}]:[{cm.Content}]");
+
+
+            if (cm.Mode == "tells you")
             {
-                string ln = e.Text;
-                int i;
 
-                //Log($"RAW ({e.Target}): {ln}");
-
-                string channel = "Global";
-                if (ln.StartsWith("["))
+                if (cm.Content.Equals("help", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    ln = ln.Substring(1);
-                    i = ln.IndexOf(']');
+                    BotTell(cm.PlayerName, "I am an ACAudio Voice Chat Server.");
+                    BotTell(cm.PlayerName, "Put my name as \"Bot\" into the VoiceChat tab of ACAudio.");
+                    BotTell(cm.PlayerName, "The ACAudio Decal plugin is available here:");
+                    BotTell(cm.PlayerName, "https://blahblah");
 
-                    channel = ln.Substring(0, i);
-
-                    ln = ln.Substring(i + 1/*end bracket*/ + 1/*space*/);
                 }
-
-                const string prefix = "<Tell:IIDString:";
-                if (ln.StartsWith(prefix))
+                else
+                    if (cm.Content.Equals("join", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    ln = ln.Substring(prefix.Length);
-                    i = ln.IndexOf(':');
+                    // trigger client's network protocol
+                    TellPacket p = new TellPacket(TellPacket.MessageType.RequestInfo);
 
-                    string sID = ln.Substring(0, i);
-                    ln = ln.Substring(i + 1);
-
-                    int id = int.Parse(sID);
-
-                    i = ln.IndexOf('>');
-                    string playerName = ln.Substring(0, i);
-                    ln = ln.Substring(i + 1);
-
-
-                    // skip rest of garbage
-
-
-                    const string endTag = "<\\Tell>";
-                    i = ln.IndexOf(endTag);
-                    ln = ln.Substring(i + endTag.Length);
-
-
-                    ln = ln.Substring(1);// skip extra space
-                    i = ln.IndexOf(',');
-                    string mode = ln.Substring(0, i);
-                    ln = ln.Substring(i + 1/*comma*/ + 1/*space*/ + 1/*openquote*/);
-
-                    string content = ln.Substring(0, ln.Length - 1/*closequote*/ - 1/*uhh donno.. newline?*/);
-
-
-
-                    Log($"CHAT ({e.Target}): [{channel}][{id.ToString("X8")}][{playerName}][{mode}]:[{content}]");//   leftover({ln.Length}):{ln}");
-
-
-
-                    if (content.Equals("help", StringComparison.InvariantCultureIgnoreCase))
+                    BotTell(cm.PlayerName, p.GenerateString());
+                } else
+                {
+                    // no recognized tell text;  assume its a packet and try
+                    TellPacket p = TellPacket.FromString(cm.Content);
+                    if(p == null)
                     {
-                        BotTell(playerName, "I am an ACAudio Voice Chat Server.");
-                        BotTell(playerName, "Put my name as \"Bot\" into the VoiceChat tab of ACAudio.");
-                        BotTell(playerName, "The ACAudio Decal plugin is available here:");
-                        BotTell(playerName, "https://blahblah");
-
+                        BotTell(cm.PlayerName, "I didn't understand that. Try 'help' to see what I recognize.");
+                    } else
+                    {
+                        BotTell(cm.PlayerName, $"Thanks for sending me a successful {p.Message} packet!");
                     }
 
-                    if (content.Equals("join", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        /*byte magic = (byte)(((DateTime.Now.ToUniversalTime().Hour & 0b00000111) << 5) |
-                                    ((DateTime.Now.ToUniversalTime().Minute & 0b00000110) << 2) |
-                                    ((DateTime.Now.ToUniversalTime().Second & 0b00111000) >> 3));
-
-                        BotTell(playerName, $"*{magic.ToString("X2")}");*/
-
-                        TellPacket p = new TellPacket(TellPacket.MessageType.Test);
-
-                        p.WriteByte(160);
-                        p.WriteByte(55);
-                        p.WriteByte(6);
-                        p.WriteByte(122);
-                        /*string someText = "blahblahblh";
-                        p.WriteByte((byte)someText.Length);
-                        foreach (byte b in System.Text.Encoding.UTF8.GetBytes(someText))
-                            p.WriteByte(b);*/
-
-                        BotTell(playerName, p.GenerateString());
-
-
-                        TellPacket ip = TellPacket.FromString(p.GenerateString());
-                        byte b0 = ip.ReadByte();
-                        byte b1 = ip.ReadByte();
-                        byte b2 = ip.ReadByte();
-                        byte b3 = ip.ReadByte();
-                        BotTell(playerName, $"{b0}.{b1}.{b2}.{b3}");
-                    }
                 }
             }
         }
@@ -353,7 +296,7 @@ namespace ACAVCServer
 
         private void Process(double dt, double truedt)
         {
-            if(!NeedFirstLoginPlayerWeenie)
+            if (!NeedFirstLoginPlayerWeenie)
             {
                 // ok we're actually logged in. lets determine if we should chat spam
 
@@ -377,7 +320,7 @@ namespace ACAVCServer
 
             (View["Status"] as HudStaticText).Text = $"Players:{Server.GetPlayers().Length}";
 
-            if(DateTime.Now.Subtract(lastDispatchChat).TotalMilliseconds > 250)
+            if (DateTime.Now.Subtract(lastDispatchChat).TotalMilliseconds > 250)
                 _DispatchChatSingle();
         }
 
@@ -403,7 +346,7 @@ namespace ACAVCServer
         {
             if (e.Type == PortalEventType.ExitPortal)
             {
-                
+
 
                 if (NeedFirstLoginPlayerWeenie)
                 {
