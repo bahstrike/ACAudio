@@ -270,6 +270,36 @@ namespace ACAVCServer
                         BotTell(playerName, "https://blahblah");
 
                     }
+
+                    if (content.Equals("join", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        /*byte magic = (byte)(((DateTime.Now.ToUniversalTime().Hour & 0b00000111) << 5) |
+                                    ((DateTime.Now.ToUniversalTime().Minute & 0b00000110) << 2) |
+                                    ((DateTime.Now.ToUniversalTime().Second & 0b00111000) >> 3));
+
+                        BotTell(playerName, $"*{magic.ToString("X2")}");*/
+
+                        TellPacket p = new TellPacket(TellPacket.MessageType.Test);
+
+                        p.WriteByte(160);
+                        p.WriteByte(55);
+                        p.WriteByte(6);
+                        p.WriteByte(122);
+                        /*string someText = "blahblahblh";
+                        p.WriteByte((byte)someText.Length);
+                        foreach (byte b in System.Text.Encoding.UTF8.GetBytes(someText))
+                            p.WriteByte(b);*/
+
+                        BotTell(playerName, p.GenerateString());
+
+
+                        TellPacket ip = TellPacket.FromString(p.GenerateString());
+                        byte b0 = ip.ReadByte();
+                        byte b1 = ip.ReadByte();
+                        byte b2 = ip.ReadByte();
+                        byte b3 = ip.ReadByte();
+                        BotTell(playerName, $"{b0}.{b1}.{b2}.{b3}");
+                    }
                 }
             }
         }
