@@ -71,7 +71,7 @@ namespace ACACommon
             Message = _Message;
 
             stream = new BitStream();
-            stream.WriteBits((int)Message, 2);
+            stream.WriteBits((int)Message, MessageBits);
         }
 
         private TellPacket(byte _magic, MessageType _Message, BitStream _stream)
