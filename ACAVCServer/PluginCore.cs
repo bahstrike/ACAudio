@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 
 using ACACommon;
+using System.Net;
 
 namespace ACAVCServer
 {
@@ -92,6 +93,41 @@ namespace ACAVCServer
                 parser.ParseFromResource($"{PluginName}.mainView.xml", out properties, out controls);
 
                 View = new VirindiViewService.HudView(properties, controls);
+
+
+
+
+                HudCombo determineIPCombo = View["DetermineIP"] as HudCombo;
+                determineIPCombo.Clear();
+
+                determineIPCombo.AddItem("-MANUAL-", null);
+                determineIPCombo.AddItem("ipinfo.io/ip", null);
+                determineIPCombo.AddItem("bot.whatismyipaddress.com", null);
+                determineIPCombo.AddItem("icanhazip.com", null);
+
+                determineIPCombo.Change += delegate (object sender, EventArgs e)
+                {
+                    HudCombo combo = (sender as HudCombo);
+                    if (combo.Current == 0)
+                        return;
+
+                    string queryAddress = "http://" + (combo[combo.Current] as HudStaticText).Text;
+
+                    try
+                    {
+                        string ipaddress = new WebClient().DownloadString(queryAddress).Replace("\\r\\n", "").Replace("\\n", "").Trim();
+
+                        IPAddress dummy;
+                        if (!IPAddress.TryParse(ipaddress, out dummy))
+                            throw new Exception();//cheap shortcut to "failed" scenario
+
+                        (View["PublicIP"] as HudTextBox).Text = ipaddress;
+                    }
+                    catch
+                    {
+                        (View["PublicIP"] as HudTextBox).Text = "-failed-";
+                    }
+                };
 
 
 

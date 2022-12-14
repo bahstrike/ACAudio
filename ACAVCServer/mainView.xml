@@ -3,7 +3,12 @@
   <control progid="DecalControls.Notebook" name="nbMain">
     <page label="Main">
       <control progid="DecalControls.FixedLayout" clipped="">
-        <control progid="DecalControls.StaticText" name="Status" left="10" top="10" width="400" height="130" text=""/>
+        <control progid="DecalControls.StaticText" name="Status" left="10" top="10" width="400" height="18" text=""/>
+
+
+        <control progid="DecalControls.StaticText" name="DetermineIPLabel" left="10" top="30" width="100" height="18" text="Determine my IP:"/>
+        <control progid="DecalControls.Choice" name="DetermineIP" left="110" top="30" width="160" height="18" text=""/>
+        <control progid="DecalControls.Edit" name="PublicIP" left="280" top="30" width="100" height="18" text=""/>
 
       </control>
     </page>
