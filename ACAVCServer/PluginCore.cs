@@ -204,10 +204,15 @@ namespace ACAVCServer
         class PlayerJoinAttempt
         {
             public readonly string PlayerName;
+            public readonly bool Silent;
+            public readonly DateTime Start = DateTime.Now;
 
-            public PlayerJoinAttempt(string _PlayerName)
+            public const int TimeoutMsec = 2000;
+
+            public PlayerJoinAttempt(string _PlayerName, bool _Silent)
             {
                 PlayerName = _PlayerName;
+                Silent = _Silent;
             }
 
             public void Tell(TellPacket p)
@@ -227,15 +232,24 @@ namespace ACAVCServer
             return null;
         }
 
-        PlayerJoinAttempt GetOrCreatePlayerJoinAttempt(string playerName)
+        PlayerJoinAttempt GetOrCreatePlayerJoinAttempt(string playerName, bool silent)
         {
-            PlayerJoinAttempt pga = GetPlayerJoinAttempt(playerName);
-            if (pga != null)
-                return pga;
+            PlayerJoinAttempt pja = GetPlayerJoinAttempt(playerName);
+            if (pja != null)
+                return pja;
 
-            pga = new PlayerJoinAttempt(playerName);
-            PlayerJoinAttempts.Add(pga);
-            return pga;
+            pja = new PlayerJoinAttempt(playerName, silent);
+            PlayerJoinAttempts.Add(pja);
+            return pja;
+        }
+
+        void DestroyPlayerJoinAttempt(string playerName)
+        {
+            PlayerJoinAttempt pja = GetPlayerJoinAttempt(playerName);
+            if (pja == null)
+                return;
+
+            PlayerJoinAttempts.Remove(pja);
         }
 
         public static bool ShowTellProtocol = false;
@@ -281,51 +295,81 @@ namespace ACAVCServer
                 if (cm.Content.Equals("help", StringComparison.InvariantCultureIgnoreCase))
                 {
                     BotTell(cm.PlayerName, "I am an ACAudio Voice Chat Server.");
-                    BotTell(cm.PlayerName, "Put my name as \"Bot\" into the VoiceChat tab of ACAudio.");
+                    BotTell(cm.PlayerName, "Tell me 'join' to connect!");
                     BotTell(cm.PlayerName, "The ACAudio Decal plugin is available here:");
-                    BotTell(cm.PlayerName, "https://blahblah");
+                    BotTell(cm.PlayerName, "https://github.com/bahstrike/ACAudio");
 
                 }
                 else
                     if (cm.Content.Equals("join", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    PlayerJoinAttempt pja = GetOrCreatePlayerJoinAttempt(cm.PlayerName);
-
-                    // trigger client's network protocol
+                    // initiate a join attempt if they /tell us "join"
+                    PlayerJoinAttempt pja = GetOrCreatePlayerJoinAttempt(cm.PlayerName, false);
                     TellPacket p = new TellPacket(TellPacket.MessageType.RequestInfo);
-
                     pja.Tell(p);
                 } else
                 {
                     // no recognized tell text;  assume its a packet and try
-                    TellPacket p = TellPacket.FromString(cm.Content);
-                    if(p == null)
+                    TellPacket clientPacket = TellPacket.FromString(cm.Content);
+                    if(clientPacket == null)
                     {
-                        BotTell(cm.PlayerName, "I didn't understand that. Try 'help' to see what I recognize.");
+                        if(!cm.Content.StartsWith(TellPacket.prefix))
+                            BotTell(cm.PlayerName, "I didn't understand that. Try 'help' to see what I recognize.");
                     } else
                     {
-                        PlayerJoinAttempt pga = GetPlayerJoinAttempt(cm.PlayerName);
-                        if (pga == null)
-                            BotTell(cm.PlayerName, "Don't give me ACA protocols unless we are handshaking.");
+                        PlayerJoinAttempt pja = GetPlayerJoinAttempt(cm.PlayerName);
+                        if (pja == null)
+                        {
+                            if (clientPacket.Message == TellPacket.MessageType.Join)
+                            {
+                                // initiate a join attempt if they send us a join packet
+                                pja = GetOrCreatePlayerJoinAttempt(cm.PlayerName, true);
+                                TellPacket p = new TellPacket(TellPacket.MessageType.RequestInfo);
+                                pja.Tell(p);
+                            }
+                            else
+                            {
+                                if (!pja.Silent)
+                                    BotTell(cm.PlayerName, "Something went wrong. Please try to 'join' again.");
+                                    //BotTell(cm.PlayerName, "Don't give me ACA protocols unless we are handshaking.");
+                            }
+                        }
                         else
                         {
-                            if(p.Message == TellPacket.MessageType.ClientInfo)
+                            if (clientPacket.Message == TellPacket.MessageType.ClientInfo)
                             {
-                                string characterName = p.ReadString();
-                                int weenieID = p.ReadInt();
+                                string characterName = clientPacket.ReadString();
+                                int weenieID = clientPacket.ReadInt();
 
-                                if (pga.PlayerName != characterName ||
+                                if (pja.PlayerName != characterName ||
                                     cm.ID != weenieID)
                                 {
-                                    BotTell(cm.PlayerName, "Your join request doesn't match.");
+                                    //BotTell(cm.PlayerName, "Your join request doesn't match.");
                                 }
                                 else
                                 {
-                                    // success
-                                    BotTell(pga.PlayerName, $"GOT UR INFO:   {characterName}|{weenieID.ToString("X8")}");
+                                    // success; send server info
+
+                                    TellPacket serverInfo = new TellPacket(TellPacket.MessageType.ServerInfo);
+                                    serverInfo.WriteByte(192);
+                                    serverInfo.WriteByte(168);
+                                    serverInfo.WriteByte(5);
+                                    serverInfo.WriteByte(2);
+                                    serverInfo.WriteBits(42420, 16);
+
+                                    pja.Tell(serverInfo);
+
+                                    if (!pja.Silent)
+                                        BotTell(cm.PlayerName, "Success!");
                                 }
                             }
-                            //BotTell(cm.PlayerName, $"Thanks for sending me a successful {p.Message} packet!");
+                            else
+                            {
+                                //BotTell(cm.PlayerName, "I wasn't expecting that message type.");
+                            }
+
+                            // kill the attempt after receiving any message
+                            DestroyPlayerJoinAttempt(cm.PlayerName);
                         }
                     }
 
@@ -400,6 +444,21 @@ namespace ACAVCServer
 
                         lastAdvertisement = DateTime.Now;
                     }
+                }
+            }
+
+
+            // time-out join attempts
+            for (int x = 0; x < PlayerJoinAttempts.Count; x++)
+            {
+                PlayerJoinAttempt pja = PlayerJoinAttempts[x];
+
+                if (DateTime.Now.Subtract(pja.Start).TotalMilliseconds >= PlayerJoinAttempt.TimeoutMsec)
+                {
+                    if(!pja.Silent)
+                        BotTell(pja.PlayerName, "Your join attempt timed-out.");
+
+                    PlayerJoinAttempts.RemoveAt(x--);
                 }
             }
 

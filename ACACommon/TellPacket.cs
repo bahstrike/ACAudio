@@ -19,8 +19,10 @@ namespace ACACommon
 
         public enum MessageType
         {
+            Join,               // client->server           same as /tell join
             RequestInfo,        // server->client           after receiving a rawtext "join" tell or whatever, send this back to trigger client's automatic protocol
             ClientInfo,         // client->server           after receiving a RequestInfo, submit client details
+            ServerInfo,         // server->client           if we accept the client info then send tcp connection details
 
         }
         private const int MessageBits = 2;//keep updated to support whatever number of MessageType we want to support

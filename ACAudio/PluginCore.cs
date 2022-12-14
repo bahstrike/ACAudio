@@ -560,6 +560,25 @@ namespace ACAudio
             }
 
 
+            if (e.Text.Contains("You tell"))
+            {
+                int i = e.Text.IndexOf(',');
+                if (i != -1)
+                {
+                    string content = e.Text.Substring(i + 3);
+                    if (content.StartsWith(TellPacket.prefix))
+                    {
+                        if (!ShowTellProtocol)
+                        {
+                            // dont show to user if its good
+                            e.Eat = true;
+                            return;
+                        }
+                    }
+                }
+            }
+
+
 
             // try to handle voicechat server bot protocol
             ACAUtils.ChatMessage cm = ACAUtils.InterpretChatMessage(e.Text);
@@ -583,9 +602,24 @@ namespace ACAudio
                             info.WriteInt(Player.Id);
 
                             // reply
-                            ChatTell(cm.PlayerName, info.GenerateString());                            
+                            ChatTell(cm.PlayerName, info.GenerateString());
                         }
 
+                        if(p.Message == TellPacket.MessageType.ServerInfo)
+                        {
+                            byte i0 = p.ReadByte();
+                            byte i1 = p.ReadByte();
+                            byte i2 = p.ReadByte();
+                            byte i3 = p.ReadByte();
+                            int port = p.ReadBits(16);
+
+                            VCClient.ServerIP = $"{i0}.{i1}.{i2}.{i3}";
+                            
+
+                            // remember this bot as our preferred host
+                            (View["VCServerBotCheck"] as HudCheckBox).Checked = true;
+                            (View["VCServerBotHost"] as HudTextBox).Text = cm.PlayerName;
+                        }
                     }
 
                 }
@@ -1498,16 +1532,45 @@ namespace ACAudio
             PerfTrack.Start("Client.Process");
             try
             {
+                // only change IP if on auto/custom.  if bot, it will be populated by /tell protocol
                 if ((View["VCServerAutoCheck"] as HudCheckBox).Checked)
                     VCClient.ServerIP = (View["VCServerAutoHost"] as HudStaticText).Text;
-                else
+                else if ((View["VCServerCustomCheck"] as HudCheckBox).Checked)
                     VCClient.ServerIP = (View["VCServerCustomHost"] as HudTextBox).Text;
+                else if ((View["VCServerBotCheck"] as HudCheckBox).Checked)
+                {
+                    // only try /tell periodically and if we are legit in-game and not connected to voice server
+                    if (!NeedFirstLoginPlayerWeenie && !VCClient.IsConnected && DateTime.Now.Subtract(lastBotJoinAttempt).TotalMilliseconds > 10000)
+                    {
+                        string botName = (View["VCServerBotHost"] as HudTextBox).Text;
+                        if(!string.IsNullOrEmpty(botName))
+                        {
+                            //ChatTell(botName, "join");
+                            TellPacket p = new TellPacket(TellPacket.MessageType.Join);
+                            ChatTell(botName, p.GenerateString());
+
+                            lastBotJoinAttempt = DateTime.Now;
+                        }
+                    }
+                }
+
+
+                bool isConnected = VCClient.IsConnected;
+                if(isConnected != wasConnectedToVoice)
+                {
+                    if (isConnected)
+                        WriteToChat($"Connected to voice chat server");
+                    else
+                        WriteToChat($"Disconnected from voice chat server");
+
+                    wasConnectedToVoice = isConnected;
+                }
 
 
                 if (VCClient.IsConnected)
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Connected   Players: {VCClient.TotalConnectedPlayers}   Nearby: {(VCClient.AreThereNearbyPlayers ? "Yes" : "No")}";
                 else if (VCClient.WaitingForConnect)
-                    (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Attempting to connect to {VCClient.ServerIP}...";
+                    (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Attempting to connect...";
                 /*else if(VCClient.SentServerHandshake)
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Logging in...";*/
                 else
@@ -1626,6 +1689,9 @@ namespace ACAudio
                 Log("------------");
             }
         }
+
+        private DateTime lastBotJoinAttempt = new DateTime();
+        private bool wasConnectedToVoice = false;
 
 
         private uint _dynamicObjectIndex = 0;
