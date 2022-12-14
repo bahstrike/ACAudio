@@ -297,7 +297,7 @@ namespace ACAVCServer
                     BotTell(cm.PlayerName, "I am an ACAudio Voice Chat Server.");
                     BotTell(cm.PlayerName, "Tell me 'join' to connect!");
                     BotTell(cm.PlayerName, "The ACAudio Decal plugin is available here:");
-                    BotTell(cm.PlayerName, "https://github.com/bahstrike/ACAudio");
+                    BotTell(cm.PlayerName, "https://acaudio.bah.wtf");
 
                 }
                 else

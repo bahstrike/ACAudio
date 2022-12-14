@@ -579,7 +579,6 @@ namespace ACAudio
             }
 
 
-
             // try to handle voicechat server bot protocol
             ACAUtils.ChatMessage cm = ACAUtils.InterpretChatMessage(e.Text);
             if(cm != null)
