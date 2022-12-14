@@ -1,3 +1,17 @@
+## Download
+
+##### ACAudio:
+[Installer for Decal plugin: ACAudio 1.0](https://github.com/bahstrike/ACAudio/releases/download/1.0.0.0/ACAudio-1.0.0.0.exe)
+
+##### For players wanting to host voice chat server via in-game bot:
+[Installer for Decal plugin: ACAVCServer 1.0](broken)
+
+##### For Asheron's Call server administrators wanting to host dedicated voice chat server:
+[GitHub repository for ACAVCServer (.NET Core)](https://github.com/bahstrike/ACAVCServer)
+
+##### _For source code or older versions, please [visit the GitHub repository](https://github.com/bahstrike/ACAudio)._
+
+
 ## What it does
 
 Music plays when you're portaling or entering specific dungeons. You may hear music when near towns or encountering specific boss monsters. 
