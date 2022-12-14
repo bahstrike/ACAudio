@@ -556,7 +556,41 @@ namespace ACAudio
                 // we have no position data.. its a 2d effect
                 Log($"wanna play something from text: {e.Text}");
                 PlayFor2DNow(snd);
+                return;
             }
+
+
+
+            // try to handle voicechat server bot protocol
+            ACAUtils.ChatMessage cm = ACAUtils.InterpretChatMessage(e.Text);
+            if(cm != null)
+            {
+                if(cm.Mode == "tells you")
+                {
+                    TellPacket p = TellPacket.FromString(cm.Content);
+                    if(p != null)
+                    {
+                        if(p.Message == TellPacket.MessageType.RequestInfo)
+                        {
+                            // bot server has recognized our request and wants our data before it will send IP
+                            TellPacket info = new TellPacket(TellPacket.MessageType.ClientInfo);
+
+                            info.WriteString(Player.Name);
+                            info.WriteInt(Player.Id);
+
+                            // reply
+                            ChatTell(cm.PlayerName, info.GenerateString());                            
+                        }
+
+                    }
+
+                }
+            }
+        }
+
+        void ChatTell(string targetName, string s)
+        {
+            CoreManager.Current.Actions.InvokeChatParser($"/tell {targetName},{s}");
         }
 
         private static void VCClientLog(string s)

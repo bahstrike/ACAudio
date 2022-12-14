@@ -19,7 +19,8 @@ namespace ACACommon
 
         public enum MessageType
         {
-            RequestInfo,        // server->client           after receiving a "join" tell or whatever, send this back to trigger client's automatic protocol
+            RequestInfo,        // server->client           after receiving a rawtext "join" tell or whatever, send this back to trigger client's automatic protocol
+            ClientInfo,         // client->server           after receiving a RequestInfo, submit client details
 
         }
         private const int MessageBits = 2;//keep updated to support whatever number of MessageType we want to support
@@ -110,7 +111,6 @@ namespace ACACommon
 
             return new TellPacket(magic, msg, bs);
         }
-
 
     }
 }

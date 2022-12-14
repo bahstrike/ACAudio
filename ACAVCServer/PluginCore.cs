@@ -201,6 +201,43 @@ namespace ACAVCServer
             }
         }
 
+        class PlayerJoinAttempt
+        {
+            public readonly string PlayerName;
+
+            public PlayerJoinAttempt(string _PlayerName)
+            {
+                PlayerName = _PlayerName;
+            }
+
+            public void Tell(TellPacket p)
+            {
+                BotTell(PlayerName, p.GenerateString());
+            }
+        }
+
+        List<PlayerJoinAttempt> PlayerJoinAttempts = new List<PlayerJoinAttempt>();
+
+        PlayerJoinAttempt GetPlayerJoinAttempt(string playerName)
+        {
+            foreach (PlayerJoinAttempt pja in PlayerJoinAttempts)
+                if (pja.PlayerName == playerName)
+                    return pja;
+
+            return null;
+        }
+
+        PlayerJoinAttempt GetOrCreatePlayerJoinAttempt(string playerName)
+        {
+            PlayerJoinAttempt pga = GetPlayerJoinAttempt(playerName);
+            if (pga != null)
+                return pga;
+
+            pga = new PlayerJoinAttempt(playerName);
+            PlayerJoinAttempts.Add(pga);
+            return pga;
+        }
+
         private void _ChatBoxMessage(object sender, ChatTextInterceptEventArgs e)
         {
             //Log($"RAWCHAT ({e.Target}): |{e.Text}|");
@@ -210,7 +247,7 @@ namespace ACAVCServer
                 return;
 
 
-            Log($"CHAT ({e.Target}): [{cm.Channel}][{cm.PlayerWeenieID.ToString("X8")}][{cm.PlayerName}][{cm.Mode}]:[{cm.Content}]");
+            Log($"CHAT ({e.Target}): [{cm.Channel}][{cm.ID.ToString("X8")}][{cm.PlayerName}][{cm.Mode}]:[{cm.Content}]");
 
 
             if (cm.Mode == "tells you")
@@ -227,10 +264,12 @@ namespace ACAVCServer
                 else
                     if (cm.Content.Equals("join", StringComparison.InvariantCultureIgnoreCase))
                 {
+                    PlayerJoinAttempt pja = GetOrCreatePlayerJoinAttempt(cm.PlayerName);
+
                     // trigger client's network protocol
                     TellPacket p = new TellPacket(TellPacket.MessageType.RequestInfo);
 
-                    BotTell(cm.PlayerName, p.GenerateString());
+                    pja.Tell(p);
                 } else
                 {
                     // no recognized tell text;  assume its a packet and try
@@ -240,7 +279,29 @@ namespace ACAVCServer
                         BotTell(cm.PlayerName, "I didn't understand that. Try 'help' to see what I recognize.");
                     } else
                     {
-                        BotTell(cm.PlayerName, $"Thanks for sending me a successful {p.Message} packet!");
+                        PlayerJoinAttempt pga = GetPlayerJoinAttempt(cm.PlayerName);
+                        if (pga == null)
+                            BotTell(cm.PlayerName, "Don't give me ACA protocols unless we are handshaking.");
+                        else
+                        {
+                            if(p.Message == TellPacket.MessageType.ClientInfo)
+                            {
+                                string characterName = p.ReadString();
+                                int weenieID = p.ReadInt();
+
+                                if (pga.PlayerName != characterName ||
+                                    cm.ID != weenieID)
+                                {
+                                    BotTell(cm.PlayerName, "Your join request doesn't match.");
+                                }
+                                else
+                                {
+                                    // success
+                                    BotTell(pga.PlayerName, $"GOT UR INFO:   {characterName}|{weenieID.ToString("X8")}");
+                                }
+                            }
+                            //BotTell(cm.PlayerName, $"Thanks for sending me a successful {p.Message} packet!");
+                        }
                     }
 
                 }

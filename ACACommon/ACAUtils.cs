@@ -9,7 +9,7 @@ namespace ACACommon
         public class ChatMessage
         {
             public string Channel;
-            public int PlayerWeenieID;
+            public int ID;
             public string PlayerName;
             public string Mode;
             public string Content;
@@ -75,7 +75,7 @@ namespace ACACommon
                 ChatMessage cm = new ChatMessage();
 
                 cm.Channel = channel;
-                cm.PlayerWeenieID = id;
+                cm.ID = id;
                 cm.PlayerName = playerName;
                 cm.Mode = mode;
                 cm.Content = content;
