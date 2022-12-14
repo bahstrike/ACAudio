@@ -570,6 +570,10 @@ namespace ACAudio
                     TellPacket p = TellPacket.FromString(cm.Content);
                     if(p != null)
                     {
+                        if(!ShowTellProtocol)
+                            // dont show to user if its good
+                            e.Eat = true;
+
                         if(p.Message == TellPacket.MessageType.RequestInfo)
                         {
                             // bot server has recognized our request and wants our data before it will send IP
@@ -587,6 +591,8 @@ namespace ACAudio
                 }
             }
         }
+
+        public static bool ShowTellProtocol = false;
 
         void ChatTell(string targetName, string s)
         {

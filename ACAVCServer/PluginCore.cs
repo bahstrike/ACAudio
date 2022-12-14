@@ -238,9 +238,34 @@ namespace ACAVCServer
             return pga;
         }
 
+        public static bool ShowTellProtocol = false;
+
         private void _ChatBoxMessage(object sender, ChatTextInterceptEventArgs e)
         {
-            //Log($"RAWCHAT ({e.Target}): |{e.Text}|");
+            Log($"RAWCHAT ({e.Target}): |{e.Text}|");
+
+
+
+            //8:28:24 PM: RAWCHAT (0): |You tell Strike Test, "ACA*333133p"
+            if(e.Text.Contains("You tell"))
+            {
+                int i = e.Text.IndexOf(',');
+                if(i != -1)
+                {
+                    string content = e.Text.Substring(i + 3);
+                    if(content.StartsWith(TellPacket.prefix))
+                    {
+                        if (!ShowTellProtocol)
+                        {
+                            // dont show to user if its good
+                            e.Eat = true;
+                            return;
+                        }                       
+                    }
+                }
+            }
+
+
 
             ACAUtils.ChatMessage cm = ACAUtils.InterpretChatMessage(e.Text);
             if (cm == null)

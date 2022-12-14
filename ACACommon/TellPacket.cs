@@ -83,7 +83,7 @@ namespace ACACommon
             stream = _stream;
         }
 
-        private const string prefix = "ACA*";
+        public const string prefix = "ACA*";
 
         public string GenerateString()
         {
