@@ -1,10 +1,3 @@
-# ACAudio
-
-ACAudio is an open-source Decal plugin for Asheron's Call that adds:
-- Music
-- 3D sound effects
-- Voice chat
-
 ## What it does
 
 Music plays when you're portaling or entering specific dungeons. You may hear music when near towns or encountering specific boss monsters. 
