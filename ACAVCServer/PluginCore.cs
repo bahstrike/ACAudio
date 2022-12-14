@@ -105,29 +105,20 @@ namespace ACAVCServer
                 determineIPCombo.AddItem("bot.whatismyipaddress.com", null);
                 determineIPCombo.AddItem("icanhazip.com", null);
 
-                determineIPCombo.Change += delegate (object sender, EventArgs e)
+                determineIPCombo.Change += DetermineIPCombo_Change;
+
+
+
+                using (INIFile ini = INIFile)
                 {
-                    HudCombo combo = (sender as HudCombo);
-                    if (combo.Current == 0)
-                        return;
+                    determineIPCombo.Current = int.Parse(ini.GetKeyString(PluginName, "DetermineIP", "0"));
 
-                    string queryAddress = "http://" + (combo[combo.Current] as HudStaticText).Text;
+                }
 
-                    try
-                    {
-                        string ipaddress = new WebClient().DownloadString(queryAddress).Replace("\\r\\n", "").Replace("\\n", "").Trim();
 
-                        IPAddress dummy;
-                        if (!IPAddress.TryParse(ipaddress, out dummy))
-                            throw new Exception();//cheap shortcut to "failed" scenario
 
-                        (View["PublicIP"] as HudTextBox).Text = ipaddress;
-                    }
-                    catch
-                    {
-                        (View["PublicIP"] as HudTextBox).Text = "-failed-";
-                    }
-                };
+                // trigger UI events
+                DetermineIPCombo_Change(determineIPCombo, new EventArgs());
 
 
 
@@ -158,6 +149,34 @@ namespace ACAVCServer
             }
         }
 
+        private void DetermineIPCombo_Change(object sender, EventArgs e)
+        {
+            HudCombo combo = (sender as HudCombo);
+            if (combo.Current == 0)
+            {
+                using (INIFile ini = INIFile)
+                    (View["PublicIP"] as HudTextBox).Text = ini.GetKeyString(PluginName, "ManualPublicIP", string.Empty);
+
+                return;
+            }
+
+            string queryAddress = "http://" + (combo[combo.Current] as HudStaticText).Text;
+
+            try
+            {
+                string ipaddress = new WebClient().DownloadString(queryAddress).Replace("\\r\\n", "").Replace("\\n", "").Trim();
+
+                IPAddress dummy;
+                if (!IPAddress.TryParse(ipaddress, out dummy))
+                    throw new Exception();//cheap shortcut to "failed" scenario
+
+                (View["PublicIP"] as HudTextBox).Text = ipaddress;
+            }
+            catch
+            {
+                (View["PublicIP"] as HudTextBox).Text = "-failed-";
+            }
+        }
 
         private bool LogOff = false;
         private void _CharacterFilter_Logoff(object sender, LogoffEventArgs e)
@@ -171,8 +190,40 @@ namespace ACAVCServer
             LogOff = true;
 
 
+            using (INIFile ini = INIFile)
+            {
+                HudCombo determineIPCombo = View["DetermineIP"] as HudCombo;
+                ini.WriteKey(PluginName, "DetermineIP", determineIPCombo.Current.ToString());
+                if (determineIPCombo.Current == 0)
+                    ini.WriteKey(PluginName, "ManualPublicIP", (View["PublicIP"] as HudTextBox).Text);
+                else
+                    ini.WriteKey(PluginName, "ManualPublicIP", string.Empty);
+            }
 
+        }
 
+        byte[] ServerIP
+        {
+            get
+            {
+                try
+                {
+                    string ipstr = (View["PublicIP"] as HudTextBox).Text;
+
+                    string[] ipparts = ipstr.Split('.');
+                    if (ipparts.Length != 4)
+                        return null;
+
+                    byte[] b = new byte[4];
+                    for (int x = 0; x < 4; x++)
+                        b[x] = byte.Parse(ipparts[x]);
+                    return b;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
         }
 
         public WorldObject Player
@@ -308,10 +359,10 @@ namespace ACAVCServer
                         if (!ShowTellProtocol)
                         {
                             // dont show to user if its good
-                            e.Eat = true;
+                        e.Eat = true;
                             return;
-                        }                       
-                    }
+                }
+            }
                 }
             }
 
@@ -339,12 +390,21 @@ namespace ACAVCServer
                 else
                     if (cm.Content.Equals("join", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    // initiate a join attempt if they /tell us "join"
-                    PlayerJoinAttempt pja = GetOrCreatePlayerJoinAttempt(cm.PlayerName, false);
-                    TellPacket p = new TellPacket(TellPacket.MessageType.RequestInfo);
-                    pja.Tell(p);
+                    if (ServerIP == null)
+                        BotTell(cm.PlayerName, "Sorry, my server isn't set up properly at this time.");
+                    else
+                    {
+                        // initiate a join attempt if they /tell us "join"
+                        PlayerJoinAttempt pja = GetOrCreatePlayerJoinAttempt(cm.PlayerName, false);
+                        TellPacket p = new TellPacket(TellPacket.MessageType.RequestInfo);
+                        pja.Tell(p);
+                    }
                 } else
                 {
+                    if (!ShowTellProtocol && cm.Content.StartsWith(TellPacket.prefix))
+                        // dont show to user if its good
+                        e.Eat = true;
+
                     // no recognized tell text;  assume its a packet and try
                     TellPacket clientPacket = TellPacket.FromString(cm.Content);
                     if(clientPacket == null)
@@ -358,10 +418,17 @@ namespace ACAVCServer
                         {
                             if (clientPacket.Message == TellPacket.MessageType.Join)
                             {
-                                // initiate a join attempt if they send us a join packet
-                                pja = GetOrCreatePlayerJoinAttempt(cm.PlayerName, true);
-                                TellPacket p = new TellPacket(TellPacket.MessageType.RequestInfo);
-                                pja.Tell(p);
+                                if (ServerIP == null)
+                                {
+
+                                }
+                                else
+                                {
+                                    // initiate a join attempt if they send us a join packet
+                                    pja = GetOrCreatePlayerJoinAttempt(cm.PlayerName, true);
+                                    TellPacket p = new TellPacket(TellPacket.MessageType.RequestInfo);
+                                    pja.Tell(p);
+                                }
                             }
                             else
                             {
@@ -386,17 +453,21 @@ namespace ACAVCServer
                                 {
                                     // success; send server info
 
-                                    TellPacket serverInfo = new TellPacket(TellPacket.MessageType.ServerInfo);
-                                    serverInfo.WriteByte(192);
-                                    serverInfo.WriteByte(168);
-                                    serverInfo.WriteByte(5);
-                                    serverInfo.WriteByte(2);
-                                    serverInfo.WriteBits(42420, 16);
+                                    byte[] ip = ServerIP;
+                                    if (ip != null)
+                                    {
+                                        TellPacket serverInfo = new TellPacket(TellPacket.MessageType.ServerInfo);
+                                        serverInfo.WriteByte(ip[0]);
+                                        serverInfo.WriteByte(ip[1]);
+                                        serverInfo.WriteByte(ip[2]);
+                                        serverInfo.WriteByte(ip[3]);
+                                        serverInfo.WriteBits(42420, 16);
 
-                                    pja.Tell(serverInfo);
+                                        pja.Tell(serverInfo);
 
-                                    if (!pja.Silent)
-                                        BotTell(cm.PlayerName, "Success!");
+                                        if (!pja.Silent)
+                                            BotTell(cm.PlayerName, "Success!");
+                                    }
                                 }
                             }
                             else

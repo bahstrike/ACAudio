@@ -573,8 +573,8 @@ namespace ACAudio
                             // dont show to user if its good
                             e.Eat = true;
                             return;
-                        }
                     }
+                }
                 }
             }
 
@@ -583,15 +583,15 @@ namespace ACAudio
             ACAUtils.ChatMessage cm = ACAUtils.InterpretChatMessage(e.Text);
             if(cm != null)
             {
-                if(cm.Mode == "tells you")
+                if (cm.Mode == "tells you")
                 {
+                    if (!ShowTellProtocol && cm.Content.StartsWith(TellPacket.prefix))
+                        // dont show to user if its good
+                        e.Eat = true;
+
                     TellPacket p = TellPacket.FromString(cm.Content);
                     if(p != null)
                     {
-                        if(!ShowTellProtocol)
-                            // dont show to user if its good
-                            e.Eat = true;
-
                         if(p.Message == TellPacket.MessageType.RequestInfo)
                         {
                             // bot server has recognized our request and wants our data before it will send IP
