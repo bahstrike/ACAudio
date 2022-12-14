@@ -1,8 +1,9 @@
 # ACAudio
 
-ACAudio is a Decal plugin for Asheron's Call that adds in-game music and 3D sound effects.
-
-![](https://github.com/bahstrike/ACAudio/blob/main/docs/proxymap_new.gif)
+ACAudio is an open-source Decal plugin for Asheron's Call that adds:
+- Music
+- 3D sound effects
+- Voice chat
 
 ## What it does
 
@@ -11,11 +12,13 @@ Music plays when you're portaling or entering specific dungeons. You may hear mu
 Candles, campfires, lanterns, blacksmith anvils, portals, lifestones, casinos, town criers... These are just a few examples of objects that have new sounds.
 There are roughly 100,000 sound sources in the provided sound pack.
 
+The built-in voice chat is proximity based and someone's speech comes from their in-game 3D character with a floating icon over their head. There are also Allegiance and Fellowship channels which work like traditional 2D voice chat; perfect for questing!
+
 ## How the sound pack works
 
-The sound pack is 100% customizable through the configuration script [/data/master.aca](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY/data/master.aca).
-All of the .ACA configuration and sound files are stored within the [/data/](https://github.com/bahstrike/ACAudio/tree/main/DEPLOY/data) folder.
-_If you make your own sound pack to distribute, you should keep your [credits.txt](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY/data/credits.txt) up-to-date!_
+The sound pack is 100% customizable through the configuration script [/data/master.aca](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY_ACAUDIO/data/master.aca).
+All of the .ACA configuration and sound files are stored within the [/data/](https://github.com/bahstrike/ACAudio/tree/main/DEPLOY_ACAUDIO/data) folder.
+_If you make your own sound pack to distribute, you should keep your [credits.txt](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY_ACAUDIO/data/credits.txt) up-to-date!_
 
 Sound Attributes are defined by not only their filename, but also properties such as their volume, audible distance or probability to play. The same configuration directives can define a looping song just as easily as they can define a rare chance for NPC speech.
 
@@ -31,9 +34,17 @@ Speech from an NPC or sizzling from a fireplace seem as though they are really c
 
 _The real magic is mapping customizable .ACA files to in-game elements. I hope the plugin does the game justice and you enjoy using and/or modifying it!_
 
+## How the voice chat works
+
+The optional voice chat is push-to-talk only so you never have to worry about a "hot mic". Bind whatever push-to-talk key you want via Virindi Hotkeys.
+
+Voice chat is not peer-to-peer so you don't have to worry about your IP address being shared with other players. Instead, ACAudio must connect to a server of which there are two options:
+- Whoever maintains the Asheron's Call server you play on can also run [ACAVCServer](https://github.com/bahstrike/ACAVCServer) which ACAudio will automatically connect to
+- Any player can run an in-game bot to provide voice chat for the whole server (usually at marketplace), which you `/tell TheBotsName, join`
+
 ## readme.txt
 
-_NOTE: This excerpt may be out of date. Please check your install directory for `readme.txt` for your version. Alternatively, click [readme.txt](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY/readme.txt) for the beta build information._
+_NOTE: This excerpt may be out of date. Please check your install directory for `readme.txt` for your version. Alternatively, click [readme.txt](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY_ACAUDIO/readme.txt) for the beta build information._
 
 ```
 Welcome to ACAudio!
@@ -49,6 +60,7 @@ Code				Strike
 Additional Code			trevis
 Static Positions Data		OptimShi
 Audio Engine			FMOD (Firelight Technologies Pty Ltd.)
+μ-law Voice Compression		https://www.codeproject.com/Articles/482735/TCP-Audio-Streamer-and-Player-Voice-Chat-over-IP
 Dynamic Music Concept		Maethor
 
 
@@ -73,17 +85,17 @@ NOTE: Plugin developer(s) are not responsible for copyright violations in soundp
       The official sound pack has properly attributed music and sounds.
 
 
-SmithLib.dll
+Smith Libraries  (SmithCore.dll, SmithAudio.dll)
 --------------------------------------------------------------------------------------------
-SmithLib.dll is a math and utilities library written by Strike (Bad Ass Hackers) for a proprietary game engine called Smith (https://smith.bah.wtf).
+Smith Libraries are a math and utilities library written by Strike (Bad Ass Hackers) for a proprietary game engine called Smith (https://smith.bah.wtf).
 
-SmithLib.dll MAY be used (as-is) in non-commercial projects:
+Smith Libraries MAY be used (as-is) in non-commercial projects:
  - The following attribution must be easily visible to the end-user within your application:  "Uses components from Smith Engine (Bad Ass Hackers)"
- - The entirety of this "SmithLib.dll" subsection must be present within your readme file or legal disclaimer.
+ - The entirety of this "Smith Libraries" subsection must be present within your readme file or legal disclaimer.
 
-You MAY NOT rename, modify, decompile, reverse engineer or sell SmithLib.dll. You must contact Bad Ass Hackers to discuss.
-You MAY NOT use SmithLib.dll in a commercial project. You must contact Bad Ass Hackers to discuss.
-You MAY NOT distribute SmithLib.dll in any fashion, unless the entirety of this "SmithLib.dll" subsection is present within your readme file or legal disclaimer.
+You MAY NOT rename, modify, decompile, reverse engineer or sell Smith Libraries. You must contact Bad Ass Hackers to discuss.
+You MAY NOT use Smith Libraries in a commercial project. You must contact Bad Ass Hackers to discuss.
+You MAY NOT distribute Smith Libraries in any fashion, unless the entirety of this "Smith Libraries" subsection is present within your readme file or legal disclaimer.
 
 
 
