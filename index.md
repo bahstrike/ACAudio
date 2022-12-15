@@ -23,22 +23,12 @@ _For source code or older versions, please [visit the GitHub repository](https:/
 
 ## What it does
 
-Music plays when you're portaling or entering specific dungeons. You may hear music when near towns or encountering specific boss monsters. 
+[Music plays when you're](#how-the-audio-engine-works) portaling or entering specific dungeons. You may hear music when near towns or encountering specific boss monsters. 
 
-Candles, campfires, lanterns, blacksmith anvils, portals, lifestones, casinos, town criers... These are just a few examples of objects that have new sounds.
+[Candles, campfires, lanterns,](#how-the-sound-pack-works) blacksmith anvils, portals, lifestones, casinos, town criers... These are just a few examples of objects that have new sounds.
 There are roughly 100,000 sound sources in the provided sound pack.
 
-The built-in voice chat is better than Discord! It is proximity based and someone's speech comes from their in-game 3D character with a floating icon over their head. There are also Allegiance and Fellowship channels which work like traditional 2D voice chat; perfect for questing!
-
-## How the sound pack works
-
-The sound pack is 100% customizable through the configuration script [/data/master.aca](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY_ACAUDIO/data/master.aca).
-All of the .ACA configuration and sound files are stored within the [/data/](https://github.com/bahstrike/ACAudio/tree/main/DEPLOY_ACAUDIO/data) folder.
-_If you make your own sound pack to distribute, you should keep your [credits.txt](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY_ACAUDIO/data/credits.txt) up-to-date!_
-
-Sound Attributes are defined by not only their filename, but also properties such as their volume, audible distance or probability to play. The same configuration directives can define a looping song just as easily as they can define a rare chance for NPC speech.
-
-Sound Sources can be anything from the player being inside a certain dungeon, a certain point on the terrain, `Data ID` of static decor _(such as a fireplace.. ALL fireplaces)_, items on the ground, NPCs with a certain species, enemies with a certain name... The possibilities are endless!
+[The built-in voice chat is better than Discord!](#how-the-voice-chat-works) It is proximity based and someone's speech comes from their in-game 3D character with a floating icon over their head. There are also Allegiance and Fellowship channels which work like traditional 2D voice chat; perfect for questing!
 
 ## How the audio engine works
 
@@ -49,6 +39,16 @@ ACAudio is able to play sounds that truly feel as though the game is playing the
 Speech from an NPC or sizzling from a fireplace seem as though they are really coming from the object; fading out as you move farther away and panning as you turn around.
 
 _The real magic is mapping customizable .ACA files to in-game elements. I hope the plugin does the game justice and you enjoy using and/or modifying it!_
+
+## How the sound pack works
+
+The sound pack is 100% customizable through the configuration script [/data/master.aca](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY_ACAUDIO/data/master.aca).
+All of the .ACA configuration and sound files are stored within the [/data/](https://github.com/bahstrike/ACAudio/tree/main/DEPLOY_ACAUDIO/data) folder.
+_If you make your own sound pack to distribute, you should keep your [credits.txt](https://github.com/bahstrike/ACAudio/blob/main/DEPLOY_ACAUDIO/data/credits.txt) up-to-date!_
+
+Sound Attributes are defined by not only their filename, but also properties such as their volume, audible distance or probability to play. The same configuration directives can define a looping song just as easily as they can define a rare chance for NPC speech.
+
+Sound Sources can be anything from the player being inside a certain dungeon, a certain point on the terrain, `Data ID` of static decor _(such as a fireplace.. ALL fireplaces)_, items on the ground, NPCs with a certain species, enemies with a certain name... The possibilities are endless!
 
 ## How the voice chat works
 
