@@ -613,9 +613,11 @@ namespace ACAudio
                             int port = p.ReadBits(16);
 
                             VCClient.ServerIP = $"{i0}.{i1}.{i2}.{i3}";
-                            
+
 
                             // remember this bot as our preferred host
+                            (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
+                            (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
                             (View["VCServerBotCheck"] as HudCheckBox).Checked = true;
                             (View["VCServerBotHost"] as HudTextBox).Text = cm.PlayerName;
                         }
