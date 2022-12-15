@@ -50,6 +50,11 @@ namespace ACACommon
             sampleRate = _sampleRate;
         }
 
+        public int DetermineExpectedBytes(int msec)
+        {
+            return (bitDepth / 8 * msec * sampleRate / ((ulaw & bitDepth == 16) ? 2 : 1)) / 1000;
+        }
+
         public static StreamInfo FromPacket(Packet p)
         {
             int magic = p.ReadInt();

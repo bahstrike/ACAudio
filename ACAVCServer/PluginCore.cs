@@ -14,6 +14,7 @@ using System.Diagnostics;
 
 using ACACommon;
 using System.Net;
+using System.Drawing;
 
 namespace ACAVCServer
 {
@@ -63,6 +64,81 @@ namespace ACAVCServer
             Log($"ERROR: {s}");
         }
 
+        class Metrics
+        {
+            // define some UI scales (non-functional; would change depending on server popularity)
+            public const int expectedSpeakingPlayers = 30;
+            public const int expectedListenersPerPlayer = 5;
+
+
+            // declare our local performance metric vars and whatnot
+            public uint totalIncomingConnectionsCount = 0;
+            public uint totalPacketsReceivedCount = 0;
+            public ulong totalPacketsReceivedBytes = 0;
+            public uint totalPacketsSentCount = 0;
+            public ulong totalPacketsSentBytes = 0;
+            public ulong numRuns = 0;
+            public ulong slowRuns = 0;
+            public double maxRunTime = 0.0;
+            public double avgRunTime = 0.0;
+            public int avgSentBytes = 0;
+            public int avgReceivedBytes = 0;
+            public const int sleepMsec = 50;
+
+            public static double slowRunTime
+            {
+                get
+                {
+                    return ((double)100/*anticipate 100msec for an audio chunk?*/ / 1000.0) * 0.2/*lets set our bar lower than bare minimum that client might expect*/;
+                }
+            }
+
+            public void Preprocess()
+            {
+                // retrieve / preprocess performance metrics
+
+                totalIncomingConnectionsCount += (uint)Server.IncomingConnectionsCount;
+                Server.IncomingConnectionsCount = 0;
+
+                totalPacketsReceivedCount += (uint)Server.PacketsReceivedCount;
+                Server.PacketsReceivedCount = 0;
+
+                uint receivedBytes = Server.PacketsReceivedBytes;
+                Server.PacketsReceivedBytes = 0;
+                totalPacketsReceivedBytes += receivedBytes;
+                avgReceivedBytes = (int)(avgReceivedBytes + receivedBytes) / 2;
+
+                totalPacketsSentCount += (uint)Server.PacketsSentCount;
+                Server.PacketsSentCount = 0;
+
+                uint sentBytes = Server.PacketsSentBytes;
+                Server.PacketsSentBytes = 0;
+                totalPacketsSentBytes += sentBytes;
+                avgSentBytes = (int)(avgSentBytes + sentBytes) / 2;
+
+                double[] runTimes = Server.CollectRunTimes();
+                if (runTimes.Length > 0)
+                {
+                    numRuns += (ulong)runTimes.Length;
+
+                    double avg = 0.0;
+                    foreach (double tm in runTimes)
+                    {
+                        maxRunTime = Math.Max(maxRunTime, tm);
+                        avg += tm;
+
+                        if (tm > slowRunTime)
+                            slowRuns++;
+                    }
+                    avg /= (double)runTimes.Length;
+
+                    avgRunTime = (avgRunTime + avg) / 2.0;
+                }
+            }
+        }
+
+        Metrics metrics = new Metrics();
+
         /// <summary>
         /// This is called when the plugin is started up. This happens only once.
         /// </summary>
@@ -106,6 +182,35 @@ namespace ACAVCServer
                 determineIPCombo.AddItem("icanhazip.com", null);
 
                 determineIPCombo.Change += DetermineIPCombo_Change;
+
+
+
+                // create custom stuff
+                /*HudFixedLayout contentLayout = View["MainContent"] as HudFixedLayout;
+                HudMeter hudCPU = new HudMeter();
+                hudCPU.InternalName = "CPUMeter";
+                Box2 rc = new Box2(View["CPULabel"].ClipRegion);
+                rc.Left = rc.Right;
+                rc.Right = (double)View["CPUPostfix"].ClipRegion.Left;
+                contentLayout.AddControl(hudCPU, (Rectangle)rc);*/
+
+                HudProgressBar meter;
+                
+                meter = View["CPUMeter"] as HudProgressBar;
+                meter.Min = 0;
+                meter.Max = 100;
+                meter.Position = 0;
+
+                meter = View["RECVMeter"] as HudProgressBar;
+                meter.Min = 0;
+                meter.Max = 100;
+                meter.Position = 0;
+
+                meter = View["SENDMeter"] as HudProgressBar;
+                meter.Min = 0;
+                meter.Max = 100;
+                meter.Position = 0;
+
 
 
 
@@ -570,10 +675,55 @@ namespace ACAVCServer
             }
 
 
-            (View["Status"] as HudStaticText).Text = $"Players:{Server.GetPlayers().Length}";
+            updateUITime -= dt;
+            if (updateUITime <= 0.0)
+            {
+                metrics.Preprocess();
+
+                (View["Status"] as HudStaticText).Text =
+                    $"Players:{Server.GetPlayers().Length}  TotalConnectAttempts:{metrics.totalIncomingConnectionsCount}" +
+                    $"\nPacketsReceived:{metrics.totalPacketsReceivedCount} ({bytesizestring(metrics.totalPacketsReceivedBytes)})    PacketsSent:{metrics.totalPacketsSentCount} ({bytesizestring(metrics.totalPacketsSentBytes)})  " +
+                    $"\nnumRums:{metrics.numRuns}  slowRuns:{metrics.slowRuns}   maxRun:{(int)(metrics.maxRunTime * 1000)}msec  avgRun:{(int)(metrics.avgRunTime * 1000)}msec";
+
+
+
+                //bargraph(" CPU", avgRunTime / slowRunTime, $"{(int)(slowRunTime * 1000.0)}msec", barWidth);
+                (View["CPUMeter"] as HudProgressBar).Position = (int)(metrics.avgRunTime / Metrics.slowRunTime * 100.0);
+                (View["CPUPostfix"] as HudStaticText).Text = $"{(int)(Metrics.slowRunTime * 1000.0)}msec";
+
+                double secPerTick = (double)Metrics.sleepMsec / 1000.0;
+                int expectedReceiveBytesPerSlowRun = (int)(Metrics.expectedSpeakingPlayers * Server.CurrentStreamInfo.DetermineExpectedBytes((int)(Metrics.slowRunTime * 1000.0)) / secPerTick);
+                //bargraph("RECV", (double)avgReceivedBytes / (double)expectedReceiveBytesPerSlowRun / secPerTick, $"{bytesizestring((ulong)expectedReceiveBytesPerSlowRun)}/sec", barWidth);
+                (View["RECVMeter"] as HudProgressBar).Position = (int)((double)metrics.avgReceivedBytes / (double)expectedReceiveBytesPerSlowRun / secPerTick * 100.0);
+                (View["RECVPostfix"] as HudStaticText).Text = $"{bytesizestring((ulong)expectedReceiveBytesPerSlowRun)}/sec";
+
+                int expectedSendBytesPerSlowRun = Metrics.expectedListenersPerPlayer * expectedReceiveBytesPerSlowRun;
+                //bargraph("SEND", (double)avgSentBytes / (double)expectedSendBytesPerSlowRun / secPerTick, $"{bytesizestring((ulong)expectedSendBytesPerSlowRun)}/sec", barWidth);
+                (View["SENDMeter"] as HudProgressBar).Position = (int)((double)metrics.avgSentBytes / (double)expectedSendBytesPerSlowRun / secPerTick * 100.0);
+                (View["SENDPostfix"] as HudStaticText).Text = $"{bytesizestring((ulong)expectedSendBytesPerSlowRun)}/sec";
+
+                updateUITime += secPerTick;
+            }
+
 
             if (DateTime.Now.Subtract(lastDispatchChat).TotalMilliseconds > 250)
                 _DispatchChatSingle();
+        }
+
+        double updateUITime = 0.0;
+
+        static string bytesizestring(ulong bytes)
+        {
+            const int kb = 1024;
+            const int mb = kb * 1024;
+            const int gb = mb * 1024;
+
+            if (bytes < mb)
+                return $"{bytes / kb}kb";
+            else if (bytes < gb)
+                return $"{((double)bytes / (double)mb).ToString("#0.0")}mb";
+            else
+                return $"{((double)bytes / (double)gb).ToString("#0.0")}gb";
         }
 
         private static DateTime lastDispatchChat = new DateTime();
