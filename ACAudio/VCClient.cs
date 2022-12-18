@@ -771,9 +771,9 @@ namespace ACAudio
                 ca.Server.EndConnect(ar);
 
                 // looks OK
-                if(ca.InitNumber == CurrentInitNumber)
+                if (ca.InitNumber == CurrentInitNumber)
                     server = ca.Server;
-            }
+                }
             catch
             {
 
@@ -850,7 +850,7 @@ namespace ACAudio
             }
 
             // dont try reconnect that often
-            if (DateTime.Now.Subtract(lastServerConnectAttempt).TotalMilliseconds < Packet.HeartbeatMsec/*can replace with another value if desired*/)
+            if (DateTime.Now.Subtract(lastServerConnectAttempt).TotalMilliseconds < 30000)
                 return;
 
             // we are trying now
@@ -859,16 +859,19 @@ namespace ACAudio
 
             try
             {
-                TcpClient tryServer = new TcpClient();
+                if (!string.IsNullOrEmpty(ServerIP))
+                {
+                    TcpClient tryServer = new TcpClient();
 
-                Log($"Attempting connection to {ServerIP}");//:{ServerPort}");
+                    Log($"Attempting connection to {ServerIP}");//:{ServerPort}");
 
-                ConnectAttempt ca = new ConnectAttempt();
-                ca.InitNumber = CurrentInitNumber;
-                ca.Server = tryServer;
+                    ConnectAttempt ca = new ConnectAttempt();
+                    ca.InitNumber = CurrentInitNumber;
+                    ca.Server = tryServer;
 
-                if (tryServer.BeginConnect(ServerIP, DefaultServerPort/*ServerPort*/, ConnectCallback, ca) != null)
-                    _WaitingForConnect = true;
+                    if (tryServer.BeginConnect(ServerIP, DefaultServerPort/*ServerPort*/, ConnectCallback, ca) != null)
+                        _WaitingForConnect = true;
+                }
             }
             catch
             {

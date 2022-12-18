@@ -1558,7 +1558,7 @@ namespace ACAudio
                 else if ((View["VCServerBotCheck"] as HudCheckBox).Checked)
                 {
                     // only try /tell periodically and if we are legit in-game and not connected to voice server
-                    if (!NeedFirstLoginPlayerWeenie && !VCClient.IsConnected && DateTime.Now.Subtract(lastBotJoinAttemptTime).TotalMilliseconds > 10000)
+                    if (!NeedFirstLoginPlayerWeenie && !VCClient.IsConnected && DateTime.Now.Subtract(lastBotJoinAttemptTime).TotalMilliseconds > 30000)
                     {
                         string botName = (View["VCServerBotHost"] as HudTextBox).Text;
                         if (!string.IsNullOrEmpty(botName))
@@ -1580,7 +1580,13 @@ namespace ACAudio
                     if (isConnected)
                         WriteToChat($"Connected to voice chat server");
                     else
+                    {
                         WriteToChat($"Disconnected from voice chat server");
+
+                        // if we were connected to bot, forget server IP to force client to attempt "/tell join" again
+                        if ((View["VCServerBotCheck"] as HudCheckBox).Checked)
+                            VCClient.ServerIP = null;
+                    }
 
                     wasConnectedToVoice = isConnected;
                 }
@@ -1588,7 +1594,7 @@ namespace ACAudio
 
                 if (VCClient.IsConnected)
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Connected   Players: {VCClient.TotalConnectedPlayers}   Nearby: {(VCClient.AreThereNearbyPlayers ? "Yes" : "No")}";
-                else if (VCClient.WaitingForConnect)
+                else if (VCClient.WaitingForConnect || DateTime.Now.Subtract(lastBotJoinAttemptTime).TotalMilliseconds < 2500)
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Attempting to connect...";
                 /*else if(VCClient.SentServerHandshake)
                     (View["VoiceChatStatus"] as HudStaticText).Text = $"Status: Logging in...";*/
