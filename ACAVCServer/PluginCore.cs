@@ -478,7 +478,7 @@ namespace ACAVCServer
                 return;
 
 
-            Log($"CHAT ({e.Target}): [{cm.Channel}][{cm.ID.ToString("X8")}][{cm.PlayerName}][{cm.Mode}]:[{cm.Content}]");
+            //Log($"CHAT ({e.Target}): [{cm.Channel}][{cm.ID.ToString("X8")}][{cm.PlayerName}][{cm.Mode}]:[{cm.Content}]");
 
 
             if (cm.Mode == "tells you")
@@ -709,7 +709,7 @@ namespace ACAVCServer
             if (DateTime.Now.Subtract(lastDispatchChat).TotalMilliseconds > 250)
                 _DispatchChatSingle();
         }
-
+        
         double updateUITime = 0.0;
 
         static string bytesizestring(ulong bytes)

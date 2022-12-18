@@ -327,7 +327,7 @@ namespace ACAudio
 
 
 
-#region VoiceChat stuff
+                #region VoiceChat stuff
                 VCClient.LogCallback = VCClientLog;
                 VCClient.GetWeeniePosition = VCClientGetWeeniePosition;
                 VCClient.CreateSpeakingIcon = VCClientCreateSpeakingIcon;
@@ -403,7 +403,7 @@ namespace ACAudio
                     int i;
                     if (!int.TryParse(ini.GetKeyString(Core.CharacterFilter.AccountName, "VCServer", "0"), out i))
                         i = 0;
-                    switch(i)
+                    switch (i)
                     {
                         case 0://auto
                             (View["VCServerAutoCheck"] as HudCheckBox).Checked = true;
@@ -444,7 +444,7 @@ namespace ACAudio
 
 
                 recordDeviceCombo.Current = defaultIndex;// set microphone input
-#endregion
+                #endregion
 
 
                 //Log("regen logos");
@@ -457,6 +457,7 @@ namespace ACAudio
                 Core.WorldFilter.ReleaseObject += _ReleaseObject;
                 Core.CharacterFilter.Logoff += _CharacterFilter_Logoff;
                 Core.ChatBoxMessage += _ChatBoxMessage;
+                Core.CommandLineText += _CommandLineText;
                 Core.CharacterFilter.ChangeFellowship += _CharacterFilter_ChangeFellowship;
 
 
@@ -573,53 +574,69 @@ namespace ACAudio
                             // dont show to user if its good
                             e.Eat = true;
                             return;
+                        }
                     }
-                }
                 }
             }
 
 
             // try to handle voicechat server bot protocol
             ACAUtils.ChatMessage cm = ACAUtils.InterpretChatMessage(e.Text);
-            if(cm != null)
+            if (cm != null)
             {
+                //Log($"CHAT ({e.Target}): [{cm.Channel}][{cm.ID.ToString("X8")}][{cm.PlayerName}][{cm.Mode}]:[{cm.Content}]");
+
                 if (cm.Mode == "tells you")
                 {
-                    if (!ShowTellProtocol && cm.Content.StartsWith(TellPacket.prefix))
-                        // dont show to user if its good
-                        e.Eat = true;
-
-                    TellPacket p = TellPacket.FromString(cm.Content);
-                    if(p != null)
+                    // tell protocol?
+                    if (cm.Content.StartsWith(TellPacket.prefix))
                     {
-                        if(p.Message == TellPacket.MessageType.RequestInfo)
+                        if (!ShowTellProtocol)
+                            // dont show to user if its good
+                            e.Eat = true;
+
+                        // dont accept any unless we initiated the conversation
+                        if (!cm.PlayerName.Equals(lastBotJoinAttemptName, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            // bot server has recognized our request and wants our data before it will send IP
-                            TellPacket info = new TellPacket(TellPacket.MessageType.ClientInfo);
-
-                            info.WriteString(Player.Name);
-                            info.WriteInt(Player.Id);
-
-                            // reply
-                            ChatTell(cm.PlayerName, info.GenerateString());
+                            // just ignore the text; dont reply back or AC server might squelch us
+                            Log($"we are receiving a packet from unexpected player {cm.PlayerName} !!!");
+                            //ChatTell(cm.PlayerName, "Whatchoo talkin bout willis");
                         }
-
-                        if(p.Message == TellPacket.MessageType.ServerInfo)
+                        else
                         {
-                            byte i0 = p.ReadByte();
-                            byte i1 = p.ReadByte();
-                            byte i2 = p.ReadByte();
-                            byte i3 = p.ReadByte();
-                            int port = p.ReadBits(16);
+                            TellPacket p = TellPacket.FromString(cm.Content);
+                            if (p != null)
+                            {
+                                if (p.Message == TellPacket.MessageType.RequestInfo)
+                                {
+                                    // bot server has recognized our request and wants our data before it will send IP
+                                    TellPacket info = new TellPacket(TellPacket.MessageType.ClientInfo);
 
-                            VCClient.ServerIP = $"{i0}.{i1}.{i2}.{i3}";
+                                    info.WriteString(Player.Name);
+                                    info.WriteInt(Player.Id);
+
+                                    // reply
+                                    ChatTell(cm.PlayerName, info.GenerateString());
+                                }
+
+                                if (p.Message == TellPacket.MessageType.ServerInfo)
+                                {
+                                    byte i0 = p.ReadByte();
+                                    byte i1 = p.ReadByte();
+                                    byte i2 = p.ReadByte();
+                                    byte i3 = p.ReadByte();
+                                    int port = p.ReadBits(16);
+
+                                    VCClient.ServerIP = $"{i0}.{i1}.{i2}.{i3}";
 
 
-                            // remember this bot as our preferred host
-                            (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
-                            (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
-                            (View["VCServerBotCheck"] as HudCheckBox).Checked = true;
-                            (View["VCServerBotHost"] as HudTextBox).Text = cm.PlayerName;
+                                    // remember this bot as our preferred host
+                                    (View["VCServerAutoCheck"] as HudCheckBox).Checked = false;
+                                    (View["VCServerCustomCheck"] as HudCheckBox).Checked = false;
+                                    (View["VCServerBotCheck"] as HudCheckBox).Checked = true;
+                                    (View["VCServerBotHost"] as HudTextBox).Text = cm.PlayerName;
+                                }
+                            }
                         }
                     }
 
@@ -1541,23 +1558,24 @@ namespace ACAudio
                 else if ((View["VCServerBotCheck"] as HudCheckBox).Checked)
                 {
                     // only try /tell periodically and if we are legit in-game and not connected to voice server
-                    if (!NeedFirstLoginPlayerWeenie && !VCClient.IsConnected && DateTime.Now.Subtract(lastBotJoinAttempt).TotalMilliseconds > 10000)
+                    if (!NeedFirstLoginPlayerWeenie && !VCClient.IsConnected && DateTime.Now.Subtract(lastBotJoinAttemptTime).TotalMilliseconds > 10000)
                     {
                         string botName = (View["VCServerBotHost"] as HudTextBox).Text;
-                        if(!string.IsNullOrEmpty(botName))
+                        if (!string.IsNullOrEmpty(botName))
                         {
                             //ChatTell(botName, "join");
                             TellPacket p = new TellPacket(TellPacket.MessageType.Join);
                             ChatTell(botName, p.GenerateString());
 
-                            lastBotJoinAttempt = DateTime.Now;
+                            lastBotJoinAttemptName = botName;
+                            lastBotJoinAttemptTime = DateTime.Now;
                         }
                     }
                 }
 
 
                 bool isConnected = VCClient.IsConnected;
-                if(isConnected != wasConnectedToVoice)
+                if (isConnected != wasConnectedToVoice)
                 {
                     if (isConnected)
                         WriteToChat($"Connected to voice chat server");
@@ -1584,7 +1602,7 @@ namespace ACAudio
                 // update parameters
                 VCClient.Loopback = (View["MicLoopback"] as HudCheckBox).Checked;
                 //VCClient.Speak3D = (View["Mic3D"] as HudCheckBox).Checked;
-//                VCClient.SpeakChannel = (StreamInfo.VoiceChannel)(View["MicChannel"] as HudCombo).Current;
+                //                VCClient.SpeakChannel = (StreamInfo.VoiceChannel)(View["MicChannel"] as HudCombo).Current;
 
                 int recordDeviceIndex = (View["RecordDevice"] as HudCombo).Current;
                 if (recordDeviceIndex < 0 || recordDeviceIndex >= AvailableRecordDevices.Length)
@@ -1691,7 +1709,8 @@ namespace ACAudio
             }
         }
 
-        private DateTime lastBotJoinAttempt = new DateTime();
+        private string lastBotJoinAttemptName = null;
+        private DateTime lastBotJoinAttemptTime = new DateTime();
         private bool wasConnectedToVoice = false;
 
 
@@ -2526,6 +2545,7 @@ namespace ACAudio
 
             //Log("unhook stuff");
             Core.ChatBoxMessage -= _ChatBoxMessage;
+            Core.CommandLineText -= _CommandLineText;
             Core.CharacterFilter.Logoff -= _CharacterFilter_Logoff;
             Core.CharacterFilter.ChangeFellowship -= _CharacterFilter_ChangeFellowship;
             Core.RenderFrame -= _Process;
@@ -2536,7 +2556,7 @@ namespace ACAudio
             Log("----------------------------------------------------------------------");
         }
 
-        private void FilterCore_CommandLineText(object sender, ChatParserInterceptEventArgs e)
+        private void _CommandLineText(object sender, ChatParserInterceptEventArgs e)
         {
             /*if (false)
             {
@@ -2545,7 +2565,68 @@ namespace ACAudio
                 e.Eat = true;
             }*/
 
+
+
+            // we want to catch a manual outgoing /tell here rather than wait for server to issue a chat message just in case acavcserver manages
+            // to give us a ACA* packet before we saw that we /tell'd.
+            //
+            // this will allow us to remember if the player actually wanted to  /tell join  in advance, to prevent possible haxx exploit
+            // where a modified acavcserver could force players to join their voice servers automatically.
+
+
+            string tellTarget = null;
+            string tellMessage = null;
+
+            foreach(string tellPrefix in new string[]
+            {
+                "tell",
+                "t",
+                "send",
+                "whisper",
+                "w"
+            })
+                if(e.Text.StartsWith("@" + tellPrefix, StringComparison.InvariantCultureIgnoreCase) ||
+                    e.Text.StartsWith("/" + tellPrefix, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    string ln = e.Text.Substring(1 + tellPrefix.Length);
+
+                    int i = ln.IndexOf(',');
+                    if (i != -1)
+                    {
+                        tellTarget = ln.Substring(0, i).Trim();
+                        tellMessage = ln.Substring(i + 1).Trim();
+                        break;
+                    }
+                }
+
+            foreach (string retellPrefix in new string[]
+            {
+                "retell",
+                "rt",
+            })
+                if (e.Text.StartsWith("@" + retellPrefix, StringComparison.InvariantCultureIgnoreCase) ||
+                    e.Text.StartsWith("/" + retellPrefix, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    tellTarget = lastTellTarget;
+                    tellMessage = e.Text.Substring(1 + retellPrefix.Length).Trim();
+                }
+
+
+            if (!string.IsNullOrEmpty(tellTarget) && !string.IsNullOrEmpty(tellMessage))
+            {
+                //Log($"TELL {tellTarget}, {tellMessage}");
+
+                if (tellMessage.Equals("join", StringComparison.InvariantCultureIgnoreCase))
+                    lastBotJoinAttemptName = tellTarget;
+                else
+                    lastBotJoinAttemptName = null;//clear unless we specifically issued a 'join' request!
+
+                lastTellTarget = tellTarget;
+            }
+
         }
+
+        private string lastTellTarget = null;// for   /retell join
 
         public static Stream GetEmbeddedFile(string name)
         {
