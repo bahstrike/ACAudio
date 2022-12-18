@@ -305,6 +305,7 @@ namespace ACAudio
                 // not holding push-to-talk key..  wait a little extra delay before ending
                 if (recordTimestamp != new DateTime())
                 {
+                    // have delay to avoid average person tendency to misjudge releasing push-to-talk VS their final speech.
                     if (DateTime.Now.Subtract(recordTimestamp).TotalMilliseconds > 350)
                     {
                         CloseRecordDevice();
@@ -380,11 +381,11 @@ namespace ACAudio
 
                             SendToServer(packet);
 
-                            Log("Sent RawAudio packet");
+                            //Log("Sent RawAudio packet");
                         }
                         else
                         {
-                            Log("Didn't send RawAudio; nobody to hear");
+                            //Log("Didn't send RawAudio; nobody to hear");
                         }
                     }
                 }
@@ -648,7 +649,7 @@ namespace ACAudio
                 for (int x = bytesToCopy; x < len; x++)
                     rBuf[x] = 0;// should this be a 16-bit mid-range value like 32768 instead?
 
-                Log($"{ID}: SAMPLE CALLBACK{(bytesToCopy < len ? $" (STARVED {100 - (bytesToCopy * 100 / len)}%)" : string.Empty)}");
+                //Log($"{ID}: SAMPLE CALLBACK{(bytesToCopy < len ? $" (STARVED {100 - (bytesToCopy * 100 / len)}%)" : string.Empty)}");
 
                 return rBuf;
 #else
@@ -710,7 +711,7 @@ namespace ACAudio
                 ReceiveStream stream;
                 if (!ReceiveStreams.TryGetValue(id, out stream))
                 {
-                    Log($"Create receive stream {id}");
+                    //Log($"Create receive stream {id}");
 
                     stream = new ReceiveStream(id, streamInfo);
                     ReceiveStreams.Add(id, stream);
@@ -731,7 +732,7 @@ namespace ACAudio
                 ReceiveStreams.Remove(id);
             }
 
-            Log($"Destroy receive stream {id}");
+            //Log($"Destroy receive stream {id}");
 
             stream.Dispose();
         }
@@ -963,8 +964,8 @@ namespace ACAudio
 
         static void CloseRecordDevice()
         {
-            if (currentRecordStreamInfo != null)//just dumb filter for log message/ can remove lol
-                Log("MICROPHONE: END");
+            //if (currentRecordStreamInfo != null)//just dumb filter for log message/ can remove lol
+                //Log("MICROPHONE: END");
 
             if (CurrentRecordDevice != null && recordBuffer != null)
                 // this seems to sometimes take ~150msec on side PC with wireless headset mic.  could result in frameskips if left on main thread
@@ -1023,7 +1024,7 @@ namespace ACAudio
             recordTimestamp = DateTime.Now;
 
 
-            Log("MICROPHONE: START");
+            //Log("MICROPHONE: START");
         }
 
         static FMOD.Sound CreateRecordBuffer(StreamInfo streamInfo)

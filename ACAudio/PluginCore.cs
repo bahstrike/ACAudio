@@ -1629,17 +1629,27 @@ namespace ACAudio
                 VCClient.PlayerFellowshipID = FellowshipID;
 
 
+                //(View["VoiceChatKey"] as HudStaticText).Text = "ACAudio Virindi Hotkeys:";
+                (View["VoiceChatKey_PTT"] as HudStaticText).Text = $"{Hotkey_PTT_Desc}: {(GetValidHotkey(Hotkey_PTT)?.KeyString ?? "-not bound-")}";
+                (View["VoiceChatKey_PTT_Allegiance"] as HudStaticText).Text = $"{Hotkey_PTT_Allegiance_Desc}: {(GetValidHotkey(Hotkey_PTT_Allegiance)?.KeyString ?? "-not bound-")}";
+                (View["VoiceChatKey_PTT_Fellowship"] as HudStaticText).Text = $"{Hotkey_PTT_Fellowship_Desc}: {(GetValidHotkey(Hotkey_PTT_Fellowship)?.KeyString ?? "-not bound-")}";
+
+
                 StreamInfo.VoiceChannel currentVoice = StreamInfo.VoiceChannel.Invalid;
                 if (DoesACHaveFocus())
                 {
-                    if (IsHotkeyHeld(HotkeyName_PTT_Allegiance))
+                    if (IsHotkeyHeld(Hotkey_PTT_Allegiance))
                         currentVoice = StreamInfo.VoiceChannel.Allegiance;
-                    else if (IsHotkeyHeld(HotkeyName_PTT_Fellowship))
+                    else if (IsHotkeyHeld(Hotkey_PTT_Fellowship))
                         currentVoice = StreamInfo.VoiceChannel.Fellowship;
-                    else if (IsHotkeyHeld(HotkeyName_PTT))
+                    else if (IsHotkeyHeld(Hotkey_PTT))
                     {
                         currentVoice = (StreamInfo.VoiceChannel)(View["MicChannel"] as HudCombo).Current;
                         //currentVoice = StreamInfo.VoiceChannel.Proximity3D;
+                    } else
+                    {
+                        // no actively-held hotkey.  forget any that have been triggered
+                        lastHotkey = null;
                     }
                 }
                 VCClient.CurrentVoice = currentVoice;
@@ -2487,22 +2497,50 @@ namespace ACAudio
 
             //Log($"hotkeysystem     running:{VHotkeySystem.Running}    realinstance:{VHotkeySystem.InstanceReal}");
 
-            VHotkeySystem hksys = VHotkeySystem.InstanceReal;
-            if (hksys != null)
-            {
-                VHotkeySystem.InstanceReal.AddHotkey(new VHotkeyInfo(HotkeyName_PTT, "Push-to-talk key", ' ', false, false, false));
-                VHotkeySystem.InstanceReal.AddHotkey(new VHotkeyInfo(HotkeyName_PTT_Allegiance, "Push-to-talk key (allegiance only)", 0, false, false, false));
-                VHotkeySystem.InstanceReal.AddHotkey(new VHotkeyInfo(HotkeyName_PTT_Fellowship, "Push-to-talk key (fellowship only)", 0, false, false, false));
-            }
+            RegisterHotkey(Hotkey_PTT, Hotkey_PTT_Desc);
+            RegisterHotkey(Hotkey_PTT_Allegiance, Hotkey_PTT_Allegiance_Desc);
+            RegisterHotkey(Hotkey_PTT_Fellowship, Hotkey_PTT_Fellowship_Desc);
 
 
             // start our world timer
             LoginCompleteTimestamp = PerfTimer.Timestamp;
         }
 
-        const string HotkeyName_PTT = "PushToTalk";
-        const string HotkeyName_PTT_Allegiance = "PushToTalk_Allegiance";
-        const string HotkeyName_PTT_Fellowship = "PushToTalk_Fellowship";
+        void RegisterHotkey(string name, string desc)
+        {
+            VHotkeySystem hksys = VHotkeySystem.InstanceReal;
+            if (hksys == null)
+                return;
+
+            VHotkeyInfo hk = new VHotkeyInfo(name, desc, 0, false, false, false);
+            hk.Fired2 += Hk_Fired2;
+
+            hksys.AddHotkey(hk);
+        }
+
+        private static void Hk_Fired2(object sender, VHotkeyInfo.cEatableFiredEventArgs e)
+        {
+            //Log($"HOTKEY: {sender}   eat:{e.Eat}");
+            //Log($"HOTKEY {DateTime.Now.Subtract(lastHotkeyTime).TotalMilliseconds}msec since last");
+
+            /*if(!object.ReferenceEquals(lastHotkey, sender))
+            {
+                Log($"HOTKEY: {(sender as VHotkeyInfo).VirtualKey}");
+            }*/
+
+            lastHotkey = (sender as VHotkeyInfo);
+        }
+
+        static VHotkeyInfo lastHotkey = null;
+
+        const string Hotkey_PTT = "PushToTalk";
+        const string Hotkey_PTT_Desc = "Push-to-talk";
+
+        const string Hotkey_PTT_Allegiance = "PushToTalk_Allegiance";
+        const string Hotkey_PTT_Allegiance_Desc = "Push-to-talk (allegiance only)";
+
+        const string Hotkey_PTT_Fellowship = "PushToTalk_Fellowship";
+        const string Hotkey_PTT_Fellowship_Desc = "Push-to-talk (fellowship only)";
 
 
         // maybe remove if we use decal/virindi hotkey system
@@ -2513,15 +2551,31 @@ namespace ACAudio
             return (GetAsyncKeyState(vKey) & 0x8000) != 0;
         }
 
-        bool IsHotkeyHeld(string name)
+        VHotkeyInfo GetValidHotkey(string name)
         {
             VHotkeySystem hksys = VHotkeySystem.InstanceReal;
             if (hksys == null)
-                return false;
+                return null;
 
             VHotkeyInfo hotkey = hksys.GetHotkeyByName(name);
             if (hotkey == null || !hotkey.Enabled || hotkey.VirtualKey == 0)
+                return null;
+
+            return hotkey;
+        }
+
+        bool IsHotkeyHeld(string name)
+        {
+#if true
+            if (lastHotkey == null || lastHotkey.HotkeyName != name)
                 return false;
+
+            VHotkeyInfo hotkey = lastHotkey;
+#else
+            VHotkeyInfo hotkey = GetValidHotkey(name);
+            if (hotkey == null)
+                return false;
+#endif
 
             if (
                 hotkey.ShiftState != (IsVirtualKeyHeld(16/*shift*/) || IsVirtualKeyHeld(160/*left shift*/) || IsVirtualKeyHeld(161/*right shift*/)) ||
@@ -2530,10 +2584,11 @@ namespace ACAudio
                 )
                 return false;
 
-            if (!IsVirtualKeyHeld(hotkey.VirtualKey))
-                return false;
+            // virindi says middlemouse button is -5  yet  VK_MBUTTON is 4
+            if (hotkey.VirtualKey < 0)
+                return IsVirtualKeyHeld(-hotkey.VirtualKey - 1);
 
-            return true;
+            return IsVirtualKeyHeld(hotkey.VirtualKey);
         }
 
         /// <summary>
