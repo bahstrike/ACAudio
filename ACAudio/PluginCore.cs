@@ -709,13 +709,14 @@ namespace ACAudio
             ActiveSpeakingIcons.Remove(weenieID);
         }
 
-        bool VCClientCheckForMute(int weenieID)
+        bool VCClientCheckForMute(string characterName, int weenieID)
         {
-            Log("UH OH, SOMEONE DIDN'T FINISH THE MUTE LOGIC");
-            /*foreach(string plrName in mutedPlayerNames)
+            //Log("UH OH, SOMEONE DIDN'T FINISH THE MUTE LOGIC");
+            foreach(string plrName in mutedPlayerNames)
             {
-
-            }*/
+                if (plrName.Equals(characterName, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
 
             // not muted
             return false;

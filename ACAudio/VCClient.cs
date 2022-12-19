@@ -45,7 +45,7 @@ namespace ACAudio
         public static SpeakingIconDelegate CreateSpeakingIcon = null;
         public static SpeakingIconDelegate DestroySpeakingIcon = null;
 
-        public delegate bool CheckPlayerDelegate(int weenieID);
+        public delegate bool CheckPlayerDelegate(string characterName, int weenieID);
         public static CheckPlayerDelegate CheckForMute = null;
 
         private static volatile int CurrentInitNumber = 0;
@@ -225,6 +225,7 @@ namespace ACAudio
                         ReceiveStreamID id = new ReceiveStreamID();
                         id.StreamInfoMagic = packet.ReadInt();
                         id.Channel = (StreamInfo.VoiceChannel)packet.ReadInt();
+                        id.CharacterName = packet.ReadString();
                         id.WeenieID = packet.ReadInt();
 
 
@@ -246,7 +247,7 @@ namespace ACAudio
 
 
                         // check for mute
-                        if (CheckForMute == null || !CheckForMute(id.WeenieID))
+                        if (CheckForMute == null || !CheckForMute(id.CharacterName, id.WeenieID))
                         {
                             ReceiveStream stream = GetOrCreateReceiveStream(id);
                             if (stream != null)
@@ -677,7 +678,9 @@ namespace ACAudio
         {
             public int StreamInfoMagic;
             public StreamInfo.VoiceChannel Channel;
-            public int WeenieID;
+            public int WeenieID;// crucial for tracking
+
+            public string CharacterName; // just for information
 
             public override string ToString()
             {

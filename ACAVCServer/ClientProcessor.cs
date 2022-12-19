@@ -192,6 +192,7 @@ namespace ACAVCServer
                             Packet detailAudio = new Packet(Packet.MessageType.DetailAudio);
                             detailAudio.WriteInt(streamInfo.magic);
                             detailAudio.WriteInt((int)speakChannel);
+                            detailAudio.WriteString(player.CharacterName);
                             detailAudio.WriteInt(player.WeenieID);
                             detailAudio.WriteBuffer(buf);
 
