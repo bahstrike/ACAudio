@@ -45,6 +45,9 @@ namespace ACAudio
         public static SpeakingIconDelegate CreateSpeakingIcon = null;
         public static SpeakingIconDelegate DestroySpeakingIcon = null;
 
+        public delegate bool CheckPlayerDelegate(int weenieID);
+        public static CheckPlayerDelegate CheckForMute = null;
+
         private static volatile int CurrentInitNumber = 0;
 
         public static void Init(string _AccountName, string _CharacterName, int _WeenieID)
@@ -242,11 +245,14 @@ namespace ACAudio
                         }
 
 
-
-                        ReceiveStream stream = GetOrCreateReceiveStream(id);
-                        if (stream != null)
+                        // check for mute
+                        if (CheckForMute == null || !CheckForMute(id.WeenieID))
                         {
-                            stream.SupplyPacket(packet);
+                            ReceiveStream stream = GetOrCreateReceiveStream(id);
+                            if (stream != null)
+                            {
+                                stream.SupplyPacket(packet);
+                            }
                         }
                     }
 

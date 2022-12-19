@@ -332,6 +332,7 @@ namespace ACAudio
                 VCClient.GetWeeniePosition = VCClientGetWeeniePosition;
                 VCClient.CreateSpeakingIcon = VCClientCreateSpeakingIcon;
                 VCClient.DestroySpeakingIcon = VCClientDestroySpeakingIcon;
+                VCClient.CheckForMute = VCClientCheckForMute;
 
 
                 (View["VCServerAutoCheck"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
@@ -701,12 +702,23 @@ namespace ACAudio
 
         void DestroySpeakingIcon(int weenieID)
         {
-            D3DObj obj;
-            if (!ActiveSpeakingIcons.TryGetValue(weenieID, out obj))
+            if (!ActiveSpeakingIcons.TryGetValue(weenieID, out D3DObj obj))
                 return;
 
             obj.Visible = false;// set as invisible since i guess we're not allowed to dispose manually (wait for GC)
             ActiveSpeakingIcons.Remove(weenieID);
+        }
+
+        bool VCClientCheckForMute(int weenieID)
+        {
+            Log("UH OH, SOMEONE DIDN'T FINISH THE MUTE LOGIC");
+            /*foreach(string plrName in mutedPlayerNames)
+            {
+
+            }*/
+
+            // not muted
+            return false;
         }
 
         private VCClient.RecordDeviceEntry[] AvailableRecordDevices;
@@ -2514,6 +2526,14 @@ namespace ACAudio
             WriteToChat($"Startup");
 
 
+#if false
+            for(int x=0; x<32; x++)
+            {
+                Instance.Host.Actions.AddChatText($"Color {x}", x);
+            }
+#endif
+
+
             // even though we're logged in, we havent spawned in-game yet.  set flag to do logic upon first gamespawn
             NeedFirstLoginPlayerWeenie = true;
 
@@ -2641,6 +2661,17 @@ namespace ACAudio
             Log("----------------------------------------------------------------------");
         }
 
+        List<string> mutedPlayerNames = new List<string>();
+
+        bool IsPlayerMuted(string plrName)
+        {
+            foreach (string s in mutedPlayerNames)
+                if (s.Equals(plrName, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+
+            return false;
+        }
+
         private void _CommandLineText(object sender, ChatParserInterceptEventArgs e)
         {
             /*if (false)
@@ -2649,6 +2680,70 @@ namespace ACAudio
                 //Do not execute as AC command.
                 e.Eat = true;
             }*/
+
+
+
+            // acaudio commands
+            if (e.Text.Length > 1 && (e.Text[0] == '/' || e.Text[0] == '@'))
+            {
+                string ln = e.Text.Substring(1);
+
+                if(ln.StartsWith("mute", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    if (ln.StartsWith("mutelist", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        WriteToChat($"------ {mutedPlayerNames.Count} muted players ------");
+                        foreach (string plrName in mutedPlayerNames)
+                            WriteToChat(plrName);
+                        WriteToChat("-----------------------------");
+
+                        e.Eat = true;
+                    }
+                    else
+                    {
+                        // assume "add"
+                        int i = ln.IndexOf(' ');
+                        if (i != -1)
+                        {
+                            string plrName = ln.Substring(i + 1).Trim();
+
+                            if (!string.IsNullOrEmpty(plrName))
+                            {
+                                if (!IsPlayerMuted(plrName))
+                                {
+                                    WriteToChat($"Muted {plrName}");
+                                    mutedPlayerNames.Add(plrName);
+
+                                    e.Eat = true;
+                                }
+                            }
+                        }
+                    }
+                } else if(ln.StartsWith("unmute", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    int i = ln.IndexOf(' ');
+                    if(i != -1)
+                    {
+                        string plrName = ln.Substring(i + 1).Trim();
+
+                        if (!string.IsNullOrEmpty(plrName))
+                        {
+                            for (int x = 0; x < mutedPlayerNames.Count; x++)
+                                if (mutedPlayerNames[x].Equals(plrName, StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    WriteToChat($"Unmuted {plrName}");
+                                    mutedPlayerNames.RemoveAt(x);
+
+                                    e.Eat = true;
+
+                                    break;
+                                }
+                        }
+                    }
+                }
+
+            }
+
 
 
 
@@ -2722,7 +2817,7 @@ namespace ACAudio
         {
             try
             {
-                Instance.Host.Actions.AddChatText($"[{PluginName}] {message}", 5);
+                Instance.Host.Actions.AddChatText($"[{PluginName}] {message}", 18);
                 Log($"WriteToChat: {message}");
             }
             catch (Exception)
