@@ -673,23 +673,33 @@ namespace ACAudio
 
         void VCClientCreateSpeakingIcon(int weenieID)
         {
+            CreateSpeakingIcon(weenieID, false);
+        }
+
+        void CreateSpeakingIcon(int weenieID, bool microphone)
+        {
             if (ActiveSpeakingIcons.ContainsKey(weenieID))
                 return;
 
             D3DObj obj = Core.D3DService.NewD3DObj();
 
-            obj.SetIcon(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "speaking.png"));
-            obj.Anchor(weenieID, 1.3f, 0.0f, 0.0f, 0.0f);
+            obj.SetIcon(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), microphone ? "microphone.png" : "speaking.png"));
+            obj.Anchor(weenieID, microphone ? 1.165f : 1.3f, 0.0f, 0.0f, 0.0f);
             obj.OrientToCamera(false);
             obj.Visible = true;
             obj.Autoscale = false;
-            obj.Scale(0.3f);
-            obj.Color = unchecked((int)0xFFFFFFFF);
+            obj.Scale(microphone ? 0.2f : 0.3f);
+            obj.Color = microphone ? unchecked((int)0x80FFFFFF) : unchecked((int)0xFFFFFFFF);
 
             ActiveSpeakingIcons.Add(weenieID, obj);
         }
 
         void VCClientDestroySpeakingIcon(int weenieID)
+        {
+            DestroySpeakingIcon(weenieID);
+        }
+
+        void DestroySpeakingIcon(int weenieID)
         {
             D3DObj obj;
             if (!ActiveSpeakingIcons.TryGetValue(weenieID, out obj))
@@ -1652,7 +1662,21 @@ namespace ACAudio
                         lastHotkey = null;
                     }
                 }
-                VCClient.CurrentVoice = currentVoice;
+
+                if (currentVoice != VCClient.CurrentVoice)
+                {
+                    VCClient.CurrentVoice = currentVoice;
+
+                    // create/destroy our own speaking icon based on what state we're moving to  (unless we are in loopback;  we'll rely on server to issue ours)
+                    WorldObject playerObj = Player;
+                    if (playerObj != null && !VCClient.Loopback)
+                    {
+                        if (currentVoice == StreamInfo.VoiceChannel.Invalid)
+                            DestroySpeakingIcon(playerObj.Id);
+                        else
+                            CreateSpeakingIcon(playerObj.Id, true);
+                    }
+                }
 
 
                 // do whatever we gotta do

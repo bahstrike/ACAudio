@@ -56,6 +56,7 @@ Section "" CoreSection
 	File "${BUILDPATH}\SmithAudio.dll"
 	File "${BUILDPATH}\static.dat"
 	File "${BUILDPATH}\speaking.png"
+	File "${BUILDPATH}\microphone.png"
 
 	SetOutPath "$INSTDIR\data"
 	File "${BUILDPATH}\data\*.*"
@@ -110,6 +111,7 @@ Section Uninstall
 	Delete "$INSTDIR\SmithAudio.dll"
 	Delete "$INSTDIR\static.dat"
 	Delete "$INSTDIR\speaking.png"
+	Delete "$INSTDIR\microphone.png"
 
 	RMDir /r "$INSTDIR\data"
 
