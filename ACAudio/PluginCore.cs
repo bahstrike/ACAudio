@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 
 using ACACommon;
+using System.Text;
 
 namespace ACAudio
 {
@@ -167,6 +168,33 @@ namespace ACAudio
                 //Log("init audio");
                 if (!Audio.Init(128, dopplerscale: 0.135f))
                     Log("Failed to initialize Audio");
+
+
+
+                // HAXXX select different output device
+                /*{
+                    int numDrivers;
+                    Audio.fmod.getNumDrivers(out numDrivers);
+                    for (int x = 0; x < numDrivers; x++)
+                    {
+                        StringBuilder sb = new StringBuilder(512);
+                        Guid guid;
+                        int systemrate;
+                        FMOD.SPEAKERMODE speakermode;
+                        int speakermodechannels;
+                        Audio.fmod.getDriverInfo(x, sb, 512, out guid, out systemrate, out speakermode, out speakermodechannels);
+
+                        speakermodechannels = speakermodechannels;
+
+                        if (sb.ToString() == "VoiceMeeter Aux Input (VB-Audio VoiceMeeter AUX VAIO)")
+                        {
+                            Audio.fmod.setDriver(x);
+                            break;
+                        }
+                    }
+
+
+                }*/
 
 
 
