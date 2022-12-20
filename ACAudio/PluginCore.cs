@@ -468,6 +468,27 @@ namespace ACAudio
                             break;
                         }
                     }
+
+
+
+                    // try to get current list of muted players from config
+                    mutedPlayerNames.Clear();
+                    try
+                    {
+                        int numMuted = int.Parse(ini.GetKeyString("Mute", "Num", "0"));
+                        for (int x = 0; x < numMuted; x++)
+                        {
+                            string playerName = ini.GetKeyString("Mute", $"Player{x}", string.Empty);
+                            if (string.IsNullOrEmpty(playerName))
+                                continue;
+
+                            mutedPlayerNames.Add(playerName);
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        Log($"Bad times parsing [Mute] from INI: {ex.Message}");
+                    }
                 }
 
 
@@ -883,6 +904,10 @@ namespace ACAudio
                 ini.WriteKey(Core.CharacterFilter.AccountName, "VCServerBotHost", (View["VCServerBotHost"] as HudTextBox).Text);
 
                 ini.WriteKey(Core.CharacterFilter.AccountName, "RecordDevice", VCClient.CurrentRecordDevice == null ? string.Empty : VCClient.CurrentRecordDevice.Name.Trim());
+
+                ini.WriteKey("Mute", "Num", mutedPlayerNames.Count.ToString());
+                for(int x=0; x<mutedPlayerNames.Count; x++)
+                    ini.WriteKey("Mute", $"Player{x}", mutedPlayerNames[x]);
             }
 
 
