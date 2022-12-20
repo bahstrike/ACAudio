@@ -1,13 +1,13 @@
 ; Define your application name
-!define APPNAME "ACAudio"
+!define APPNAME "ACAVCServer"
 !define SOFTWARECOMPANY "Bad Ass Hackers"
 !define VERSION	"1.0.0.0"
-!define APPGUID "{dccf58a6-a37a-4fea-adcc-488ce2d51883}"
+!define APPGUID "{3a47b37f-c57b-4560-bc17-1bc2fa995388}"
 
-!define ASSEMBLY "ACAudio.dll"
-!define CLASSNAME "ACAudio.PluginCore"
+!define ASSEMBLY "ACAVCServer.dll"
+!define CLASSNAME "ACAVCServer.PluginCore"
 
-!define BUILDPATH "C:\ACAudio\DEPLOY_ACAUDIO"
+!define BUILDPATH "C:\ACAudio\DEPLOY_ACAVCSERVER"
 
 ; Main Install settings
 ; compressor goes first
@@ -49,17 +49,9 @@ Section "" CoreSection
 	SetOutPath "$INSTDIR\"
 
 	File "${BUILDPATH}\${ASSEMBLY}"
-	File "${BUILDPATH}\data\credits.txt"
+	File "${BUILDPATH}\readme.txt"
 	File "${BUILDPATH}\ACACommon.dll"
-	File "${BUILDPATH}\fmod.dll"
 	File "${BUILDPATH}\SmithCore.dll"
-	File "${BUILDPATH}\SmithAudio.dll"
-	File "${BUILDPATH}\static.dat"
-	File "${BUILDPATH}\speaking.png"
-	File "${BUILDPATH}\microphone.png"
-
-	SetOutPath "$INSTDIR\data"
-	File "${BUILDPATH}\data\*.*"
 
 SectionEnd
 
@@ -104,16 +96,9 @@ Section Uninstall
 	Delete "$INSTDIR\${ASSEMBLY}"
 	Delete "$INSTDIR\${APPNAME}.ini"
 	Delete "$INSTDIR\${APPNAME}.log"
-	Delete "$INSTDIR\credits.txt"
+	Delete "$INSTDIR\readme.txt"
 	Delete "$INSTDIR\ACACommon.dll"
-	Delete "$INSTDIR\fmod.dll"
 	Delete "$INSTDIR\SmithCore.dll"
-	Delete "$INSTDIR\SmithAudio.dll"
-	Delete "$INSTDIR\static.dat"
-	Delete "$INSTDIR\speaking.png"
-	Delete "$INSTDIR\microphone.png"
-
-	RMDir /r "$INSTDIR\data"
 
 
 	RMDir "$INSTDIR\"
