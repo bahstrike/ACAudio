@@ -38,7 +38,7 @@
         <control progid="DecalControls.CheckBox" name="MicLoopback" left="10" top="130" width="120" height="20" text="Loopback Test" checked="False"/>
         <control progid="DecalControls.Choice" name="MicChannel" left="10" top="150" width="120" height="20"/>
 
-        <control progid="DecalControls.StaticText" name="VoiceChatKey" left="10" top="190" width="400" height="18" text="ACAudio Virindi Hotkeys:"/>
+        <control progid="DecalControls.StaticText" name="VoiceChatKey" left="10" top="190" width="400" height="18" text="ACAudio Virindi Hotkeys:               (type /mutelist for mute interface)"/>
         <control progid="DecalControls.StaticText" name="VoiceChatKey_PTT" left="10" top="210" width="400" height="18" text=""/>
         <control progid="DecalControls.StaticText" name="VoiceChatKey_PTT_Allegiance" left="10" top="230" width="400" height="18" text=""/>
         <control progid="DecalControls.StaticText" name="VoiceChatKey_PTT_Fellowship" left="10" top="250" width="400" height="18" text=""/>

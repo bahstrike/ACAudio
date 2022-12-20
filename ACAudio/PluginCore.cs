@@ -2746,6 +2746,8 @@ namespace ACAudio
                 {
                     if (ln.StartsWith("mutelist", StringComparison.InvariantCultureIgnoreCase))
                     {
+                        WriteToChat("Initiating /mutelist report:");
+                        WriteToChat("Use '/mute playername' or '/unmute playername'  to manipulate this list.");
                         WriteToChat($"------ {mutedPlayerNames.Count} muted players ------");
                         foreach (string plrName in mutedPlayerNames)
                             WriteToChat(plrName);
