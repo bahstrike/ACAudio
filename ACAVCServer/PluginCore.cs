@@ -216,6 +216,9 @@ namespace ACAVCServer
 
                 using (INIFile ini = INIFile)
                 {
+                    (View["Enable"] as HudCheckBox).Checked = ini.GetKeyString(PluginName, "Enable", "1") != "0";
+                    (View["Advertise"] as HudCheckBox).Checked = ini.GetKeyString(PluginName, "Advertise", "1") != "0";
+
                     determineIPCombo.Current = int.Parse(ini.GetKeyString(PluginName, "DetermineIP", "0"));
 
                 }
@@ -227,16 +230,10 @@ namespace ACAVCServer
 
 
 
-                try
-                {
-                    Server.LogCallback = Log;
 
-                    Server.Init();
-                }
-                catch (Exception ex)
-                {
-                    Log($"server init exception: {ex.Message}");
-                }
+
+                Server.LogCallback = Log;
+
 
 
 
@@ -297,6 +294,9 @@ namespace ACAVCServer
 
             using (INIFile ini = INIFile)
             {
+                ini.WriteKey(PluginName, "Enable", (View["Enable"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey(PluginName, "Advertise", (View["Advertise"] as HudCheckBox).Checked ? "1" : "0");
+
                 HudCombo determineIPCombo = View["DetermineIP"] as HudCombo;
                 ini.WriteKey(PluginName, "DetermineIP", determineIPCombo.Current.ToString());
                 if (determineIPCombo.Current == 0)
@@ -448,7 +448,10 @@ namespace ACAVCServer
 
         private void _ChatBoxMessage(object sender, ChatTextInterceptEventArgs e)
         {
-            Log($"RAWCHAT ({e.Target}): |{e.Text}|");
+            if (!EnableServer)
+                return;
+
+            //Log($"RAWCHAT ({e.Target}): |{e.Text}|");
 
 
 
@@ -633,29 +636,77 @@ namespace ACAVCServer
             }
         }
 
-        public bool EnableAvertisement = false;
+        public bool EnableServer
+        {
+            get
+            {
+                return (View["Enable"] as HudCheckBox).Checked;
+            }
+        }
+
+        public bool EnableAvertisement
+        {
+            get
+            {
+                try
+                {
+                    return (View["Advertise"] as HudCheckBox).Checked;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         private DateTime lastAdvertisement = new DateTime();
 
         private void Process(double dt, double truedt)
         {
-            if (!NeedFirstLoginPlayerWeenie)
+            // if we havent finished logging in, just dont do anything
+            if (NeedFirstLoginPlayerWeenie)
+                return;
+
+
+
+            bool enableServer = EnableServer;//precache
+
+            if (!enableServer)
             {
-                // ok we're actually logged in. lets determine if we should chat spam
+                // server should not be running. do nothing here
+                Server.Shutdown();
+            }
 
-                if (EnableAvertisement)
+            if (!Server.IsRunning)
+            {
+                try
                 {
-                    if (lastAdvertisement == new DateTime())
-                    {
-                        BotChat("ACAudio Voice Chat Server is Online!");
+                    Server.Init();
 
-                        lastAdvertisement = DateTime.Now;
-                    }
-                    else if (DateTime.Now.Subtract(lastAdvertisement).TotalMinutes >= 5.0)
-                    {
-                        BotChat("I am an ACAudio Voice Chat Server. Tell me 'help' to learn more.");
+                    lastAdvertisement = new DateTime();
+                }
+                catch (Exception ex)
+                {
+                    Log($"server init exception: {ex.Message}");
+                }
+            }
 
-                        lastAdvertisement = DateTime.Now;
-                    }
+
+
+
+            if (enableServer && Server.IsRunning && EnableAvertisement)
+            {
+                if (lastAdvertisement == new DateTime())
+                {
+                    BotChat("ACAudio Voice Chat Server is Online!");
+
+                    lastAdvertisement = DateTime.Now;
+                }
+                else if (DateTime.Now.Subtract(lastAdvertisement).TotalMinutes >= (5.0 + MathLib.random.Next(10)))
+                {
+                    BotChat("I am an ACAudio Voice Chat Server. Tell me 'help' to learn more.");
+
+                    lastAdvertisement = DateTime.Now;
                 }
             }
 
@@ -678,7 +729,11 @@ namespace ACAVCServer
             updateUITime -= dt;
             if (updateUITime <= 0.0)
             {
-                metrics.Preprocess();
+                if (!enableServer)
+                    metrics = new Metrics();// clear metrics if server disabled
+                else
+                    metrics.Preprocess();
+
 
                 (View["Status"] as HudStaticText).Text =
                     $"Players:{Server.GetPlayers().Length}  TotalConnectAttempts:{metrics.totalIncomingConnectionsCount}" +

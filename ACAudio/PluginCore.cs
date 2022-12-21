@@ -1634,7 +1634,7 @@ namespace ACAudio
                 else if ((View["VCServerBotCheck"] as HudCheckBox).Checked)
                 {
                     // only try /tell periodically and if we are legit in-game and not connected to voice server
-                    if (!NeedFirstLoginPlayerWeenie && !VCClient.IsConnected && DateTime.Now.Subtract(lastBotJoinAttemptTime).TotalMilliseconds > 30000)
+                    if (!NeedFirstLoginPlayerWeenie && !VCClient.IsConnected && (DateTime.Now.Subtract(lastBotJoinAttemptTime).TotalMilliseconds + botJoinAttemptOffsetMsec) > 30000)
                     {
                         string botName = (View["VCServerBotHost"] as HudTextBox).Text;
                         if (!string.IsNullOrEmpty(botName))
@@ -1645,6 +1645,7 @@ namespace ACAudio
 
                             lastBotJoinAttemptName = botName;
                             lastBotJoinAttemptTime = DateTime.Now;
+                            botJoinAttemptOffsetMsec = MathLib.random.Next(15000);//after our attempt, establish some extra delay to stagger many peoples' join attempts
                         }
                     }
                 }
@@ -1661,7 +1662,11 @@ namespace ACAudio
 
                         // if we were connected to bot, forget server IP to force client to attempt "/tell join" again
                         if ((View["VCServerBotCheck"] as HudCheckBox).Checked)
+                        {
                             VCClient.ServerIP = null;
+
+                            lastBotJoinAttemptTime = DateTime.Now;// make sure we dont try again immediately and perhaps use our staggering logic
+                        }
                     }
 
                     wasConnectedToVoice = isConnected;
@@ -1817,6 +1822,7 @@ namespace ACAudio
 
         private string lastBotJoinAttemptName = null;
         private DateTime lastBotJoinAttemptTime = new DateTime();
+        private int botJoinAttemptOffsetMsec = 0;
         private bool wasConnectedToVoice = false;
 
 

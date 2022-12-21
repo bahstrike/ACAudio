@@ -119,6 +119,14 @@ namespace ACAVCServer
                 LogCallback(s);
         }
 
+        public static bool IsRunning
+        {
+            get
+            {
+                return (listener != null);
+            }
+        }
+
         public static void Init()
         {
             Shutdown();

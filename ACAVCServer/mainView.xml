@@ -3,26 +3,32 @@
   <control progid="DecalControls.Notebook" name="nbMain">
     <page label="Main">
       <control progid="DecalControls.FixedLayout" name="MainContent" clipped="">
-        <control progid="DecalControls.StaticText" name="DetermineIPLabel" left="10" top="10" width="100" height="18" text="Determine my IP:"/>
-        <control progid="DecalControls.Choice" name="DetermineIP" left="110" top="10" width="160" height="18" text=""/>
-        <control progid="DecalControls.Edit" name="PublicIP" left="280" top="10" width="100" height="18" text=""/>
+        <control progid="DecalControls.CheckBox" name="Enable" left="10" top="10" width="100" height="18" text="Enable"/>
 
-        <control progid="DecalControls.StaticText" name="ServerPortLabel" left="10" top="30" width="400" height="38" text="You must ensure your router has port forwarding set up for TCP port 42420 or people will be unable to connect!"/>
-
-
-        <control progid="DecalControls.StaticText" name="Status" left="10" top="90" width="400" height="58" text=""/>
-
-        <control progid="DecalControls.StaticText" name="CPULabel" left="10" top="170" width="40" height="18" text="CPU"/>
-        <control progid="DecalControls.Progress" name="CPUMeter" left="50" top="170" width="280" height="18"/>
-        <control progid="DecalControls.StaticText" name="CPUPostfix" left="340" top="170" width="60" height="18" text="00msec"/>
-
-        <control progid="DecalControls.StaticText" name="RECVLabel" left="10" top="190" width="40" height="18" text="RECV"/>
-        <control progid="DecalControls.Progress" name="RECVMeter" left="50" top="190" width="280" height="18"/>
-        <control progid="DecalControls.StaticText" name="RECVPostfix" left="340" top="190" width="60" height="18" text="000kb/sec"/>
+        <control progid="DecalControls.CheckBox" name="Advertise" left="110" top="10" width="100" height="18" text="Advertise"/>
         
-        <control progid="DecalControls.StaticText" name="SENDLabel" left="10" top="210" width="40" height="18" text="SEND"/>
-        <control progid="DecalControls.Progress" name="SENDMeter" left="50" top="210" width="280" height="18"/>
-        <control progid="DecalControls.StaticText" name="SENDPostfix" left="340" top="210" width="60" height="18" text="000kb/sec"/>
+        
+        
+        <control progid="DecalControls.StaticText" name="DetermineIPLabel" left="10" top="40" width="100" height="18" text="Determine my IP:"/>
+        <control progid="DecalControls.Choice" name="DetermineIP" left="110" top="40" width="160" height="18" text=""/>
+        <control progid="DecalControls.Edit" name="PublicIP" left="280" top="40" width="100" height="18" text=""/>
+
+        <control progid="DecalControls.StaticText" name="ServerPortLabel" left="10" top="60" width="400" height="38" text="You must ensure your router has port forwarding set up for TCP port 42420 or people will be unable to connect!"/>
+
+
+        <control progid="DecalControls.StaticText" name="Status" left="10" top="120" width="400" height="58" text=""/>
+
+        <control progid="DecalControls.StaticText" name="CPULabel" left="10" top="200" width="40" height="18" text="CPU"/>
+        <control progid="DecalControls.Progress" name="CPUMeter" left="50" top="200" width="280" height="18"/>
+        <control progid="DecalControls.StaticText" name="CPUPostfix" left="340" top="200" width="60" height="18" text="00msec"/>
+
+        <control progid="DecalControls.StaticText" name="RECVLabel" left="10" top="220" width="40" height="18" text="RECV"/>
+        <control progid="DecalControls.Progress" name="RECVMeter" left="50" top="220" width="280" height="18"/>
+        <control progid="DecalControls.StaticText" name="RECVPostfix" left="340" top="220" width="60" height="18" text="000kb/sec"/>
+        
+        <control progid="DecalControls.StaticText" name="SENDLabel" left="10" top="240" width="40" height="18" text="SEND"/>
+        <control progid="DecalControls.Progress" name="SENDMeter" left="50" top="240" width="280" height="18"/>
+        <control progid="DecalControls.StaticText" name="SENDPostfix" left="340" top="240" width="60" height="18" text="000kb/sec"/>
 
       </control>
     </page>
