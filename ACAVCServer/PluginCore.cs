@@ -216,10 +216,10 @@ namespace ACAVCServer
 
                 using (INIFile ini = INIFile)
                 {
-                    (View["Enable"] as HudCheckBox).Checked = ini.GetKeyString(PluginName, "Enable", "1") != "0";
-                    (View["Advertise"] as HudCheckBox).Checked = ini.GetKeyString(PluginName, "Advertise", "1") != "0";
+                    (View["Enable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "Enable", "1") != "0";
+                    (View["Advertise"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "Advertise", "1") != "0";
 
-                    determineIPCombo.Current = int.Parse(ini.GetKeyString(PluginName, "DetermineIP", "0"));
+                    determineIPCombo.Current = int.Parse(ini.GetKeyString(Core.CharacterFilter.AccountName, "DetermineIP", "0"));
 
                 }
 
@@ -257,7 +257,7 @@ namespace ACAVCServer
             if (combo.Current == 0)
             {
                 using (INIFile ini = INIFile)
-                    (View["PublicIP"] as HudTextBox).Text = ini.GetKeyString(PluginName, "ManualPublicIP", string.Empty);
+                    (View["PublicIP"] as HudTextBox).Text = ini.GetKeyString(Core.CharacterFilter.AccountName, "ManualPublicIP", string.Empty);
 
                 return;
             }
@@ -294,15 +294,15 @@ namespace ACAVCServer
 
             using (INIFile ini = INIFile)
             {
-                ini.WriteKey(PluginName, "Enable", (View["Enable"] as HudCheckBox).Checked ? "1" : "0");
-                ini.WriteKey(PluginName, "Advertise", (View["Advertise"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey(Core.CharacterFilter.AccountName, "Enable", (View["Enable"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey(Core.CharacterFilter.AccountName, "Advertise", (View["Advertise"] as HudCheckBox).Checked ? "1" : "0");
 
                 HudCombo determineIPCombo = View["DetermineIP"] as HudCombo;
-                ini.WriteKey(PluginName, "DetermineIP", determineIPCombo.Current.ToString());
+                ini.WriteKey(Core.CharacterFilter.AccountName, "DetermineIP", determineIPCombo.Current.ToString());
                 if (determineIPCombo.Current == 0)
-                    ini.WriteKey(PluginName, "ManualPublicIP", (View["PublicIP"] as HudTextBox).Text);
+                    ini.WriteKey(Core.CharacterFilter.AccountName, "ManualPublicIP", (View["PublicIP"] as HudTextBox).Text);
                 else
-                    ini.WriteKey(PluginName, "ManualPublicIP", string.Empty);
+                    ini.WriteKey(Core.CharacterFilter.AccountName, "ManualPublicIP", string.Empty);
             }
 
         }
