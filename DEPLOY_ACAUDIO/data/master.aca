@@ -113,6 +113,12 @@
 //
 // text ["blahblah"]
 // Triggers when an exact string is received in chat. Only works with song/2d.
+//
+// vcconnect
+// Triggers when voice chat has connected. Only one sound can be associated. Only works with song/2d.
+//
+// vcdisconnect
+// Triggers when voice chat has disconnected. Only one sound can be associated. Only works with song/2d.
 
 
 //--------------------------------------------------------------------------------------------------------
@@ -140,6 +146,20 @@ push
 
 	vol 0.35
 	dungeon 0007 // keep portal music going while in town network?
+pop
+
+
+
+// voicechat stuff
+push
+	mode 2d
+	vol 0.3
+
+	file voicechat_connect.mp3
+	vcconnect
+
+	file voicechat_disconnect.mp3
+	vcdisconnect
 pop
 
 

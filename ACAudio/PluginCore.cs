@@ -1051,6 +1051,23 @@ namespace ACAudio
         }
 
 
+        static void PlaySimple2D(Config.SoundAttributes Sound, bool? looping=null)
+        {
+            if (Sound == null)
+                return;
+
+            Audio.Sound snd = GetOrLoadSound(Sound.file, Audio.DimensionMode._2D, looping ?? Sound.looping, false);
+            if (snd == null)
+                return;
+
+            Audio.Channel channel = Audio.PlaySound(snd, true);
+
+            channel.Volume = Sound.vol;
+
+            channel.Play();
+        }
+
+
         double sayStuff = 0.0;
         private void Process(double dt, double truedt)
         {
@@ -1655,10 +1672,14 @@ namespace ACAudio
                 if (isConnected != wasConnectedToVoice)
                 {
                     if (isConnected)
+                    {
                         WriteToChat($"Connected to voice chat server");
+                        PlaySimple2D(Config.VCConnectSound, false);
+                    }
                     else
                     {
                         WriteToChat($"Disconnected from voice chat server");
+                        PlaySimple2D(Config.VCDisconnectSound, false);
 
                         // if we were connected to bot, forget server IP to force client to attempt "/tell join" again
                         if ((View["VCServerBotCheck"] as HudCheckBox).Checked)

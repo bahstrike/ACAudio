@@ -229,6 +229,8 @@ namespace ACAudio
 
         public static List<SoundSource> Sources = new List<SoundSource>();
         public static SoundAttributes PortalSound = null;
+        public static SoundAttributes VCConnectSound = null;
+        public static SoundAttributes VCDisconnectSound = null;
 
 
         public static SoundSourceText FindSoundSourceText(string txt)
@@ -346,6 +348,8 @@ namespace ACAudio
         {
             Sources.Clear();
             PortalSound = null;
+            VCConnectSound = null;
+            VCDisconnectSound = null;
 
             // reset stack and prepopulate default
             SoundAttributeStack.Clear();
@@ -635,6 +639,20 @@ namespace ACAudio
 
                                     //Log($"NEED TO REGISTER PORTAL");
                                     PortalSound = CurrentSound.Clone();// be sure to clone since attributes stack may modify later
+                                }
+                                break;
+
+                            case "vcconnect":
+                                {
+
+                                    VCConnectSound = CurrentSound.Clone();// be sure to clone since attributes stack may modify later
+                                }
+                                break;
+
+                            case "vcdisconnect":
+                                {
+
+                                    VCDisconnectSound = CurrentSound.Clone();// be sure to clone since attributes stack may modify later
                                 }
                                 break;
 
