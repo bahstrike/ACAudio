@@ -195,7 +195,7 @@ namespace ACAVCServer
                 contentLayout.AddControl(hudCPU, (Rectangle)rc);*/
 
                 HudProgressBar meter;
-                
+
                 meter = View["CPUMeter"] as HudProgressBar;
                 meter.Min = 0;
                 meter.Max = 100;
@@ -456,21 +456,21 @@ namespace ACAVCServer
 
 
             //8:28:24 PM: RAWCHAT (0): |You tell Strike Test, "ACA*333133p"
-            if(e.Text.Contains("You tell"))
+            if (e.Text.Contains("You tell"))
             {
                 int i = e.Text.IndexOf(',');
-                if(i != -1)
+                if (i != -1)
                 {
                     string content = e.Text.Substring(i + 3);
-                    if(content.StartsWith(TellPacket.prefix))
+                    if (content.StartsWith(TellPacket.prefix))
                     {
                         if (!ShowTellProtocol)
                         {
                             // dont show to user if its good
-                        e.Eat = true;
+                            e.Eat = true;
                             return;
-                }
-            }
+                        }
+                    }
                 }
             }
 
@@ -507,7 +507,8 @@ namespace ACAVCServer
                         TellPacket p = new TellPacket(TellPacket.MessageType.RequestInfo);
                         pja.Tell(p);
                     }
-                } else
+                }
+                else
                 {
                     if (!ShowTellProtocol && cm.Content.StartsWith(TellPacket.prefix))
                         // dont show to user if its good
@@ -515,11 +516,12 @@ namespace ACAVCServer
 
                     // no recognized tell text;  assume its a packet and try
                     TellPacket clientPacket = TellPacket.FromString(cm.Content);
-                    if(clientPacket == null)
+                    if (clientPacket == null)
                     {
-                        if(!cm.Content.StartsWith(TellPacket.prefix))
+                        if (!cm.Content.StartsWith(TellPacket.prefix))
                             BotTell(cm.PlayerName, "I didn't understand that. Try 'help' to see what I recognize.");
-                    } else
+                    }
+                    else
                     {
                         PlayerJoinAttempt pja = GetPlayerJoinAttempt(cm.PlayerName);
                         if (pja == null)
@@ -542,7 +544,7 @@ namespace ACAVCServer
                             {
                                 if (!pja.Silent)
                                     BotTell(cm.PlayerName, "Something went wrong. Please try to 'join' again.");
-                                    //BotTell(cm.PlayerName, "Don't give me ACA protocols unless we are handshaking.");
+                                //BotTell(cm.PlayerName, "Don't give me ACA protocols unless we are handshaking.");
                             }
                         }
                         else
@@ -676,7 +678,7 @@ namespace ACAVCServer
                 // server should not be running. do nothing here
                 Server.Shutdown();
             }
-
+            else
             if (!Server.IsRunning)
             {
                 try
@@ -718,7 +720,7 @@ namespace ACAVCServer
 
                 if (DateTime.Now.Subtract(pja.Start).TotalMilliseconds >= PlayerJoinAttempt.TimeoutMsec)
                 {
-                    if(!pja.Silent)
+                    if (!pja.Silent)
                         BotTell(pja.PlayerName, "Your join attempt timed-out.");
 
                     PlayerJoinAttempts.RemoveAt(x--);
@@ -764,7 +766,7 @@ namespace ACAVCServer
             if (DateTime.Now.Subtract(lastDispatchChat).TotalMilliseconds > 250)
                 _DispatchChatSingle();
         }
-        
+
         double updateUITime = 0.0;
 
         static string bytesizestring(ulong bytes)
