@@ -24,9 +24,13 @@
       <control progid="DecalControls.FixedLayout" clipped="">
         <control progid="DecalControls.CheckBox" name="VCServerAutoCheck" left="10" top="10" width="80" height="20" text="Automatic" checked="True"/>
         <control progid="DecalControls.StaticText" name="VCServerAutoHost" left="110" top="10" width="120" height="18" text=""/>
+
+        <control progid="DecalControls.CheckBox" name="SoundsConnect" left ="270" top="10" width="130" height="18" text="Connected sounds"/>
         
         <control progid="DecalControls.CheckBox" name="VCServerCustomCheck" left="10" top="30" width="80" height="20" text="Custom" checked="False"/>
         <control progid="DecalControls.Edit" name="VCServerCustomHost" left="110" top="30" width="120" height="18" text=""/>
+
+        <control progid="DecalControls.CheckBox" name="SoundsJoin" left ="270" top="30" width="130" height="18" text="Player join sounds"/>
 
         <control progid="DecalControls.CheckBox" name="VCServerBotCheck" left="10" top="50" width="80" height="20" text="Bot" checked="False"/>
         <control progid="DecalControls.Edit" name="VCServerBotHost" left="110" top="50" width="120" height="18" text=""/>

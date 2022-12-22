@@ -457,6 +457,10 @@ namespace ACAudio
                     (View["VCServerBotHost"] as HudTextBox).Text = ini.GetKeyString(Core.CharacterFilter.AccountName, "VCServerBotHost", string.Empty);
 
 
+                    (View["SoundsConnect"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "SoundsConnect", "1") != "0";
+                    (View["SoundsJoin"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "SoundsJoin", "0") != "0";
+
+
                     string preferredMic = ini.GetKeyString(Core.CharacterFilter.AccountName, "RecordDevice", string.Empty);
                     for (int x = 0; x < AvailableRecordDevices.Length; x++)
                     {
@@ -902,6 +906,9 @@ namespace ACAudio
                 ini.WriteKey(Core.CharacterFilter.AccountName, "VCServer", i.ToString());
                 ini.WriteKey(Core.CharacterFilter.AccountName, "VCServerCustomHost", (View["VCServerCustomHost"] as HudTextBox).Text);
                 ini.WriteKey(Core.CharacterFilter.AccountName, "VCServerBotHost", (View["VCServerBotHost"] as HudTextBox).Text);
+
+                ini.WriteKey(Core.CharacterFilter.AccountName, "SoundsConnect", (View["SoundsConnect"] as HudCheckBox).Checked ? "1" : "0");
+                ini.WriteKey(Core.CharacterFilter.AccountName, "SoundsJoin", (View["SoundsJoin"] as HudCheckBox).Checked ? "1" : "0");
 
                 ini.WriteKey(Core.CharacterFilter.AccountName, "RecordDevice", VCClient.CurrentRecordDevice == null ? string.Empty : VCClient.CurrentRecordDevice.Name.Trim());
 
@@ -1671,15 +1678,19 @@ namespace ACAudio
                 bool isConnected = VCClient.IsConnected;
                 if (isConnected != wasConnectedToVoice)
                 {
+                    bool wantSounds = (View["SoundsConnect"] as HudCheckBox).Checked;
+
                     if (isConnected)
                     {
                         WriteToChat($"Connected to voice chat server");
-                        PlaySimple2D(Config.VCConnectSound, false);
+                        if(wantSounds)
+                            PlaySimple2D(Config.VCConnectSound, false);
                     }
                     else
                     {
                         WriteToChat($"Disconnected from voice chat server");
-                        PlaySimple2D(Config.VCDisconnectSound, false);
+                        if(wantSounds)
+                            PlaySimple2D(Config.VCDisconnectSound, false);
 
                         // if we were connected to bot, forget server IP to force client to attempt "/tell join" again
                         if ((View["VCServerBotCheck"] as HudCheckBox).Checked)
@@ -1845,12 +1856,16 @@ namespace ACAudio
             // this should probably be like a checkbox or something;  a populated server probably shouldnt "DING DING DING" people join/leave the voice server.
             if(VCClient.TotalConnectedPlayers != lastKnownPlayerCount)
             {
-                if(VCClient.TotalConnectedPlayers > lastKnownPlayerCount)
+                bool wantSounds = (View["SoundsJoin"] as HudCheckBox).Checked;
+
+                if (VCClient.TotalConnectedPlayers > lastKnownPlayerCount)
                 {
-                    PlaySimple2D(Config.VCJoinSound, false);
+                    if(wantSounds)
+                        PlaySimple2D(Config.VCJoinSound, false);
                 } else
                 {
-                    PlaySimple2D(Config.VCLeaveSound, false);
+                    if(wantSounds)
+                        PlaySimple2D(Config.VCLeaveSound, false);
                 }
 
                 lastKnownPlayerCount = VCClient.TotalConnectedPlayers;
