@@ -231,6 +231,8 @@ namespace ACAudio
         public static SoundAttributes PortalSound = null;
         public static SoundAttributes VCConnectSound = null;
         public static SoundAttributes VCDisconnectSound = null;
+        public static SoundAttributes VCJoinSound = null;
+        public static SoundAttributes VCLeaveSound = null;
 
 
         public static SoundSourceText FindSoundSourceText(string txt)
@@ -350,6 +352,8 @@ namespace ACAudio
             PortalSound = null;
             VCConnectSound = null;
             VCDisconnectSound = null;
+            VCJoinSound = null;
+            VCLeaveSound = null;
 
             // reset stack and prepopulate default
             SoundAttributeStack.Clear();
@@ -655,6 +659,21 @@ namespace ACAudio
                                     VCDisconnectSound = CurrentSound.Clone();// be sure to clone since attributes stack may modify later
                                 }
                                 break;
+
+                            case "vcjoin":
+                                {
+
+                                    VCJoinSound = CurrentSound.Clone();// be sure to clone since attributes stack may modify later
+                                }
+                                break;
+
+                            case "vcleave":
+                                {
+
+                                    VCLeaveSound = CurrentSound.Clone();// be sure to clone since attributes stack may modify later
+                                }
+                                break;
+
 
                             case "text":
                                 {

@@ -119,6 +119,12 @@
 //
 // vcdisconnect
 // Triggers when voice chat has disconnected. Only one sound can be associated. Only works with song/2d.
+//
+// vcjoin
+// Triggers when another client has joined voicechat server. Only one sound can be associated. Only works with song/2d.
+//
+// vcleave
+// Triggers when another client has left voicechat server. Only one sound can be associated. Only works with song/2d.
 
 
 //--------------------------------------------------------------------------------------------------------
@@ -160,6 +166,12 @@ push
 
 	file voicechat_disconnect.mp3
 	vcdisconnect
+
+	file voicechat_join.mp3
+	vcjoin
+
+	file voicechat_leave.mp3
+	vcleave
 pop
 
 

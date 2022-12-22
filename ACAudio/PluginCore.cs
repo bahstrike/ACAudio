@@ -1839,7 +1839,25 @@ namespace ACAudio
                 }
                 Log("------------");
             }
+
+
+
+            // this should probably be like a checkbox or something;  a populated server probably shouldnt "DING DING DING" people join/leave the voice server.
+            if(VCClient.TotalConnectedPlayers != lastKnownPlayerCount)
+            {
+                if(VCClient.TotalConnectedPlayers > lastKnownPlayerCount)
+                {
+                    PlaySimple2D(Config.VCJoinSound, false);
+                } else
+                {
+                    PlaySimple2D(Config.VCLeaveSound, false);
+                }
+
+                lastKnownPlayerCount = VCClient.TotalConnectedPlayers;
+            }
         }
+
+        int lastKnownPlayerCount = 0;
 
         private string lastBotJoinAttemptName = null;
         private DateTime lastBotJoinAttemptTime = new DateTime();

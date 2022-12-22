@@ -15,6 +15,8 @@ portal				Strike
 lifestone			Strike
 voicechat_connect		Strike
 voicechat_disconnect		Strike
+voicechat_join			Strike
+voicechat_leave			Strike
 candle				https://www.youtube.com/watch?v=qOhUpdIWrMs
 gasflame			https://freesound.org/people/neilraouf/sounds/435643/
 waterfountain			https://freesound.org/people/roscoetoon/sounds/26402/
