@@ -277,12 +277,17 @@ vol 1.0
 mindist 5.0
 maxdist 35.0
 
-file lifestone.ogg
-dynamic class=lifestone
+push
+	vol 0.45
+	file lifestone.ogg
+	dynamic class=lifestone
+pop
 
 
-file portal.ogg
-dynamic class=portal
+push
+	file portal.ogg
+	dynamic class=portal
+pop
 
 
 // LOL this wil be annoying
@@ -298,7 +303,7 @@ push
 		interval 23
 		chance 0.25
 		maxdist 18
-		vol 0.4
+		vol 0.8
 		file towncrier_m_unwanteditems.mp3
 		dynamic class=npc string(name)="Town Crier" long(gender)=1
 
@@ -337,11 +342,14 @@ push
 
 
 	// HAHHAHA
-	interval 1200
-	chance 0.06
-	file fart.mp3
-	dynamic class=npc
-	dynamic class=vendor
+	push
+		vol 0.4
+		interval 1200
+		chance 0.06
+		file fart.mp3
+		dynamic class=npc
+		dynamic class=vendor
+	pop
 pop
 
 
@@ -362,14 +370,14 @@ maxdist 18
 mode 3d
 
 push
-	vol 0.3
+	vol 0.6
 	file anvil.mp3
 	static 020000A7// blacksmith anvil
 pop
 
 
 push
-vol 0.15
+vol 0.2
 maxdist 12
 interval 40
 file bedtime.mp3
@@ -394,8 +402,8 @@ mode 3d
 
 // ------ CANDLES --------
 file candle.ogg
-vol 0.175
-mindist 1.0
+vol 0.25
+mindist 2.0
 maxdist 9.0
 
 static 020005D8// candle post
@@ -428,8 +436,8 @@ dynamic class=misc string(name)="Torch" // dropped torches
 
 // ------ LANTERNS --------
 file gasflame.ogg
-vol 0.05
-mindist 1.0
+vol 0.15
+mindist 2.0
 maxdist 9.0
 
 static 02000719// lantern post (gharu)
@@ -453,7 +461,7 @@ static 02001238// lantern (westwatch)
 
 // ------ WATER FOUNTAINS --------
 file waterfountain.ogg
-vol 0.1
+vol 0.2
 mindist 4.0
 maxdist 12.0
 
@@ -464,7 +472,7 @@ static 02000AA3// fancy water fountain
 
 // ------ FIRES --------
 file campfire.ogg
-vol 0.15
+vol 0.6
 mindist 4.0
 maxdist 16.0
 
@@ -485,7 +493,6 @@ static 02000627//big stone fire stand
 
 static 0200034C//big stone fire wall
 
-
 dynamic class=misc string(name)="Bonfire" // fires seen with some random monster spawns
 
 
@@ -501,7 +508,7 @@ static 02000345// cooking pot hanging over fire
 
 // ------ BLACKSMITH FORGE --------
 file forge.ogg
-vol 0.15
+vol 0.2
 mindist 8.0
 maxdist 18.0
 
@@ -527,7 +534,7 @@ mode hybrid
 
 // ------ CASINO CROWD --------
 file casino.ogg
-vol 0.15
+vol 0.6
 mindist 18.0
 maxdist 75.0
 
@@ -543,7 +550,7 @@ pos 0x8090015E,12.1244,20.4491,117.6600 // manaforge in zaikhal
 
 // ------ PUB CROWD --------
 file pub.ogg
-vol 0.15
+vol 0.6
 mindist 18.0
 maxdist 75.0
 
