@@ -1,7 +1,7 @@
 ; Define your application name
 !define APPNAME "ACAVCServer"
 !define SOFTWARECOMPANY "Bad Ass Hackers"
-!define VERSION	"1.0.0.0"
+!define VERSION	"2.0.0.0"
 !define APPGUID "{3a47b37f-c57b-4560-bc17-1bc2fa995388}"
 
 !define ASSEMBLY "ACAVCServer.dll"
