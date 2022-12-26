@@ -274,10 +274,10 @@ namespace ACAudio
                 View["Defaults"].Hit += delegate (object sender, EventArgs e)
                 {
                     (View["Enable"] as HudCheckBox).Checked = true;
-                    (View["Volume"] as HudHSlider).Position = 75;
+                    (View["Volume"] as HudHSlider).Position = 100;
 
                     (View["MusicEnable"] as HudCheckBox).Checked = true;
-                    (View["MusicVolume"] as HudHSlider).Position = 35;
+                    (View["MusicVolume"] as HudHSlider).Position = 75;
 
                     (View["PortalMusicEnable"] as HudCheckBox).Checked = true;
                 };
@@ -421,10 +421,10 @@ namespace ACAudio
                 using (INIFile ini = INIFile)
                 {
                     (View["Enable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "Enable", "1") != "0";
-                    (View["Volume"] as HudHSlider).Position = int.Parse(ini.GetKeyString(Core.CharacterFilter.AccountName, "Volume", "75"));
+                    (View["Volume"] as HudHSlider).Position = int.Parse(ini.GetKeyString(Core.CharacterFilter.AccountName, "Volume", "100"));
 
                     (View["MusicEnable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "MusicEnable", "1") != "0";
-                    (View["MusicVolume"] as HudHSlider).Position = int.Parse(ini.GetKeyString(Core.CharacterFilter.AccountName, "MusicVolume", "35"));
+                    (View["MusicVolume"] as HudHSlider).Position = int.Parse(ini.GetKeyString(Core.CharacterFilter.AccountName, "MusicVolume", "75"));
 
                     (View["PortalMusicEnable"] as HudCheckBox).Checked = ini.GetKeyString(Core.CharacterFilter.AccountName, "PortalMusicEnable", "1") != "0";
 

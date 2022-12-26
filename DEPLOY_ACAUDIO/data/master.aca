@@ -228,9 +228,13 @@ push
 pop
 
 
-file tax2020_3.mp3
-include olthoidungeons.aca
-dungeon 0096//eater jaw
+push
+	vol 0.685
+
+	file tax2020_3.mp3
+	include olthoidungeons.aca
+	dungeon 0096//eater jaw
+pop
 
 
 // HAHA lets test tying a song to an enemy
@@ -498,7 +502,7 @@ dynamic class=misc string(name)="Bonfire" // fires seen with some random monster
 
 // ------ FOOD SIMMERING --------
 file simmering.ogg
-vol 0.4
+vol 0.8
 mindist 6.0
 maxdist 16.0
 
@@ -508,7 +512,7 @@ static 02000345// cooking pot hanging over fire
 
 // ------ BLACKSMITH FORGE --------
 file forge.ogg
-vol 0.2
+vol 0.6
 mindist 8.0
 maxdist 18.0
 
