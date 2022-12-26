@@ -5,7 +5,7 @@ layout: default
 ## Download
 
 ##### ACAudio:
-**[Installer for Decal plugin: ACAudio 2.0](https://github.com/bahstrike/ACAudio/releases/download/2.0.0.0/ACAudio-2.0.0.0.exe)**
+**[Installer for Decal plugin: ACAudio 2.0](https://github.com/bahstrike/ACAudio/releases/download/2.0.0.0/ACAudio-2.0.0.0.exe) _(most users only need this)_**
 
 _[Portable Beta version; download whole folder: you must add `ACAudio.dll` to Decal](https://github.com/bahstrike/ACAudio/tree/main/DEPLOY_ACAUDIO)_
 
