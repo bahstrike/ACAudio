@@ -111,6 +111,9 @@
 // portal
 // Triggers when portaling. Only one sound can be associated. Only works with song/2d.
 //
+// pkbattle
+// Triggers when player is near others with same PK / PKL status. Ignores other monarch members. Only works with song/2d.
+//
 // text ["blahblah"]
 // Triggers when an exact string is received in chat. Only works with song/2d.
 //
@@ -181,6 +184,15 @@ push
 
 	file wtctest.mp3
 	dungeon 016C // marketplace
+pop
+
+
+// pk battle
+push
+	vol 0.6//good town music volume?
+
+	file bangshoot.mp3
+	pkbattle
 pop
 
 

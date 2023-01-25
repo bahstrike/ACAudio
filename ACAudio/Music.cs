@@ -106,14 +106,34 @@ namespace ACAudio
                         // store desired scale factor before we use FinalVolume
                         DesiredVolume = vol;
 
-                        Log($"STARTING music to finalvol:{FinalVolume.ToString("#0.0")} = musicvol:{Volume.ToString("#0.0")} * desiredvol:{DesiredVolume.ToString("#0.0")}");
+                        Log($"we be playin MUSIC {filename} | {FinalVolume.ToString("#0.0")} = musicvol:{Volume.ToString("#0.0")} * desiredvol:{DesiredVolume.ToString("#0.0")}");
 
                         Channel.Channel.Volume = 0.0;
                         Channel.Channel.SetTargetVolume(FinalVolume, fadeTime);
 
                         Channel.Channel.Play();
 
-                        Log($"we be playin {filename}");
+
+                        // figure out from credits.txt who made this?
+                        {
+                            foreach(string _ln in System.IO.File.ReadAllLines(PluginCore.GenerateDataPath("credits.txt")))
+                            {
+                                string ln = _ln.Trim();
+
+                                int i = ln.IndexOfAny(new char[] { ' ', '\t' });
+                                if (i == -1)
+                                    continue;
+
+                                string creditFilename = ln.Substring(0, i);
+
+                                if (!creditFilename.Equals(filename, StringComparison.InvariantCultureIgnoreCase) &&
+                                    !creditFilename.Equals(System.IO.Path.GetFileNameWithoutExtension(filename), StringComparison.InvariantCultureIgnoreCase))
+                                    continue;
+
+                                PluginCore.Instance.ShowSongCredits(ln);
+                                break;
+                            }
+                        }
                     }
                 }
 
@@ -128,7 +148,9 @@ namespace ACAudio
         {
             if (Channel != null)
             {
+#if DEBUG
                 Log($"beginning fadeout stop for {Channel.Channel.Sound?.Name}");
+#endif
 
                 Channel.Channel.FadeToStop(fadeTime);
 
@@ -136,6 +158,8 @@ namespace ACAudio
                 // pre-forget about it?
                 Channel = null;
             }
+
+            PluginCore.Instance.DestroySongCredits();
         }
 
         public static void Process(double dt)

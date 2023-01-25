@@ -216,7 +216,7 @@ namespace ACAudio
 
                 View["Dump"].Hit += delegate (object sender, EventArgs e)
                 {
-                    WriteToChat("BLAH");
+                    WriteToChat("Check ACAudio.log");
 
                     List<ShadowObject> allobj = FilterByDistance(WorldObjects, CameraPosition, 35.0);
 
@@ -246,14 +246,102 @@ namespace ACAudio
                         Log($"class:{obj.ObjectClass}   id:{obj.Id}   name:{obj.Object.Name}  stringkeys:{{{stringkeys}}}  longkeys:{{{longkeys}}}  pos:{SmithInterop.Vector(obj.Object.RawCoordinates())}");
                     }
 
+
+
+
+                    // delete or disable this
+                    List<ShadowObject> players = new List<ShadowObject>();
+                    foreach(ShadowObject obj in WorldObjects)
+                    {
+                        if (obj.ObjectClass != ObjectClass.Player)
+                            continue;
+
+                        QueryForIdInfo(obj.Object, true);
+
+                        players.Add(obj);
+                    }
+
+                    // need at least 2 for a diff.. lol
+                    if (players.Count >= 2)
+                    {
+                        // compile list of all possible longvalue keys
+                        List<int> longValueKeys = new List<int>();
+                        List<LongValueKey> blacklistKeys = new List<LongValueKey>(new LongValueKey[]
+                        {
+                            LongValueKey.Burden,
+                            LongValueKey.Value,
+                            LongValueKey.TotalValue,
+                            LongValueKey.Monarch,
+                            LongValueKey.Species,
+                            LongValueKey.Gender,
+                            LongValueKey.DateOfBirth,
+                            LongValueKey.ArmorLevel,
+                            LongValueKey.Landblock,
+                            LongValueKey.Icon,
+                            LongValueKey.Monarch,
+                            LongValueKey.PhysicsDataFlags,
+                            LongValueKey.CreateFlags1,
+                            LongValueKey.Model,
+                            LongValueKey.SkillCreditsAvail,
+                            LongValueKey.CreatureLevel,
+                            LongValueKey.Rank,
+                            LongValueKey.NumberFollowers,
+                            LongValueKey.Deaths,
+                            LongValueKey.Heritage,
+
+                    });
+                        foreach (ShadowObject player in players)
+                            foreach (int key in player.LongKeys)
+                                if (!longValueKeys.Contains(key) && !blacklistKeys.Contains((LongValueKey)key))
+                                    longValueKeys.Add(key);
+
+                        // remove longvalue keys if they are identical across all players
+                        foreach (int key in longValueKeys.ToArray())
+                        {
+                            int refValue = players[0].Values((LongValueKey)key);
+
+                            bool identical = true;
+                            for(int x=1; x<players.Count; x++)
+                                if(players[x].Values((LongValueKey)key) != refValue)
+                                {
+                                    identical = false;
+                                    break;
+                                }
+
+                            if (identical)
+                                longValueKeys.Remove(key);
+                        }
+
+                        if (longValueKeys.Count > 1)
+                        {
+                            // sort so our output is nice
+                            longValueKeys.Sort();
+
+                            Log("--------------- PLAYER DIFFS ------------");
+                            foreach(ShadowObject obj in players)
+                            {
+                                string longkeys = string.Empty;
+                                foreach (int i in longValueKeys)
+                                    longkeys += $"{(LongValueKey)i}={obj.Values((LongValueKey)i)}, ";
+
+
+                                Log($"name:{obj.Object.Name}  longkeys:{{{longkeys}}}");
+                            }
+                        }
+                    }
+
+
+
                 };
 
                 View["Coords"].Hit += delegate (object sender, EventArgs e)
                 {
-                    WriteToChat("WEEE");
+                    string output = $"pos {SmithInterop.Position(Player).ToString().Replace(" ", "")/*condense*/}";
+
+                    WriteToChat(output);
 
                     // the log message is intended to be copy&paste to the .ACA files
-                    Log($"pos {SmithInterop.Position(Player).ToString().Replace(" ", "")/*condense*/}");
+                    Log(output);
                 };
 
                 (View["Enable"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
@@ -723,6 +811,52 @@ namespace ACAudio
             return pos.Value.Global;
         }
 
+
+        string lastSongCredits = null;
+        D3DObj songCreditsOverlay = null;
+        double songCreditsOverlayTime = 0.0;
+        public void ShowSongCredits(string ln)
+        {
+            // bail if we triggered already
+            if (!string.IsNullOrEmpty(lastSongCredits) && lastSongCredits.Equals(ln))
+                return;
+
+            ln = "just music";
+
+            Log($"CREATE SONG CREDITS: {ln}");
+
+            // kill old overlay
+            DestroySongCredits();
+
+
+            // create overlay
+
+            D3DObj obj = Core.D3DService.NewD3DObj();
+
+            obj.SetText(ln);
+
+            obj.Anchor(Player.Id, /*1.165f*/-0.5f, 0.0f, 0.0f, 0.0f);
+            obj.OrientToCamera(true);
+            obj.Visible = true;
+            obj.Autoscale = false;
+            obj.Scale(0.135f);
+            obj.Color = unchecked((int)0xFFFFFFFF);
+
+
+            // remember
+            songCreditsOverlayTime = 5.0;//decay after a while
+            songCreditsOverlay = obj;
+        }
+
+        public void DestroySongCredits()
+        {
+            if (songCreditsOverlay == null)
+                return;
+
+            songCreditsOverlay.Visible = false;
+            songCreditsOverlay = null;
+        }
+
         private Dictionary<int, D3DObj> ActiveSpeakingIcons = new Dictionary<int, D3DObj>();
 
         void VCClientCreateSpeakingIcon(int weenieID)
@@ -786,7 +920,7 @@ namespace ACAudio
 
             Config.Load("master.aca");
 
-            Log($"Parsed {Config.Sources.Count} sound sources from master.aca");
+            Log($"Parsed {Config.Sources.Count} sound sources from configs");
 
 
             // reload static positions;  we will only keep what we registered from configs
@@ -806,11 +940,13 @@ namespace ACAudio
 
             BVH.Process(0.00001);//flush with a nonzero dt?
 
+#if DEBUG
             {
                 int numBVHs, numNodes, numThings;
                 BVH.GetTreeInfo(out numBVHs, out numNodes, out numThings);
                 Log($"BVH INFO: numBVHs:{numBVHs}  numNodes:{numNodes}  numThings:{numThings}");//report so far lol
             }
+#endif
 
 
             pt.Stop();
@@ -872,7 +1008,9 @@ namespace ACAudio
             if (LogOff)
                 return;
 
+#if DEBUG
             Log("LOGOFF LOL");
+#endif
             IsPortaling = true;
             StartPortalSong();
 
@@ -1017,10 +1155,10 @@ namespace ACAudio
 
         private Dictionary<int, QueryIdAttempt> queryAttempts = new Dictionary<int, QueryIdAttempt>();
 
-        public void QueryForIdInfo(WorldObject obj)
+        public void QueryForIdInfo(WorldObject obj, bool forceRenew=false)
         {
             // already have? nothing to do
-            if (obj.HasIdData)
+            if (!forceRenew && obj.HasIdData)
                 return;
 
             // limit frequency of queries
@@ -1366,6 +1504,12 @@ namespace ACAudio
 
 
 
+            if(songCreditsOverlay != null)
+            {
+
+            }
+
+
             sayStuff += dt;
             if (sayStuff >= 0.2)
             {
@@ -1464,10 +1608,12 @@ namespace ACAudio
                 if (discardReason != null)
                 {
 
+#if DEBUG
                     if (a is ObjectAmbient)
                         Log($"removing for weenie {(a as ObjectAmbient).WeenieID}: {discardReason}");
                     else if (a is StaticAmbient)
                         Log($"removing for static {(a as StaticAmbient).Position}: {discardReason}");
+#endif
 
 
 
@@ -1683,13 +1829,13 @@ namespace ACAudio
                     if (isConnected)
                     {
                         WriteToChat($"Connected to voice chat server");
-                        if(wantSounds)
+                        if (wantSounds)
                             PlaySimple2D(Config.VCConnectSound, false);
                     }
                     else
                     {
                         WriteToChat($"Disconnected from voice chat server");
-                        if(wantSounds)
+                        if (wantSounds)
                             PlaySimple2D(Config.VCDisconnectSound, false);
 
                         // if we were connected to bot, forget server IP to force client to attempt "/tell join" again
@@ -1759,7 +1905,8 @@ namespace ACAudio
                     {
                         currentVoice = (StreamInfo.VoiceChannel)(View["MicChannel"] as HudCombo).Current;
                         //currentVoice = StreamInfo.VoiceChannel.Proximity3D;
-                    } else
+                    }
+                    else
                     {
                         // no actively-held hotkey.  forget any that have been triggered
                         lastHotkey = null;
@@ -1780,8 +1927,14 @@ namespace ACAudio
                             CreateSpeakingIcon(playerObj.Id, true);
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Log($"vcclient updates exception: {ex.Message}");
+            }
 
-
+            try
+            { 
                 // do whatever we gotta do
                 VCClient.Process(dt);
             }
@@ -1821,6 +1974,7 @@ namespace ACAudio
 
             // anything that decreases frames below XX should be reported
             double fps = (1.0 / lastProcessTime);
+#if DEBUG
             if (fps < 20.0 || ForcePerfDump)
             {
                 string title;
@@ -1850,6 +2004,7 @@ namespace ACAudio
                 }
                 Log("------------");
             }
+#endif
 
 
 
@@ -1936,6 +2091,40 @@ namespace ACAudio
                     foreach (WorldObject obj in finalObjects)
                         PlayForObject(obj, src);
                 }
+
+
+                // if we are playerkiller, lets scan for other playerkillers
+                int playerPKStatus = Player.Values((LongValueKey)134) & 0x44/*0x40=pklite  0x04=pk*/;
+                if (playerPKStatus != 0)
+                {
+                    foreach (ShadowObject obj in objects)
+                    {
+                        if (obj.ObjectClass != ObjectClass.Player)
+                            continue;
+
+                        // we need their values
+                        PluginCore.Instance.QueryForIdInfo(obj.Object, true);
+
+                        // check if target is the same pk status as us  (pklite and pk cannot attack each other)
+                        if ((obj.Values((LongValueKey)134) & 0x44/*0x40=pklite  0x04=pk*/) != playerPKStatus)
+                            continue;
+
+                        // skip if in same allegiance?
+                        if (Player.Values(LongValueKey.Monarch) == obj.Values(LongValueKey.Monarch))
+                            continue;
+
+                        // skip if in same fellowship?
+                        ////  since there is no longvaluekey or anything for fellowship, we will need to use _CharacterFilter_ChangeFellowship
+                        ////  to track recruit/quit events for other players to detect if they are in our fellowship or not
+                        //if (xyz)
+                        //continue;
+
+
+                        // we've made contact
+                        lastSeenOtherPK = DateTime.Now;
+                        break;
+                    }
+                }
             }
         }
 
@@ -1964,7 +2153,9 @@ namespace ACAudio
 
                     if (filestream)
                     {
+#if DEBUG
                         Log($"Creating file stream: {name}");
+#endif
                         string filepath = GenerateDataPath(name);
                         if (!File.Exists(filepath))
                             return null;
@@ -1973,7 +2164,9 @@ namespace ACAudio
                     }
                     else
                     {
+#if DEBUG
                         Log($"Loading file to RAM: {name}");
+#endif
                         byte[] buf = PluginCore.ReadDataFile(name);
                         if (buf == null || buf.Length == 0)
                             return null;
@@ -1982,7 +2175,9 @@ namespace ACAudio
                     }
 
                     pt.Stop();
+#if DEBUG
                     Log($"loading took {(pt.Duration * 1000.0).ToString("#0.0")}msec");
+#endif
                 }
                 catch (Exception ex)
                 {
@@ -2114,7 +2309,9 @@ namespace ACAudio
                 {
                     if (!_WantSongPlay)
                     {
+#if DEBUG
                         Log("WE WANT SONG");
+#endif
                         _WantSongPlay = true;
                     }
 
@@ -2122,7 +2319,7 @@ namespace ACAudio
                 }
 
 
-                Log($"we wanna play {Source.Sound.file}");
+                Log($"PLAYING: {Source.Sound.file}");
 
                 // if channel exists, kill it?
                 if (Channel != null)
@@ -2176,7 +2373,9 @@ namespace ACAudio
                 {
                     if (_WantSongPlay)
                     {
+#if DEBUG
                         Log("WE DONT WANT SONG");
+#endif
                         _WantSongPlay = false;
                     }
 
@@ -2373,8 +2572,9 @@ namespace ACAudio
 
             ActiveAmbients.Add(newsa);
 
-
+#if DEBUG
             Log($"added static ambient {src.Sound.file} at {pos}");
+#endif
         }
 
         public void PlayForObject(WorldObject obj, Config.SoundSource src)
@@ -2411,7 +2611,9 @@ namespace ACAudio
 
             ActiveAmbients.Add(newoa);
 
+#if DEBUG
             Log($"added weenie ambient {src.Sound.file} from ID {obj.Id}");
+#endif
         }
 
         public static byte[] ReadDataFile(string filename)
@@ -2512,14 +2714,18 @@ namespace ACAudio
             if (e.Type == PortalEventType.EnterPortal)
             {
                 // start sound
+#if DEBUG
                 Log("changeportalmode START");
+#endif
 
                 IsPortaling = true;
                 StartPortalSong();
             }
             else
             {
+#if DEBUG
                 Log("changeportalmode DONE");
+#endif
 
                 // dont have to do here..  Process will pick it up
                 //TryMusic();
@@ -2531,7 +2737,9 @@ namespace ACAudio
                 {
                     NeedFirstLoginPlayerWeenie = false;
 
+#if DEBUG
                     Log("INITIALIZE VOICECHAT");
+#endif
                     VCClient.Init(Core.CharacterFilter.AccountName, Player.Name, Player.Id);
                 }
             }
@@ -2544,6 +2752,8 @@ namespace ACAudio
                 Music.Stop();
         }
 
+        DateTime lastSeenOtherPK = new DateTime();
+
         private bool _TryMusic()
         {
             if (!GetUserEnableMusic())
@@ -2555,31 +2765,53 @@ namespace ACAudio
             Mat4 camMat;
             SmithInterop.GetCameraInfo(out camPos, out camMat);
             {
+                Config.SoundAttributes musicSound = null;
 
-                // "placeable" song triggers should take priority over dungeon or default sources
-                double closestDist = MathLib.Infinity;
-                Ambient closestAmb = null;
-                foreach (Ambient a in ActiveAmbients)
+
+                if (musicSound == null)
                 {
-                    if (!a.IsSong || !a.WantSongPlay)
-                        continue;
-
-                    double dist = (a.Position.Global - camPos.Global).Magnitude;
-
-                    if (dist < closestDist)
+                    // check for PK battle;  should take precedence over absolutely everything
+                    Config.SoundSourcePKBattle pkSong = Config.FindSoundSourcePKBattleSong();
+                    if (pkSong != null)
                     {
-                        closestDist = dist;
-                        closestAmb = a;
+                        if (DateTime.Now.Subtract(lastSeenOtherPK).TotalSeconds < 8.0)
+                            musicSound = pkSong.Sound;
                     }
                 }
 
 
-                Config.SoundAttributes musicSound = null;
 
-                // if we found a placed trigger, select it straight away
-                if (closestAmb != null)
-                    musicSound = closestAmb.Source.Sound;
-                else
+
+                if (musicSound == null)
+                {
+                    // "placeable" song triggers should take priority over dungeon or default sources
+                    double closestDist = MathLib.Infinity;
+                    Ambient closestAmb = null;
+                    foreach (Ambient a in ActiveAmbients)
+                    {
+                        if (!a.IsSong || !a.WantSongPlay)
+                            continue;
+
+                        double dist = (a.Position.Global - camPos.Global).Magnitude;
+
+                        if (dist < closestDist)
+                        {
+                            closestDist = dist;
+                            closestAmb = a;
+                        }
+                    }
+
+
+
+                    // if we found a placed trigger, select it straight away
+                    if (closestAmb != null)
+                        musicSound = closestAmb.Source.Sound;
+                }
+                
+
+
+
+                if(musicSound == null)
                 {
                     // check for defaults?
 

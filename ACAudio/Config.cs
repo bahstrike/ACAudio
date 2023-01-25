@@ -216,6 +216,15 @@ namespace ACAudio
             }
         }
 
+        public class SoundSourcePKBattle : SoundSource
+        {
+            public SoundSourcePKBattle(SoundAttributes _Sound)
+                : base(_Sound)
+            {
+
+            }
+        }
+
         public class SoundSourceText : SoundSource
         {
             public readonly string Text;
@@ -331,6 +340,20 @@ namespace ACAudio
                     continue;
 
                 return dungeonSrc;
+            }
+
+            return null;
+        }
+
+        public static SoundSourcePKBattle FindSoundSourcePKBattleSong()
+        {
+            foreach(SoundSource src in Sources)
+            {
+                SoundSourcePKBattle battleSrc = src as SoundSourcePKBattle;
+                if (battleSrc == null)
+                    continue;
+
+                return battleSrc;
             }
 
             return null;
@@ -638,6 +661,12 @@ namespace ACAudio
                                 }
                                 break;
 
+                            case "pkbattle":
+                                {
+                                    Sources.Add(new SoundSourcePKBattle(CurrentSound));
+                                }
+                                break;
+
                             case "portal":
                                 {
 
@@ -679,7 +708,9 @@ namespace ACAudio
                                 {
                                     string txt = content.Replace("\"", "");
 
+#if DEBUG
                                     Log($"adding text source: {txt}");
+#endif
                                     Sources.Add(new SoundSourceText(CurrentSound, txt));
                                 }
                                 break;
