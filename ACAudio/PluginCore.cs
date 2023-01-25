@@ -835,7 +835,7 @@ namespace ACAudio
 
             obj.SetText(ln);
 
-            obj.Anchor(Player.Id, /*1.165f*/-0.5f, 0.0f, 0.0f, 0.0f);
+            obj.Anchor(Player.Id, 1.165f, 0.0f, 0.0f, 0.0f);
             obj.OrientToCamera(true);
             obj.Visible = true;
             obj.Autoscale = false;
