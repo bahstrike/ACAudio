@@ -679,7 +679,9 @@ namespace ACAudio
                                 {
                                     string txt = content.Replace("\"", "");
 
+#if DEBUG
                                     Log($"adding text source: {txt}");
+#endif
                                     Sources.Add(new SoundSourceText(CurrentSound, txt));
                                 }
                                 break;

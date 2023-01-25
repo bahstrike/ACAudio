@@ -286,7 +286,9 @@ namespace ACAVCServer
             if (LogOff)
                 return;
 
+#if DEBUG
             Log("LOGOFF LOL");
+#endif
 
 
             LogOff = true;

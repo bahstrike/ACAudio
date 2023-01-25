@@ -216,7 +216,7 @@ namespace ACAudio
 
                 View["Dump"].Hit += delegate (object sender, EventArgs e)
                 {
-                    WriteToChat("BLAH");
+                    WriteToChat("Check ACAudio.log");
 
                     List<ShadowObject> allobj = FilterByDistance(WorldObjects, CameraPosition, 35.0);
 
@@ -250,10 +250,12 @@ namespace ACAudio
 
                 View["Coords"].Hit += delegate (object sender, EventArgs e)
                 {
-                    WriteToChat("WEEE");
+                    string output = $"pos {SmithInterop.Position(Player).ToString().Replace(" ", "")/*condense*/}";
+
+                    WriteToChat(output);
 
                     // the log message is intended to be copy&paste to the .ACA files
-                    Log($"pos {SmithInterop.Position(Player).ToString().Replace(" ", "")/*condense*/}");
+                    Log(output);
                 };
 
                 (View["Enable"] as HudCheckBox).Change += delegate (object sender, EventArgs e)
@@ -786,7 +788,7 @@ namespace ACAudio
 
             Config.Load("master.aca");
 
-            Log($"Parsed {Config.Sources.Count} sound sources from master.aca");
+            Log($"Parsed {Config.Sources.Count} sound sources from configs");
 
 
             // reload static positions;  we will only keep what we registered from configs
@@ -806,11 +808,13 @@ namespace ACAudio
 
             BVH.Process(0.00001);//flush with a nonzero dt?
 
+#if DEBUG
             {
                 int numBVHs, numNodes, numThings;
                 BVH.GetTreeInfo(out numBVHs, out numNodes, out numThings);
                 Log($"BVH INFO: numBVHs:{numBVHs}  numNodes:{numNodes}  numThings:{numThings}");//report so far lol
             }
+#endif
 
 
             pt.Stop();
@@ -872,7 +876,9 @@ namespace ACAudio
             if (LogOff)
                 return;
 
+#if DEBUG
             Log("LOGOFF LOL");
+#endif
             IsPortaling = true;
             StartPortalSong();
 
@@ -1464,10 +1470,12 @@ namespace ACAudio
                 if (discardReason != null)
                 {
 
+#if DEBUG
                     if (a is ObjectAmbient)
                         Log($"removing for weenie {(a as ObjectAmbient).WeenieID}: {discardReason}");
                     else if (a is StaticAmbient)
                         Log($"removing for static {(a as StaticAmbient).Position}: {discardReason}");
+#endif
 
 
 
@@ -1759,7 +1767,8 @@ namespace ACAudio
                     {
                         currentVoice = (StreamInfo.VoiceChannel)(View["MicChannel"] as HudCombo).Current;
                         //currentVoice = StreamInfo.VoiceChannel.Proximity3D;
-                    } else
+                    }
+                    else
                     {
                         // no actively-held hotkey.  forget any that have been triggered
                         lastHotkey = null;
@@ -1780,8 +1789,14 @@ namespace ACAudio
                             CreateSpeakingIcon(playerObj.Id, true);
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Log($"vcclient updates exception: {ex.Message}");
+            }
 
-
+            try
+            { 
                 // do whatever we gotta do
                 VCClient.Process(dt);
             }
@@ -1821,6 +1836,7 @@ namespace ACAudio
 
             // anything that decreases frames below XX should be reported
             double fps = (1.0 / lastProcessTime);
+#if DEBUG
             if (fps < 20.0 || ForcePerfDump)
             {
                 string title;
@@ -1850,6 +1866,7 @@ namespace ACAudio
                 }
                 Log("------------");
             }
+#endif
 
 
 
@@ -1964,7 +1981,9 @@ namespace ACAudio
 
                     if (filestream)
                     {
+#if DEBUG
                         Log($"Creating file stream: {name}");
+#endif
                         string filepath = GenerateDataPath(name);
                         if (!File.Exists(filepath))
                             return null;
@@ -1973,7 +1992,9 @@ namespace ACAudio
                     }
                     else
                     {
+#if DEBUG
                         Log($"Loading file to RAM: {name}");
+#endif
                         byte[] buf = PluginCore.ReadDataFile(name);
                         if (buf == null || buf.Length == 0)
                             return null;
@@ -1982,7 +2003,9 @@ namespace ACAudio
                     }
 
                     pt.Stop();
+#if DEBUG
                     Log($"loading took {(pt.Duration * 1000.0).ToString("#0.0")}msec");
+#endif
                 }
                 catch (Exception ex)
                 {
@@ -2114,7 +2137,9 @@ namespace ACAudio
                 {
                     if (!_WantSongPlay)
                     {
+#if DEBUG
                         Log("WE WANT SONG");
+#endif
                         _WantSongPlay = true;
                     }
 
@@ -2122,7 +2147,7 @@ namespace ACAudio
                 }
 
 
-                Log($"we wanna play {Source.Sound.file}");
+                Log($"PLAYING: {Source.Sound.file}");
 
                 // if channel exists, kill it?
                 if (Channel != null)
@@ -2176,7 +2201,9 @@ namespace ACAudio
                 {
                     if (_WantSongPlay)
                     {
+#if DEBUG
                         Log("WE DONT WANT SONG");
+#endif
                         _WantSongPlay = false;
                     }
 
@@ -2373,8 +2400,9 @@ namespace ACAudio
 
             ActiveAmbients.Add(newsa);
 
-
+#if DEBUG
             Log($"added static ambient {src.Sound.file} at {pos}");
+#endif
         }
 
         public void PlayForObject(WorldObject obj, Config.SoundSource src)
@@ -2411,7 +2439,9 @@ namespace ACAudio
 
             ActiveAmbients.Add(newoa);
 
+#if DEBUG
             Log($"added weenie ambient {src.Sound.file} from ID {obj.Id}");
+#endif
         }
 
         public static byte[] ReadDataFile(string filename)
@@ -2512,14 +2542,18 @@ namespace ACAudio
             if (e.Type == PortalEventType.EnterPortal)
             {
                 // start sound
+#if DEBUG
                 Log("changeportalmode START");
+#endif
 
                 IsPortaling = true;
                 StartPortalSong();
             }
             else
             {
+#if DEBUG
                 Log("changeportalmode DONE");
+#endif
 
                 // dont have to do here..  Process will pick it up
                 //TryMusic();
@@ -2531,7 +2565,9 @@ namespace ACAudio
                 {
                     NeedFirstLoginPlayerWeenie = false;
 
+#if DEBUG
                     Log("INITIALIZE VOICECHAT");
+#endif
                     VCClient.Init(Core.CharacterFilter.AccountName, Player.Name, Player.Id);
                 }
             }

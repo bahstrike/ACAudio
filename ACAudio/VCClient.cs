@@ -873,7 +873,7 @@ namespace ACAudio
                 {
                     TcpClient tryServer = new TcpClient();
 
-                    Log($"Attempting connection to {ServerIP}");//:{ServerPort}");
+                    //Log($"Attempting connection...");// to {ServerIP}");//:{ServerPort}");
 
                     ConnectAttempt ca = new ConnectAttempt();
                     ca.InitNumber = CurrentInitNumber;
