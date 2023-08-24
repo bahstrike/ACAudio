@@ -85,7 +85,6 @@ Advan
 Harli Quin
 Hells
 Immortal Bob
-Maethor
 OptimShi
 paradox
 trevis
