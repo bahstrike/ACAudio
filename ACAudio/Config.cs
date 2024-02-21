@@ -677,7 +677,15 @@ namespace ACAudio
 
                             case "text":
                                 {
-                                    string txt = content.Replace("\"", "");
+                                    string txt = content;
+
+                                    // if there are a beginning and ending quote, remove them
+                                    if (txt.StartsWith("\"") && content.EndsWith("\""))
+                                        txt = txt.Substring(1, txt.Length - 2);
+
+
+                                    // if anyone embedded a \"  then replace with "
+                                    txt = txt.Replace("\\\"", "\"");
 
 #if DEBUG
                                     Log($"adding text source: {txt}");

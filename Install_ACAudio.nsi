@@ -1,7 +1,7 @@
 ; Define your application name
 !define APPNAME "ACAudio"
 !define SOFTWARECOMPANY "Bad Ass Hackers"
-!define VERSION	"2.0.0.0"
+!define VERSION	"2.0.1.0"
 !define APPGUID "{dccf58a6-a37a-4fea-adcc-488ce2d51883}"
 
 !define ASSEMBLY "ACAudio.dll"
