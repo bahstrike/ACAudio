@@ -5,14 +5,14 @@ layout: default
 ## Download
 
 ##### ACAudio:
-**[Installer for Decal plugin: ACAudio 2.0](https://github.com/bahstrike/ACAudio/releases/download/2.0.0.0/ACAudio-2.0.0.0.exe) _(most users only need this)_**
+**[Installer for Decal plugin: ACAudio 2.0.1](https://github.com/bahstrike/ACAudio/releases/download/2.0.1.0/ACAudio-2.0.1.0.exe) _(most users only need this)_**
 
-_[Portable version; download whole folder: you must add `ACAudio.dll` to Decal](https://github.com/bahstrike/ACAudio/tree/2.0.0.0/DEPLOY_ACAUDIO)_
+_[Portable version; download whole folder: you must add `ACAudio.dll` to Decal](https://github.com/bahstrike/ACAudio/tree/2.0.1.0/DEPLOY_ACAUDIO)_
 
 ##### For players wanting to host voice chat server via in-game bot:
-[Installer for Decal plugin: ACAVCServer 2.0](https://github.com/bahstrike/ACAudio/releases/download/2.0.0.0/ACAVCServer-2.0.0.0.exe)
+[Installer for Decal plugin: ACAVCServer 2.0.1](https://github.com/bahstrike/ACAudio/releases/download/2.0.1.0/ACAVCServer-2.0.1.0.exe)
 
-_[Portable version; download whole folder: you must add `ACAVCServer.dll` to Decal](https://github.com/bahstrike/ACAudio/tree/2.0.0.0/DEPLOY_ACAVCSERVER)_
+_[Portable version; download whole folder: you must add `ACAVCServer.dll` to Decal](https://github.com/bahstrike/ACAudio/tree/2.0.1.0/DEPLOY_ACAVCSERVER)_
 
 
 ##### For Asheron's Call server administrators wanting to host dedicated voice chat server:
